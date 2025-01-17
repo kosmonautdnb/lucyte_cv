@@ -4,7 +4,7 @@
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const int outputVideoFrameRate = 25;
 
-#define FILESET 1
+#define FILESET 4
 
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";
@@ -20,4 +20,9 @@ const int lastFrame = 12600;
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street1/auto%04d.jpg";
 const int firstFrame = 1;
 const int lastFrame = 2375;
+#endif
+#if FILESET == 4
+const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street4/auto%04d.png";
+const int firstFrame = 1;
+const int lastFrame = 1627;
 #endif

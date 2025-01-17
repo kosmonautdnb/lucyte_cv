@@ -16,11 +16,11 @@ int tex(const unsigned char* s, const float x, const float y, int width, int hei
     const int yr = yr8 >> 10;
     if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1))
         return -abs(xr) - abs(yr); // invalid but put some value in maybe it helps
-    const int p = xr + yr * width;
+    s += xr + yr * width;
     const int xn = xr8 & 1023;
     const int yn = yr8 & 1023;
-    const unsigned short a = *((unsigned short*)(s + p));
-    const unsigned short b = *((unsigned short*)(s + p + width));
+    const unsigned short a = *((unsigned short*)(s));
+    const unsigned short b = *((unsigned short*)(s + width));
     const unsigned char a0 = *((unsigned char*)&a);
     const unsigned char a1 = *((unsigned char*)&a + 1);
     const unsigned char b0 = *((unsigned char*)&b);

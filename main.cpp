@@ -14,6 +14,9 @@ const float STEPSIZE = 0.0025f;
 const float DESCRIPTORSCALE = 8.f;
 const bool BOOLSTEPPING = true;
 const float MIPSTART = 0.0;
+const float STEPATTENUATION = 0.5f;
+const float MIPSCALE = 0.5;
+const int KEYPOINTCOUNT = 300;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
@@ -45,7 +48,7 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
         cv::Mat clone = k.clone();
         cv::resize(clone, clone, cv::Size(width, height), 0.f, 0.f, cv::INTER_LINEAR);
         mipmaps.push_back(clone);
-        cv::resize(k, k, cv::Size(k.cols / 2, k.rows / 2), 0.f, 0.f, cv::INTER_AREA);
+        cv::resize(k, k, cv::Size(k.cols * MIPSCALE, k.rows * MIPSCALE), 0.f, 0.f, cv::INTER_AREA);
     }
     return mipmaps;
 }
@@ -108,7 +111,7 @@ int main(int argc, char** argv)
     cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate, cv::Size(mat1.cols, mat1.rows), true);
 
     std::vector<KeyPoint> groundTruthKeyPoints;
-    groundTruthKeyPoints.resize(100);
+    groundTruthKeyPoints.resize(KEYPOINTCOUNT);
     for (int i = 0; i < groundTruthKeyPoints.size(); ++i) {
         groundTruthKeyPoints[i].x = frrand2(mipmaps1[0].cols);
         groundTruthKeyPoints[i].y = frrand2(mipmaps1[0].rows);
@@ -142,7 +145,7 @@ int main(int argc, char** argv)
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     for (int k = 0; k < STEPCOUNT; k++) {
                         float descriptorScale = (1 << i);
-                        const float step = STEPSIZE * descriptorScale;
+                        const float step = STEPSIZE * descriptorScale * (1.f-float(k)/STEPCOUNT*STEPATTENUATION);
                         descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
                         sampleDescriptor(keyPoints[j], foundDescriptors[j], mipmaps2[i].data, descriptorScale, width, height);
