@@ -7,7 +7,7 @@ float descriptorsX1[DESCRIPTORSIZE];
 float descriptorsY1[DESCRIPTORSIZE];
 float descriptorsX2[DESCRIPTORSIZE];
 float descriptorsY2[DESCRIPTORSIZE];
-const bool ONLYVALID = false;
+const bool ONLYVALID = true;
 
 int tex(const unsigned char* s, const float x, const float y, int width, int height) {
     const int xr8 = int(floor(x * 1024.f));
@@ -60,7 +60,7 @@ void refineKeyPoint(bool stepping, KeyPoint& kp, const Descriptor& toSearch, Des
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {
         int v1 = (toSearch.valid[b / 32] >> (b & 31)) & 1;
         int v2 = (current.valid[b / 32] >> (b & 31)) & 1;
-        if (ONLYVALID && v1 != 1 || v2 != 1)
+        if (ONLYVALID && (v1 != 1 || v2 != 1))
             continue;
         int b1 = (toSearch.bits[b / 32] >> (b & 31)) & 1;
         int b2 = (current.bits[b / 32] >> (b & 31)) & 1;
