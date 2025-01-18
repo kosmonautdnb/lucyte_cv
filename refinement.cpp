@@ -7,7 +7,7 @@ float descriptorsX1[DESCRIPTORSIZE];
 float descriptorsY1[DESCRIPTORSIZE];
 float descriptorsX2[DESCRIPTORSIZE];
 float descriptorsY2[DESCRIPTORSIZE];
-const bool ONLYVALID = true;
+const bool ONLYVALID = false;
 
 int tex(const unsigned char* s, const float x, const float y, int width, int height) {
     const int xr8 = int(floor(x * 1024.f));
@@ -49,7 +49,7 @@ void sampleDescriptor(KeyPoint& kp, Descriptor& d, const unsigned char* s, float
     }
 }
 
-void refineKeyPoint(bool stepping, KeyPoint& kp, const Descriptor& toSearch, Descriptor& current, const unsigned char* s, float descriptorScale, float angle, float step, int width, int height) {
+KeyPoint refineKeyPoint(bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const Descriptor& current, const unsigned char* s, float descriptorScale, float angle, float step, int width, int height) {
     const float sina = sin(angle) * descriptorScale;
     const float cosa = cos(angle) * descriptorScale;
     const float gdxx = cosa; const float gdxy = sina;
@@ -98,7 +98,9 @@ void refineKeyPoint(bool stepping, KeyPoint& kp, const Descriptor& toSearch, Des
         xa /= l;
         ya /= l;
     }
-    kp.x += (cosa * xa + sina * ya) * step;
-    kp.y += (-sina * xa + cosa * ya) * step;
+    KeyPoint r;
+    r.x = kp.x + (cosa * xa + sina * ya) * step;
+    r.y = kp.y + (-sina * xa + cosa * ya) * step;
+    return r;
 }
 

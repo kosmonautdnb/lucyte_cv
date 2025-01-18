@@ -13,6 +13,8 @@ const int STEPCOUNT = 64;
 const float STEPSIZE = 0.0025f;
 const float DESCRIPTORSCALE = 8.f;
 const bool BOOLSTEPPING = true;
+const bool CHECKVARIANCE = true;
+const float MAXVARIANCEPIXELS = 3.0;
 const float MIPSTART = 0.0;
 const float STEPATTENUATION = 0.5f;
 const float MIPSCALE = 0.5;
@@ -29,10 +31,14 @@ float frrand2(float rad) {
     return ((float)(rand() % RAND_MAX) / RAND_MAX) * rad;
 }
 
-cv::Mat output(const std::string& windowName, const cv::Mat& matrix1, std::vector<KeyPoint>& keyPoints1) {
-    cv::Mat bg1 = matrix1.clone();
-    for (int i = 0; i < keyPoints1.size(); i++) {
-        cv::circle(bg1, cv::Point(keyPoints1[i].x, keyPoints1[i].y), 4.f, cv::Scalar(0, 0, 255));
+cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints) {
+    cv::Mat bg1 = image.clone();
+    for (int i = 0; i < keyPoints.size(); i++) {
+        float varianceX = variancePoints[i].x - keyPoints[i].x;
+        float varianceY = variancePoints[i].y - keyPoints[i].y;
+        float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
+        if (variance < MAXVARIANCEPIXELS)
+            cv::circle(bg1, cv::Point(keyPoints[i].x, keyPoints[i].y), 4.f, cv::Scalar(0, 0, 255));
     }
     imshow(windowName, bg1);
     return bg1;
@@ -106,54 +112,60 @@ int main(int argc, char** argv)
     defaultDescriptorShape(DESCRIPTORSCALE);
 
     cv::Mat mat1 = loadImage(firstFrame);
-    mipmaps1 = mipMaps(mat1);
-
     cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate, cv::Size(mat1.cols, mat1.rows), true);
+    mipmaps1 = mipMaps(mat1);
+    int mipStart = MIPSTART * mipmaps1.size();
 
-    std::vector<KeyPoint> groundTruthKeyPoints;
-    groundTruthKeyPoints.resize(KEYPOINTCOUNT);
-    for (int i = 0; i < groundTruthKeyPoints.size(); ++i) {
-        groundTruthKeyPoints[i].x = frrand2(mipmaps1[0].cols);
-        groundTruthKeyPoints[i].y = frrand2(mipmaps1[0].rows);
+    std::vector<KeyPoint> keyPoints;
+    std::vector<KeyPoint> variancePoints;
+    keyPoints.resize(KEYPOINTCOUNT);
+    variancePoints.resize(KEYPOINTCOUNT);
+    for (int i = 0; i < keyPoints.size(); ++i) {
+        keyPoints[i].x = frrand2(mipmaps1[0].cols);
+        keyPoints[i].y = frrand2(mipmaps1[0].rows);
     }
 
-    std::vector<std::vector<Descriptor>> groundTruthDescriptors;
-    groundTruthDescriptors.resize(mipmaps1.size());
-    int mipStart = MIPSTART * mipmaps1.size();
+    std::vector<std::vector<Descriptor>> searchForDescriptors;
+    searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipStart; i < mipmaps1.size(); i++) {
         const float descriptorScale = 1 << i;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
-        groundTruthDescriptors[i].resize(groundTruthKeyPoints.size());
-        for (int j = 0; j < groundTruthKeyPoints.size(); ++j) {
-            KeyPoint& kp = groundTruthKeyPoints[j];
-            Descriptor& d = groundTruthDescriptors[i][j];
-            sampleDescriptor(kp, d, mipmaps1[i].data, descriptorScale, width, height);
+        searchForDescriptors[i].resize(keyPoints.size());
+        for (int j = 0; j < keyPoints.size(); ++j) {
+            sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps1[i].data, descriptorScale, width, height);
         }
     }
 
-    std::vector<KeyPoint> keyPoints = groundTruthKeyPoints;
     for (int steps = firstFrame; steps <= lastFrame; steps++) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
-        for (int i = mipmaps1.size() - 1; i >= mipStart; i--) {
-            const int width = mipmaps2[i].cols;
-            const int height = mipmaps2[i].rows;
-            std::vector<Descriptor> foundDescriptors;
-            foundDescriptors.resize(keyPoints.size());
+        for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
 #pragma omp parallel for
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
+                KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
+                for (int i = mipmaps1.size() - 1; i >= mipStart; i--) {
+                    const int width = mipmaps2[i].cols;
+                    const int height = mipmaps2[i].rows;
                     for (int k = 0; k < STEPCOUNT; k++) {
                         float descriptorScale = (1 << i);
-                        const float step = STEPSIZE * descriptorScale * (1.f-float(k)/STEPCOUNT*STEPATTENUATION);
+                        const float step = STEPSIZE * descriptorScale * (1.f - float(k) / STEPCOUNT * STEPATTENUATION);
                         descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
-                        sampleDescriptor(keyPoints[j], foundDescriptors[j], mipmaps2[i].data, descriptorScale, width, height);
-                        refineKeyPoint(BOOLSTEPPING, keyPoints[j], groundTruthDescriptors[i][j], foundDescriptors[j], mipmaps2[i].data, descriptorScale, angle, step, width, height);
+                        Descriptor foundDescriptor;
+                        sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height);
+                        kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height);
                     }
+                }
+                switch (v) {
+                case 0: keyPoints[j] = kp; 
+                case 1: variancePoints[j] = kp; break;
+                }
             }
         }
-        video.write(output("keypoints", mat2, keyPoints)); cv::waitKey(1);
+        video.write(output("keypoints", mat2, keyPoints, variancePoints));
+        if (cv::waitKey(1) == 27) 
+            break;
         const bool readd = true;
         if (readd) {
             const int width = mipmaps2[0].cols;
@@ -168,29 +180,31 @@ int main(int argc, char** argv)
                     k.x = frrand2(width);
                     k.y = frrand2(height);
                 }
+                float varianceX = variancePoints[j].x - keyPoints[j].x;
+                float varianceY = variancePoints[j].y - keyPoints[j].y;
+                float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
+                if (variance >= MAXVARIANCEPIXELS) {
+                    k.x = frrand2(width);
+                    k.y = frrand2(height);
+                }
             }
         }
 
         const bool resample = true;
         if (resample) {
-            groundTruthKeyPoints = keyPoints;
             for (int i = mipStart; i < mipmaps1.size(); i++) {
                 const float descriptorScale = 1 << i;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
 #pragma omp parallel for
-                for (int j = groundTruthKeyPoints.size() - 1; j >= 0; j--) {
-                    sampleDescriptor(groundTruthKeyPoints[j], groundTruthDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height);
+                for (int j = keyPoints.size() - 1; j >= 0; j--) {
+                    sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height);
                 }
             }
         }
     }
 
     video.release();
-
-    while (1) {
-        if (cv::waitKey(0) == 27) break;
-    }
 
     return 0;
 }
