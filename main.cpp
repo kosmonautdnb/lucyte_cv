@@ -18,7 +18,7 @@ const float MAXVARIANCEPIXELS = 3.0;
 const float MIPSTART = 0.0;
 const float STEPATTENUATION = 0.5f;
 const float MIPSCALE = 0.5;
-const int KEYPOINTCOUNT = 300;
+const int KEYPOINTCOUNT = 600;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
@@ -31,17 +31,27 @@ float frrand2(float rad) {
     return ((float)(rand() % RAND_MAX) / RAND_MAX) * rad;
 }
 
-cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints) {
-    cv::Mat bg1 = image.clone();
+cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<KeyPoint>& lastFrameVariancePoints) {
+    cv::Mat mat = image.clone();
     for (int i = 0; i < keyPoints.size(); i++) {
         float varianceX = variancePoints[i].x - keyPoints[i].x;
         float varianceY = variancePoints[i].y - keyPoints[i].y;
         float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-        if (variance < MAXVARIANCEPIXELS)
-            cv::circle(bg1, cv::Point(keyPoints[i].x, keyPoints[i].y), 4.f, cv::Scalar(0, 0, 255));
+        float lastFrameVarianceX = lastFrameVariancePoints[i].x - lastFrameKeyPoints[i].x;
+        float lastFrameVarianceY = lastFrameVariancePoints[i].y - lastFrameKeyPoints[i].y;
+        float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
+        if (variance < MAXVARIANCEPIXELS && lastFrameVariance < MAXVARIANCEPIXELS) {
+            const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
+            const float sx = 3.f;
+            const float sy = 6.f;
+            cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
+            cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
+            cv::line(mat, cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
+            cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(0, 0, 255));
+        }
     }
-    imshow(windowName, bg1);
-    return bg1;
+    imshow(windowName, mat);
+    return mat;
 }
 
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
@@ -107,7 +117,7 @@ cv::Mat loadImage(int frame) {
 int main(int argc, char** argv)
 {
     srand(SEED);
-    omp_set_num_threads(4);
+    omp_set_num_threads(32);
 
     defaultDescriptorShape(DESCRIPTORSCALE);
 
@@ -137,9 +147,11 @@ int main(int argc, char** argv)
         }
     }
 
-    for (int steps = firstFrame; steps <= lastFrame; steps++) {
+    for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
+        std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
+        std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
         for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
 #pragma omp parallel for
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
@@ -163,7 +175,7 @@ int main(int argc, char** argv)
                 }
             }
         }
-        video.write(output("keypoints", mat2, keyPoints, variancePoints));
+        video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
         cv::setWindowTitle("keypoints", std::string("Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame));
         if (cv::waitKey(1) == 27) 
             break;
