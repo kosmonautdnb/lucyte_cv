@@ -52,8 +52,8 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     const float descriptorSize = mipScale * descriptorScale;
     const float sina = sinf(angle);
     const float cosa = cosf(angle);
-    const float sinad = sina * descriptorScale * mipScale;
-    const float cosad = cosa * descriptorScale * mipScale;
+    const float sinad = sina * descriptorSize;
+    const float cosad = cosa * descriptorSize;
     const float gdxx = cosa; const float gdxy = sina;
     const float gdyx = -sina; const float gdyy = cosa;
     float xa = 0;
