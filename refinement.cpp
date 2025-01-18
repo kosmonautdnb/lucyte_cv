@@ -10,8 +10,8 @@ float descriptorsY2[DESCRIPTORSIZE];
 const bool ONLYVALID = false;
 
 int tex(const unsigned char* s, const float x, const float y, int width, int height) {
-    const int xr8 = int(floor(x * 1024.f));
-    const int yr8 = int(floor(y * 1024.f));
+    const int xr8 = int(floorf(x * 1024.f));
+    const int yr8 = int(floorf(y * 1024.f));
     const int xr = xr8 >> 10;
     const int yr = yr8 >> 10;
     if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1))
@@ -21,10 +21,10 @@ int tex(const unsigned char* s, const float x, const float y, int width, int hei
     const int yn = yr8 & 1023;
     const unsigned short a = *((unsigned short*)(s));
     const unsigned short b = *((unsigned short*)(s + width));
-    const unsigned char a0 = *((unsigned char*)&a);
-    const unsigned char a1 = *((unsigned char*)&a + 1);
-    const unsigned char b0 = *((unsigned char*)&b);
-    const unsigned char b1 = *((unsigned char*)&b + 1);
+    const unsigned char a0 = a & 255;
+    const unsigned char a1 = a >> 8;
+    const unsigned char b0 = b & 255;
+    const unsigned char b1 = b >> 8;
     const int xc1 = (((a1 - a0) * xn) >> 9) + (a0 << 1);
     const int xc2 = (((b1 - b0) * xn) >> 9) + (b0 << 1);
     return (((xc2 - xc1) * yn) >> 9) + (xc1 << 1); // 10 bit
@@ -42,18 +42,20 @@ void sampleDescriptor(KeyPoint& kp, Descriptor& d, const unsigned char* s, float
 }
 
 KeyPoint refineKeyPoint(bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const Descriptor& current, const unsigned char* s, float descriptorScale, float angle, float step, int width, int height) {
-    const float sina = sin(angle) * descriptorScale;
-    const float cosa = cos(angle) * descriptorScale;
+    const float sina = sinf(angle) * descriptorScale;
+    const float cosa = cosf(angle) * descriptorScale;
     const float gdxx = cosa; const float gdxy = sina;
     const float gdyx = -sina; const float gdyy = cosa;
     float xa = 0;
     float ya = 0;
 #pragma omp parallel for num_threads(32)
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {
-        int v1 = (toSearch.valid[b / 32] >> (b & 31)) & 1;
-        int v2 = (current.valid[b / 32] >> (b & 31)) & 1;
-        if (ONLYVALID && (v1 != 1 || v2 != 1))
-            continue;
+        if (ONLYVALID) {
+            int v1 = (toSearch.valid[b / 32] >> (b & 31)) & 1;
+            int v2 = (current.valid[b / 32] >> (b & 31)) & 1;
+            if ((v1 != 1 || v2 != 1))
+                continue;
+        }
         int b1 = (toSearch.bits[b / 32] >> (b & 31)) & 1;
         int b2 = (current.bits[b / 32] >> (b & 31)) & 1;
         if (b2 != b1) {

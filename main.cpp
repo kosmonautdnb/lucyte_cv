@@ -15,7 +15,7 @@ const float DESCRIPTORSCALE = 8.f;
 const bool BOOLSTEPPING = true;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEPIXELS = 3.0;
-const float MIPSTART = 0.0;
+const float MIPEND = 1.0;
 const float STEPATTENUATION = 0.5f;
 const float MIPSCALE = 0.5;
 const int KEYPOINTCOUNT = 600;
@@ -47,7 +47,7 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
             cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
             cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
             cv::line(mat, cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
-            cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(0, 0, 255));
+            cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
         }
     }
     imshow(windowName, mat);
@@ -122,7 +122,7 @@ int main(int argc, char** argv)
     cv::Mat mat1 = loadImage(firstFrame);
     cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate, cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
-    int mipStart = MIPSTART * mipmaps1.size();
+    int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
     std::vector<KeyPoint> variancePoints;
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
-    for (int i = mipStart; i < mipmaps1.size(); i++) {
+    for (int i = mipEnd; i >= 0; i--) {
         const float descriptorScale = 1 << i;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 #pragma omp parallel for num_threads(32)
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
                 KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
-                for (int i = mipmaps1.size() - 1; i >= mipStart; i--) {
+                for (int i = mipEnd; i >= 0; i--) {
                     const int width = mipmaps2[i].cols;
                     const int height = mipmaps2[i].rows;
                     for (int k = 0; k < STEPCOUNT; k++) {
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
 
         const bool resample = true;
         if (resample) {
-            for (int i = mipStart; i < mipmaps1.size(); i++) {
+            for (int i = mipEnd; i >= 0; i--) {
                 const float descriptorScale = 1 << i;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
