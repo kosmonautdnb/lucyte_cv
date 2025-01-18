@@ -12,7 +12,7 @@ const float ROTATIONINVARIANCE = 20.f / 2.f; // 45.f / 2 is good you may do 8 se
 const int STEPCOUNT = 64;
 const float STEPSIZE = 0.0025f;
 const float DESCRIPTORSCALE = 8.f;
-const bool BOOLSTEPPING = true;
+const bool BOOLSTEPPING = false;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEPIXELS = 3.0;
 const float MIPEND = 1.0;
@@ -62,7 +62,6 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     std::vector<cv::Mat> mipmaps;
     while (k.cols > 4 && k.rows > 4) {
         cv::Mat clone = k.clone();
-        cv::resize(clone, clone, cv::Size(width, height), 0.f, 0.f, cv::INTER_LINEAR);
         mipmaps.push_back(clone);
         cv::resize(k, k, cv::Size(k.cols * MIPSCALE, k.rows * MIPSCALE), 0.f, 0.f, cv::INTER_AREA);
     }
@@ -137,11 +136,12 @@ int main(int argc, char** argv)
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
         const float descriptorScale = 1 << i;
+        const float mipScale = 1.f / descriptorScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
         for (int j = 0; j < keyPoints.size(); ++j) {
-            sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps1[i].data, descriptorScale, width, height);
+            sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps1[i].data, descriptorScale, width, height, mipScale);
         }
     }
 
@@ -159,12 +159,13 @@ int main(int argc, char** argv)
                     const int height = mipmaps2[i].rows;
                     for (int k = 0; k < STEPCOUNT; k++) {
                         float descriptorScale = (1 << i);
+                        const float mipScale = 1.f / descriptorScale;
                         const float step = STEPSIZE * descriptorScale * (1.f - float(k) / STEPCOUNT * STEPATTENUATION);
                         descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
                         Descriptor foundDescriptor;
-                        sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height);
-                        kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height);
+                        sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                        kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
                     }
                 }
                 switch (v) {
@@ -205,11 +206,12 @@ int main(int argc, char** argv)
         if (resample) {
             for (int i = mipEnd; i >= 0; i--) {
                 const float descriptorScale = 1 << i;
+                const float mipScale = 1.f / descriptorScale;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
 #pragma omp parallel for num_threads(32)
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height);
+                    sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 }
             }
         }
