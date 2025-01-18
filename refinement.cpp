@@ -63,8 +63,9 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
         if (ONLYVALID) {
             int v1 = (toSearch.valid[b / 32] >> (b & 31)) & 1;
             int v2 = (current.valid[b / 32] >> (b & 31)) & 1;
-            if ((v1 != 1 || v2 != 1))
+            if ((v1 != 1 || v2 != 1)) {
                 continue;
+            }
         }
         int b1 = (toSearch.bits[b / 32] >> (b & 31)) & 1;
         int b2 = (current.bits[b / 32] >> (b & 31)) & 1;
@@ -104,9 +105,10 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
         xa /= l;
         ya /= l;
     }
+    float stepSize = descriptorScale * step;
     KeyPoint r;
-    r.x = kp.x + (cosa * xa + sina * ya) * descriptorScale * step;
-    r.y = kp.y + (-sina * xa + cosa * ya) * descriptorScale * step;
+    r.x = kp.x + (cosa * xa + sina * ya) * stepSize;
+    r.y = kp.y + (-sina * xa + cosa * ya) * stepSize;
     return r;
 }
 

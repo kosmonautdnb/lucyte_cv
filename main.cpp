@@ -14,11 +14,12 @@ const float STEPSIZE = 0.0025f;
 const float DESCRIPTORSCALE = 8.f;
 const bool BOOLSTEPPING = false;
 const bool CHECKVARIANCE = true;
-const float MAXVARIANCEPIXELS = 3.0;
+const float MAXVARIANCEINPIXELS = 3.0;
 const float MIPEND = 1.0;
-const float STEPATTENUATION = 0.95f;
 const float MIPSCALE = 0.5;
 const int KEYPOINTCOUNT = 1000;
+const bool RESAMPLEONVARIANCE = true;
+const float RESAMPLEONVARIANCERADIUS = 1.f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
@@ -42,7 +43,7 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
         float lastFrameVarianceX = lastFrameVariancePoints[i].x - lastFrameKeyPoints[i].x;
         float lastFrameVarianceY = lastFrameVariancePoints[i].y - lastFrameKeyPoints[i].y;
         float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
-        if (variance < MAXVARIANCEPIXELS && lastFrameVariance < MAXVARIANCEPIXELS) {
+        if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS) {
             validKeyPoints++;
             float distanceX = lastFrameVariancePoints[i].x - keyPoints[i].x;
             float distanceY = lastFrameVariancePoints[i].y - keyPoints[i].y;
@@ -50,13 +51,13 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
             const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
             const float sx = 2.f;
             const float sy = 4.f;
-            if (distance >= MAXVARIANCEPIXELS) {
+            if (distance >= MAXVARIANCEINPIXELS) {
                 cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
                 cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
                 cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
             }
             else {
-                cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), MAXVARIANCEPIXELS, cv::Scalar(255, 255, 255));
+                cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), MAXVARIANCEINPIXELS, cv::Scalar(255, 255, 255));
             }
         }
     }
@@ -146,7 +147,7 @@ int main(int argc, char** argv)
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
         const float descriptorScale = 1 << i;
-        const float mipScale = 1.f / descriptorScale;
+        const float mipScale = powf(MIPSCALE, float(i));
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
@@ -169,8 +170,8 @@ int main(int argc, char** argv)
                     const int height = mipmaps2[i].rows;
                     for (int k = 0; k < STEPCOUNT; k++) {
                         float descriptorScale = (1 << i);
-                        const float mipScale = 1.f / descriptorScale;
-                        const float step = STEPSIZE * descriptorScale * (1.f - float(k) / STEPCOUNT * STEPATTENUATION);
+                        const float mipScale = powf(MIPSCALE, float(i));
+                        const float step = STEPSIZE * descriptorScale;
                         descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
                         Descriptor foundDescriptor;
@@ -205,10 +206,11 @@ int main(int argc, char** argv)
                 float varianceX = variancePoints[j].x - keyPoints[j].x;
                 float varianceY = variancePoints[j].y - keyPoints[j].y;
                 float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                if (variance >= MAXVARIANCEPIXELS) {
+                if (variance >= MAXVARIANCEINPIXELS) {
                     k.x = frrand2(width);
                     k.y = frrand2(height);
                 }
+                variancePoints[j] = k;
             }
         }
 
@@ -216,12 +218,16 @@ int main(int argc, char** argv)
         if (resample) {
             for (int i = mipEnd; i >= 0; i--) {
                 const float descriptorScale = 1 << i;
-                const float mipScale = 1.f / descriptorScale;
+                const float mipScale = powf(MIPSCALE, float(i));
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
 #pragma omp parallel for num_threads(32)
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                    float varianceX = variancePoints[j].x - keyPoints[j].x;
+                    float varianceY = variancePoints[j].y - keyPoints[j].y;
+                    float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
+                    if ((!RESAMPLEONVARIANCE)||(variance < RESAMPLEONVARIANCERADIUS))
+                        sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 }
             }
         }
