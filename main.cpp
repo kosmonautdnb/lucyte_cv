@@ -117,8 +117,6 @@ cv::Mat loadImage(int frame) {
 int main(int argc, char** argv)
 {
     srand(SEED);
-    omp_set_num_threads(32);
-
     defaultDescriptorShape(DESCRIPTORSCALE);
 
     cv::Mat mat1 = loadImage(firstFrame);
@@ -153,7 +151,7 @@ int main(int argc, char** argv)
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
         for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
-#pragma omp parallel for
+#pragma omp parallel for num_threads(32)
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
                 KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
                 for (int i = mipmaps1.size() - 1; i >= mipStart; i--) {
@@ -209,7 +207,7 @@ int main(int argc, char** argv)
                 const float descriptorScale = 1 << i;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(32)
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height);
                 }
