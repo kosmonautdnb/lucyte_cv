@@ -164,6 +164,7 @@ int main(int argc, char** argv)
             }
         }
         video.write(output("keypoints", mat2, keyPoints, variancePoints));
+        cv::setWindowTitle("keypoints", std::string("Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame));
         if (cv::waitKey(1) == 27) 
             break;
         const bool readd = true;
