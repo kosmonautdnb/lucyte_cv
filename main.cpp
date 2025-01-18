@@ -16,7 +16,7 @@ const bool BOOLSTEPPING = false;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEPIXELS = 3.0;
 const float MIPEND = 1.0;
-const float STEPATTENUATION = 0.5f;
+const float STEPATTENUATION = 0.95f;
 const float MIPSCALE = 0.5;
 const int KEYPOINTCOUNT = 1000;
 
