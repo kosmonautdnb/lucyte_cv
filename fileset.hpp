@@ -2,6 +2,7 @@
 #pragma once
 
 const char* outputVideoFileName = "c:/!mad/video.avi";
+const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const int outputVideoFrameRate = 25;
 
 #define FILESET 6
