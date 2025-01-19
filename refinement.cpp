@@ -21,10 +21,10 @@ int tex(const unsigned char* s, const float x, const float y, const int width, c
     const int yn = yr8 & 1023;
     const unsigned short a = *((unsigned short*)(s));
     const unsigned short b = *((unsigned short*)(s + width));
-    const unsigned char a0 = a & 255;
-    const unsigned char a1 = a >> 8;
-    const unsigned char b0 = b & 255;
-    const unsigned char b1 = b >> 8;
+    const int a0 = a & 255;
+    const int a1 = a >> 8;
+    const int b0 = b & 255;
+    const int b1 = b >> 8;
     const int xc1 = (((a1 - a0) * xn) >> 9) + (a0 << 1);
     const int xc2 = (((b1 - b0) * xn) >> 9) + (b0 << 1);
     return (((xc2 - xc1) * yn) >> 9) + (xc1 << 1); // 10 bit
@@ -105,14 +105,13 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
         xa /= l;
         ya /= l;
     }
-    float stepSize = descriptorScale * step;
+    const float stepSize = descriptorScale * step;
     KeyPoint r;
     r.x = kp.x + (cosa * xa + sina * ya) * stepSize;
     r.y = kp.y + (-sina * xa + cosa * ya) * stepSize;
-    const bool clipping = false;
-    if (clipping) {
-        int w = floorf(width / mipScale);
-        int h = floorf(height / mipScale);
+    const bool clipping = false; if (clipping) {
+        const int w = int(floorf(float(width) / mipScale));
+        const int h = int(floorf(float(height) / mipScale));
         if (r.x < 0) r.x = 0;
         if (r.y < 0) r.y = 0;
         if (r.x >= w - 1) r.x = w - 1;

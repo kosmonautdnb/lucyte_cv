@@ -6,11 +6,12 @@
 #include "refinement.hpp"
 #include "fileset.hpp"
 
+const unsigned int SEED = 0x13337;
 const float SCALEINVARIANCE = 0.5 / 2.f; // 0.5 / 2 is good
 const float ROTATIONINVARIANCE = 20.f / 2.f; // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
 const int STEPCOUNT = 64;
 const float STEPSIZE = 0.0025f;
-const float DESCRIPTORSCALE = 8.f;
+const float DESCRIPTORSCALE = 5.f;
 const bool BOOLSTEPPING = true;
 const float MAXVARIANCEINPIXELS = 3.0;
 const float MIPSCALE = 0.5;
@@ -36,14 +37,16 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
 }
 
 void cross(int index, double centerx, double centery, double size) {
-    descriptorsX1[index * 2 + 0] = centerx - size * 1.5;
-    descriptorsY1[index * 2 + 0] = centery;
-    descriptorsX2[index * 2 + 0] = centerx + size;
-    descriptorsY2[index * 2 + 0] = centery;
-    descriptorsX1[index * 2 + 1] = centerx;
-    descriptorsY1[index * 2 + 1] = centery - size;
-    descriptorsX2[index * 2 + 1] = centerx;
-    descriptorsY2[index * 2 + 1] = centery + size * 1.5;
+    float a = (float)rand() * 2.f * 3.14159f / RAND_MAX;
+    descriptorsX1[index * 2 + 0] = centerx + cos(a) * size * 1.5;
+    descriptorsY1[index * 2 + 0] = centery + sin(a) * size * 1.5;
+    descriptorsX2[index * 2 + 0] = centerx - cos(a) * size;
+    descriptorsY2[index * 2 + 0] = centery - sin(a) * size;
+    a += 3.14159f * 0.5;
+    descriptorsX1[index * 2 + 1] = centerx + cos(a) * size * 1.5;
+    descriptorsY1[index * 2 + 1] = centery + sin(a) * size * 1.5;
+    descriptorsX2[index * 2 + 1] = centerx - cos(a) * size;
+    descriptorsY2[index * 2 + 1] = centery - sin(a) * size;
 }
 
 void defaultDescriptorShape(const double rad) {
@@ -301,6 +304,7 @@ cv::Mat testFrame(cv::Mat &image) {
 
 int main(int argc, char** argv)
 {
+    srand(SEED);
     defaultDescriptorShape(DESCRIPTORSCALE);
 
     cv::VideoWriter video = cv::VideoWriter(outputBenchmarkVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(512*3, 512*2), true);
