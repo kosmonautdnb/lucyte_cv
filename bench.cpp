@@ -16,6 +16,9 @@ const float MAXVARIANCEINPIXELS = 3.0;
 const float MIPSCALE = 0.5;
 const unsigned int KEYPOINTCOUNT = 1000;
 const float MARGIN = 0.1;
+const double OUTLIERDISTANCE = 10;
+const double RANDOMX = 50;
+const double RANDOMY = 50;
 int randomLikeIndex = 0;
 
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
@@ -165,8 +168,8 @@ cv::Mat testFrame(cv::Mat &image) {
     kltTrackCanvas.create(cv::Size(512, 512), CV_8UC3);
     const float sx = 512;
     const float sy = 512;
-    const float kx = 64;
-    const float ky = 64;
+    const float kx = RANDOMX;
+    const float ky = RANDOMY;
     KeyPoint d[4] = {
         {randomLike(randomLikeIndex++) * kx,randomLike(randomLikeIndex++) * ky},
         {sx - randomLike(randomLikeIndex++) * kx,randomLike(randomLikeIndex++) * ky},
@@ -203,6 +206,7 @@ cv::Mat testFrame(cv::Mat &image) {
     }
     int validLucyteKeyPoints = 0;
     double lucyteError = 0;
+    int lucyteErrors = 0;
 #pragma omp parallel for num_threads(32)
     for (int i = 0; i < KEYPOINTCOUNT; i++) {
         std::pair<KeyPoint, float> kpv = trackPoint(baseImage, trackCanvas, keyPointsSource[i]);
@@ -210,22 +214,22 @@ cv::Mat testFrame(cv::Mat &image) {
         float variance = kpv.second;
         if (variance < MAXVARIANCEINPIXELS) {
             cv::circle(trackCanvas, cv::Point(k.x, k.y), 3, cv::Scalar(0, 0, 255), -1);
-            cv::circle(trackCanvas, cv::Point(k.x, k.y), 3, cv::Scalar(255, 255, 255));
             KeyPoint k1 = getPointInPoly(keyPointsSource[i].x, keyPointsSource[i].y, leftMat);
             cv::circle(leftCanvas, cv::Point(k1.x, k1.y), 3, cv::Scalar(0, 0, 255), -1);
-            cv::circle(leftCanvas, cv::Point(k1.x, k1.y), 3, cv::Scalar(255, 255, 255));
             KeyPoint k2 = getPointInPoly(keyPointsSource[i].x, keyPointsSource[i].y, rightMat);
             cv::circle(rightCanvas, cv::Point(k2.x, k2.y), 3, cv::Scalar(0, 0, 255), -1);
-            cv::circle(rightCanvas, cv::Point(k2.x, k2.y), 3, cv::Scalar(255, 255, 255));
             cv::circle(rightCanvas, cv::Point(k.x, k.y), 2, cv::Scalar(255, 0, 0), -1);
             validLucyteKeyPoints++;
             double pixelErrorX = k2.x - k.x;
             double pixelErrorY = k2.y - k.y;
             double distance = sqrt(pixelErrorX * pixelErrorX + pixelErrorY * pixelErrorY);
-            lucyteError += distance;
+            if (distance < OUTLIERDISTANCE) {
+                lucyteError += distance;
+                lucyteErrors++;
+            }
         }
     }
-    lucyteError /= double(validLucyteKeyPoints);
+    lucyteError /= double(lucyteErrors);
 
     std::vector<cv::Point2f> cvKeyPoints;
     std::vector<cv::Point2f> cvResultKeyPoints;
@@ -239,6 +243,7 @@ cv::Mat testFrame(cv::Mat &image) {
     cv::calcOpticalFlowPyrLK(m1, m2, cvKeyPoints, cvResultKeyPoints, status, err, cv::Size(15, 15), 2, criteria);
     int validKLTKeyPoints = 0;
     double kltError = 0;
+    int kltErrors = 0;
     for (int i = 0; i < cvResultKeyPoints.size(); i++) {
         KeyPoint k;
         k.x = cvResultKeyPoints[i].x;
@@ -247,22 +252,21 @@ cv::Mat testFrame(cv::Mat &image) {
         if (variance < MAXVARIANCEINPIXELS) {
             validKLTKeyPoints++;
             cv::circle(kltTrackCanvas, cv::Point(k.x, k.y), 3, cv::Scalar(0, 0, 255), -1);
-            cv::circle(kltTrackCanvas, cv::Point(k.x, k.y), 3, cv::Scalar(255, 255, 255));
             KeyPoint k1 = getPointInPoly(keyPointsSource[i].x, keyPointsSource[i].y, leftMat);
             cv::circle(kltLeftCanvas, cv::Point(k1.x, k1.y), 3, cv::Scalar(0, 0, 255), -1);
-            cv::circle(kltLeftCanvas, cv::Point(k1.x, k1.y), 3, cv::Scalar(255, 255, 255));
             KeyPoint k2 = getPointInPoly(keyPointsSource[i].x, keyPointsSource[i].y, rightMat);
             cv::circle(kltRightCanvas, cv::Point(k2.x, k2.y), 3, cv::Scalar(0, 0, 255), -1);
-            cv::circle(kltRightCanvas, cv::Point(k2.x, k2.y), 3, cv::Scalar(255, 255, 255));
             cv::circle(kltRightCanvas, cv::Point(k.x, k.y), 2, cv::Scalar(255, 0, 0), -1);
-            validLucyteKeyPoints++;
             double pixelErrorX = k2.x - k.x;
             double pixelErrorY = k2.y - k.y;
             double distance = sqrt(pixelErrorX * pixelErrorX + pixelErrorY * pixelErrorY);
-            kltError += distance;
+            if (distance < OUTLIERDISTANCE) {
+                kltError += distance;
+                kltErrors++;
+            }
         }
     }
-    kltError /= double(validKLTKeyPoints);
+    kltError /= double(kltErrors);
 
     std::string lucyteText = "Lucyte avg. pixel error:" + std::to_string(lucyteError);
     std::string kltText = "KLT avg. pixel error:" + std::to_string(kltError);
@@ -270,12 +274,14 @@ cv::Mat testFrame(cv::Mat &image) {
         cv::Scalar color = i ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 0, 0);
         const int font = cv::HersheyFonts::FONT_HERSHEY_DUPLEX;
         const double fontScale = 0.7;
-        cv::putText(leftCanvas, "Original", cv::Point(0, 20-i), font, fontScale, color);
-        cv::putText(rightCanvas, "GroundTruth and Lucyte", cv::Point(0, 20 - i), font, fontScale, color);
-        cv::putText(trackCanvas, lucyteText, cv::Point(0, 20 - i), font, fontScale, color);
-        cv::putText(kltLeftCanvas, "Original", cv::Point(0, 20 - i), font, fontScale, color);
-        cv::putText(kltRightCanvas, "GroundTruth and KLT", cv::Point(0, 20 - i), font, fontScale, color);
-        cv::putText(kltTrackCanvas, kltText, cv::Point(0, 20 - i), font, fontScale, color);
+        const double yp = 30 - i * 1;
+        const double xp = 5;
+        cv::putText(leftCanvas, std::to_string(validLucyteKeyPoints) + " keypoints of " + std::to_string(KEYPOINTCOUNT), cv::Point(xp, yp), font, fontScale, color);
+        cv::putText(rightCanvas, "GroundTruth and Lucyte", cv::Point(xp, yp), font, fontScale, color);
+        cv::putText(trackCanvas, lucyteText, cv::Point(xp, yp), font, fontScale, color);
+        cv::putText(kltLeftCanvas, std::to_string(validKLTKeyPoints) + " keypoints of " + std::to_string(KEYPOINTCOUNT), cv::Point(xp, yp), font, fontScale, color);
+        cv::putText(kltRightCanvas, "GroundTruth and KLT", cv::Point(xp, yp), font, fontScale, color);
+        cv::putText(kltTrackCanvas, kltText, cv::Point(xp, yp), font, fontScale, color);
     }
     cv::Mat kltCanvas;
     cv::Mat canvas;
@@ -302,7 +308,7 @@ int main(int argc, char** argv)
     cv::Mat benchImage = cv::imread("bench.png", cv::IMREAD_COLOR);
     while (cv::waitKey(100) != 27) {
         cv::Mat mat = testFrame(benchImage);
-        for (int i = 0; i < 10; i++) video.write(mat);
+        for (int i = 0; i < 5; i++) video.write(mat);
         cv::waitKey(1);
     }
 
