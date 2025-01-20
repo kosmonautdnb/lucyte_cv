@@ -113,9 +113,7 @@ KeyPoint getPointInPoly(float x, float y, const cv::Mat& perspective) {
     return r;
 }
 
-std::pair<KeyPoint,float> trackPoint(const cv::Mat &sourceMat, const cv::Mat& destMat, const KeyPoint &keyPointSource) {
-    std::vector<cv::Mat> mipmapsSource = mipMaps(sourceMat);
-    std::vector<cv::Mat> mipmapsDest = mipMaps(destMat);
+std::pair<KeyPoint,float> trackPoint(const std::vector<cv::Mat> & mipmapsSource, const std::vector<cv::Mat> &mipmapsDest, const KeyPoint &keyPointSource) {
 
     std::vector<Descriptor> searchForDescriptors;
     searchForDescriptors.resize(mipmapsSource.size());
@@ -211,10 +209,11 @@ cv::Mat testFrame(const cv::Mat &image) {
     int validLucyteKeyPoints = 0;
     double lucyteError = 0;
     int lucyteErrors = 0;
-    cv::Mat trackCanvas2 = trackCanvas.clone();
+    std::vector<cv::Mat> mipmapsSource = mipMaps(baseImage);
+    std::vector<cv::Mat> mipmapsDest = mipMaps(trackCanvas);
 #pragma omp parallel for num_threads(32)
     for (int i = 0; i < KEYPOINTCOUNT; i++) {
-        std::pair<KeyPoint, float> kpv = trackPoint(baseImage, trackCanvas2, keyPointsSource[i]);
+        std::pair<KeyPoint, float> kpv = trackPoint(mipmapsSource, mipmapsDest, keyPointsSource[i]);
         KeyPoint k = kpv.first;
         float variance = kpv.second;
         if (variance < MAXVARIANCEINPIXELS) {

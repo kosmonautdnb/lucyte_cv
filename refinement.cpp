@@ -74,14 +74,12 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
             const float d1y = (-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);
             const float d2x = (cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);
             const float d2y = (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);
-            // go in direction of the gradient to get smaller values
+            // get x and y gradient at both points
             const int g1x = tex(s, kp2.x + d1x - gdxx, kp2.y + d1y - gdxy, width, height) - tex(s, kp2.x + d1x + gdxx, kp2.y + d1y + gdxy, width, height);
             const int g1y = tex(s, kp2.x + d1x - gdyx, kp2.y + d1y - gdyy, width, height) - tex(s, kp2.x + d1x + gdyx, kp2.y + d1y + gdyy, width, height);
-            // go in direction of the gradient to get smaller values
             const int g2x = tex(s, kp2.x + d2x - gdxx, kp2.y + d2y - gdxy, width, height) - tex(s, kp2.x + d2x + gdxx, kp2.y + d2y + gdxy, width, height);
             const int g2y = tex(s, kp2.x + d2x - gdyx, kp2.y + d2y - gdyy, width, height) - tex(s, kp2.x + d2x + gdyx, kp2.y + d2y + gdyy, width, height);
-            //g2 should be bigger g1 for bit to be set
-            // ideally g2 should be bigger and g1 should be smaller
+            // go in correct direction by the gradients for the bits to flip from (b2 != b1) to (b2 == b1)
             int gx = g2x - g1x;
             int gy = g2y - g1y;
             if (b2 != 0) {
