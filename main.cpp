@@ -7,16 +7,16 @@
 #include "fileset.hpp"
 
 const unsigned int SEED = 0x13337;
+const float MIPSCALE = 0.5;
 const float SCALEINVARIANCE = 0.5 / 2.f; // 0.5 / 2 is good
 const float ROTATIONINVARIANCE = 20.f / 2.f; // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
-const int STEPCOUNT = 64;
-const float STEPSIZE = 0.0025f;
+const int STEPCOUNT = 100;
+const float STEPSIZE = 0.002f;
 const float DESCRIPTORSCALE = 5.f;
 const bool BOOLSTEPPING = false;
 const bool CHECKVARIANCE = true;
-const float MAXVARIANCEINPIXELS = 3.0;
+const float MAXVARIANCEINPIXELS = 1.0;
 const float MIPEND = 1.0;
-const float MIPSCALE = 0.5;
 const int KEYPOINTCOUNT = 1000;
 const bool RESAMPLEONVARIANCE = true;
 const float RESAMPLEONVARIANCERADIUS = 1.f;
@@ -81,15 +81,15 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
 
 void cross(int index, double centerx, double centery, double size) {
     float a = (float)rand() * 2.f * 3.14159f / RAND_MAX;
-    descriptorsX1[index * 2 + 0] = centerx + cos(a) * size * 1.5;
-    descriptorsY1[index * 2 + 0] = centery + sin(a) * size * 1.5;
-    descriptorsX2[index * 2 + 0] = centerx - cos(a) * size;
-    descriptorsY2[index * 2 + 0] = centery - sin(a) * size;
-    a += 3.14159f * 0.5;
-    descriptorsX1[index * 2 + 1] = centerx + cos(a) * size * 1.5;
-    descriptorsY1[index * 2 + 1] = centery + sin(a) * size * 1.5;
-    descriptorsX2[index * 2 + 1] = centerx - cos(a) * size;
-    descriptorsY2[index * 2 + 1] = centery - sin(a) * size;
+    descriptorsX1[index * 2 + 0] = centerx + cosf(a) * size * 1.5f;
+    descriptorsY1[index * 2 + 0] = centery + sinf(a) * size * 1.5f;
+    descriptorsX2[index * 2 + 0] = centerx - cosf(a) * size;
+    descriptorsY2[index * 2 + 0] = centery - sinf(a) * size;
+    a += 3.14159f * 0.5 * 0.75;
+    descriptorsX1[index * 2 + 1] = centerx + cosf(a) * size * 1.5f;
+    descriptorsY1[index * 2 + 1] = centery + sinf(a) * size * 1.5f;
+    descriptorsX2[index * 2 + 1] = centerx - cosf(a) * size;
+    descriptorsY2[index * 2 + 1] = centery - sinf(a) * size;
 }
 
 void defaultDescriptorShape(const double rad) {

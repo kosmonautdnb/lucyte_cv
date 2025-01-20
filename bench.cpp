@@ -7,20 +7,28 @@
 #include "fileset.hpp"
 
 const unsigned int SEED = 0x13337;
+const float MIPSCALE = 0.5;
 const float SCALEINVARIANCE = 0.5 / 2.f; // 0.5 / 2 is good
 const float ROTATIONINVARIANCE = 20.f / 2.f; // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
-const int STEPCOUNT = 64;
-const float STEPSIZE = 0.0025f;
+const int STEPCOUNT = 100;
+const float STEPSIZE = 0.002f;
 const float DESCRIPTORSCALE = 5.f;
 const bool BOOLSTEPPING = true;
-const float MAXVARIANCEINPIXELS = 3.0;
-const float MIPSCALE = 0.5;
+const float MAXVARIANCEINPIXELS = 1.0;
 const unsigned int KEYPOINTCOUNT = 1000;
 const float MARGIN = 0.1;
 const double OUTLIERDISTANCE = 10;
 const double RANDOMX = 50;
 const double RANDOMY = 50;
 int randomLikeIndex = 0;
+
+const double randomLike(const int index) {
+    //return float(rand()) / float(RAND_MAX);
+    int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
+    b = b ^ (b << 8) ^ (b * 23);
+    b >>= 3;
+    return (double)(b & 0xffff) / 0x10000;
+}
 
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     cv::Mat k;
@@ -37,16 +45,16 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
 }
 
 void cross(int index, double centerx, double centery, double size) {
-    float a = (float)rand() * 2.f * 3.14159f / RAND_MAX;
-    descriptorsX1[index * 2 + 0] = centerx + cos(a) * size * 1.5;
-    descriptorsY1[index * 2 + 0] = centery + sin(a) * size * 1.5;
-    descriptorsX2[index * 2 + 0] = centerx - cos(a) * size;
-    descriptorsY2[index * 2 + 0] = centery - sin(a) * size;
-    a += 3.14159f * 0.5;
-    descriptorsX1[index * 2 + 1] = centerx + cos(a) * size * 1.5;
-    descriptorsY1[index * 2 + 1] = centery + sin(a) * size * 1.5;
-    descriptorsX2[index * 2 + 1] = centerx - cos(a) * size;
-    descriptorsY2[index * 2 + 1] = centery - sin(a) * size;
+    float a = randomLike(index * 13) * 2.f * 3.14159f / RAND_MAX;
+    descriptorsX1[index * 2 + 0] = centerx + cosf(a) * size * 1.5f;
+    descriptorsY1[index * 2 + 0] = centery + sinf(a) * size * 1.5f;
+    descriptorsX2[index * 2 + 0] = centerx - cosf(a) * size;
+    descriptorsY2[index * 2 + 0] = centery - sinf(a) * size;
+    a += 3.14159f * 0.5 * 0.75;
+    descriptorsX1[index * 2 + 1] = centerx + cosf(a) * size * 1.5f;
+    descriptorsY1[index * 2 + 1] = centery + sinf(a) * size * 1.5f;
+    descriptorsX2[index * 2 + 1] = centerx - cosf(a) * size;
+    descriptorsY2[index * 2 + 1] = centery - sinf(a) * size;
 }
 
 void defaultDescriptorShape(const double rad) {
@@ -75,14 +83,6 @@ void defaultDescriptorShape(const double rad) {
             i++;
         }
     }
-}
-
-const double randomLike(const int index) {
-    //return float(rand()) / float(RAND_MAX);
-    int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
-    b = b ^ (b << 8) ^ (b * 23);
-    b >>= 3;
-    return (double)(b & 0xffff) / 0x10000;
 }
 
 cv::Mat drawPoly(cv::Mat& canvas, const cv::Mat& image, const float x0, const float y0, const float x1, const float y1, const float x2, const float y2, const float x3, const float y3) {
@@ -130,7 +130,7 @@ std::pair<KeyPoint,float> trackPoint(const cv::Mat &sourceMat, const cv::Mat& de
     KeyPoint keyPoint;
     KeyPoint varianceKeyPoint;
     for (int v = 0; v < 2; v++) {
-        KeyPoint kp = { mipmapsDest[0].cols * 0.5, mipmapsDest[0].rows * 0.5 };
+        KeyPoint kp = { float(mipmapsDest[0].cols) * 0.5f, float(mipmapsDest[0].rows) * 0.5f };
         for (int i = mipmapsDest.size() - 1; i >= 0; i--) {
             const int width = mipmapsDest[i].cols;
             const int height = mipmapsDest[i].rows;
@@ -138,8 +138,8 @@ std::pair<KeyPoint,float> trackPoint(const cv::Mat &sourceMat, const cv::Mat& de
                 float descriptorScale = (1 << i);
                 const float mipScale = powf(MIPSCALE, float(i));
                 const float step = STEPSIZE * descriptorScale;
-                descriptorScale *= 1.0 + randomLike(randomLikeIndex++) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
-                const float angle = (randomLike(randomLikeIndex++) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
+                descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
+                const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
                 Descriptor foundDescriptor;
                 sampleDescriptor(kp, foundDescriptor, mipmapsDest[i].data, descriptorScale, width, height, mipScale);
                 kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i], foundDescriptor, mipmapsDest[i].data, descriptorScale, angle, step, width, height, mipScale);
@@ -156,21 +156,21 @@ std::pair<KeyPoint,float> trackPoint(const cv::Mat &sourceMat, const cv::Mat& de
     return { keyPoint, variance };
 }
 
-cv::Mat testFrame(cv::Mat &image) {
+cv::Mat testFrame(const cv::Mat &image) {
     cv::Mat leftCanvas;
     cv::Mat rightCanvas;
     cv::Mat trackCanvas;
     cv::Mat kltLeftCanvas;
     cv::Mat kltRightCanvas;
     cv::Mat kltTrackCanvas;
-    leftCanvas.create(cv::Size(512, 512), CV_8UC3);
-    rightCanvas.create(cv::Size(512, 512), CV_8UC3);
-    trackCanvas.create(cv::Size(512, 512), CV_8UC3);
-    kltLeftCanvas.create(cv::Size(512, 512), CV_8UC3);
-    kltRightCanvas.create(cv::Size(512, 512), CV_8UC3);
-    kltTrackCanvas.create(cv::Size(512, 512), CV_8UC3);
     const float sx = 512;
     const float sy = 512;
+    leftCanvas.create(cv::Size(sx, sy), CV_8UC3);
+    rightCanvas.create(cv::Size(sx, sy), CV_8UC3);
+    trackCanvas.create(cv::Size(sx, sy), CV_8UC3);
+    kltLeftCanvas.create(cv::Size(sx, sy), CV_8UC3);
+    kltRightCanvas.create(cv::Size(sx, sy), CV_8UC3);
+    kltTrackCanvas.create(cv::Size(sx, sy), CV_8UC3);
     const float kx = RANDOMX;
     const float ky = RANDOMY;
     KeyPoint d[4] = {
@@ -194,8 +194,8 @@ cv::Mat testFrame(cv::Mat &image) {
     keyPointsGroundTruth.resize(KEYPOINTCOUNT);
 #pragma omp parallel for num_threads(32)
     for (int i = 0; i < KEYPOINTCOUNT; i++) {
-        keyPointsSource[i].x = randomLike(randomLikeIndex++) * baseImage.cols * (1.f - MARGIN * 2.f) + MARGIN * baseImage.cols;
-        keyPointsSource[i].y = randomLike(randomLikeIndex++) * baseImage.rows * (1.f - MARGIN * 2.f) + MARGIN * baseImage.rows;
+        keyPointsSource[i].x = randomLike(i*2+1234) * baseImage.cols * (1.f - MARGIN * 2.f) + MARGIN * baseImage.cols;
+        keyPointsSource[i].y = randomLike(i*5+1234) * baseImage.rows * (1.f - MARGIN * 2.f) + MARGIN * baseImage.rows;
         KeyPoint k = getPointInPoly(keyPointsSource[i].x, keyPointsSource[i].y, leftMat);
         cv::circle(leftCanvas, cv::Point(k.x, k.y), 2, cv::Scalar(0, 0, 255));
         cv::circle(kltLeftCanvas, cv::Point(k.x, k.y), 2, cv::Scalar(0, 0, 255));
@@ -207,12 +207,14 @@ cv::Mat testFrame(cv::Mat &image) {
         cv::circle(rightCanvas, cv::Point(k.x, k.y), 2, cv::Scalar(0, 0, 255));
         cv::circle(kltRightCanvas, cv::Point(k.x, k.y), 2, cv::Scalar(0, 0, 255));
     }
+
     int validLucyteKeyPoints = 0;
     double lucyteError = 0;
     int lucyteErrors = 0;
+    cv::Mat trackCanvas2 = trackCanvas.clone();
 #pragma omp parallel for num_threads(32)
     for (int i = 0; i < KEYPOINTCOUNT; i++) {
-        std::pair<KeyPoint, float> kpv = trackPoint(baseImage, trackCanvas, keyPointsSource[i]);
+        std::pair<KeyPoint, float> kpv = trackPoint(baseImage, trackCanvas2, keyPointsSource[i]);
         KeyPoint k = kpv.first;
         float variance = kpv.second;
         if (variance < MAXVARIANCEINPIXELS) {
@@ -227,6 +229,7 @@ cv::Mat testFrame(cv::Mat &image) {
             double pixelErrorY = k2.y - k.y;
             double distance = sqrt(pixelErrorX * pixelErrorX + pixelErrorY * pixelErrorY);
             if (distance < OUTLIERDISTANCE) {
+                cv::line(rightCanvas, cv::Point(k.x, k.y), cv::Point(k2.x, k2.y), cv::Scalar(255, 255, 255), 1);
                 lucyteError += distance;
                 lucyteErrors++;
             }
@@ -264,6 +267,7 @@ cv::Mat testFrame(cv::Mat &image) {
             double pixelErrorY = k2.y - k.y;
             double distance = sqrt(pixelErrorX * pixelErrorX + pixelErrorY * pixelErrorY);
             if (distance < OUTLIERDISTANCE) {
+                cv::line(kltRightCanvas, cv::Point(k.x, k.y), cv::Point(k2.x, k2.y), cv::Scalar(255, 255, 255), 1);
                 kltError += distance;
                 kltErrors++;
             }
