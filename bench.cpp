@@ -17,7 +17,7 @@ const bool BOOLSTEPPING = true;
 const float MAXVARIANCEINPIXELS = 1.0;
 const unsigned int KEYPOINTCOUNT = 1000;
 const float MARGIN = 0.1;
-const double OUTLIERDISTANCE = 10;
+const double OUTLIERDISTANCE = 20;
 const double RANDOMX = 50;
 const double RANDOMY = 50;
 int randomLikeIndex = 0;
@@ -255,7 +255,7 @@ cv::Mat testFrame(const cv::Mat &image) {
         k.x = cvResultKeyPoints[i].x;
         k.y = cvResultKeyPoints[i].y;
         float variance = err[i];
-        if (variance < MAXVARIANCEINPIXELS) {
+        if (variance < 10.0) {
             validKLTKeyPoints++;
             cv::circle(kltTrackCanvas, cv::Point(k.x, k.y), 3, cv::Scalar(0, 0, 255), -1);
             KeyPoint k1 = getPointInPoly(keyPointsSource[i].x, keyPointsSource[i].y, leftMat);
