@@ -5,6 +5,6 @@ A novel feature/point tracking approach that uses the descriptors to locate the 
 
 Demo: https://www.youtube.com/watch?v=A_0tm-1DTm4
 
-Luminance agnostic: https://www.youtube.com/watch?v=FZHaOj7gu7E
-
 Lucyte Algorithm vs. Optical Flow(KLT) by Kanade Lucas Tomasi: https://www.youtube.com/watch?v=pYw6Db9fh_Y
+
+Luminance agnostic demo: https://www.youtube.com/watch?v=FZHaOj7gu7E
