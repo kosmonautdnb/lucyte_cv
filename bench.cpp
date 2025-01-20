@@ -20,10 +20,10 @@ const float MARGIN = 0.1;
 const double OUTLIERDISTANCE = 20;
 const double RANDOMX = 50;
 const double RANDOMY = 50;
+const bool WRITEVIDEO = false;
 int randomLikeIndex = 0;
 
 const double randomLike(const int index) {
-    //return float(rand()) / float(RAND_MAX);
     int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
     b = b ^ (b << 8) ^ (b * 23);
     b >>= 3;
@@ -206,11 +206,12 @@ cv::Mat testFrame(const cv::Mat &image) {
         cv::circle(kltRightCanvas, cv::Point(k.x, k.y), 2, cv::Scalar(0, 0, 255));
     }
 
+    std::vector<cv::Mat> mipmapsSource = mipMaps(baseImage);
+    std::vector<cv::Mat> mipmapsDest = mipMaps(trackCanvas);
+
     int validLucyteKeyPoints = 0;
     double lucyteError = 0;
     int lucyteErrors = 0;
-    std::vector<cv::Mat> mipmapsSource = mipMaps(baseImage);
-    std::vector<cv::Mat> mipmapsDest = mipMaps(trackCanvas);
 #pragma omp parallel for num_threads(32)
     for (int i = 0; i < KEYPOINTCOUNT; i++) {
         std::pair<KeyPoint, float> kpv = trackPoint(mipmapsSource, mipmapsDest, keyPointsSource[i]);
@@ -246,6 +247,7 @@ cv::Mat testFrame(const cv::Mat &image) {
     cv::cvtColor(baseImage, m1, cv::COLOR_RGB2GRAY);
     cv::cvtColor(kltTrackCanvas, m2, cv::COLOR_RGB2GRAY);
     cv::calcOpticalFlowPyrLK(m1, m2, cvKeyPoints, cvResultKeyPoints, status, err, cv::Size(15, 15), 2, criteria);
+
     int validKLTKeyPoints = 0;
     double kltError = 0;
     int kltErrors = 0;
@@ -289,6 +291,7 @@ cv::Mat testFrame(const cv::Mat &image) {
         cv::putText(kltRightCanvas, "GroundTruth and KLT", cv::Point(xp, yp), font, fontScale, color);
         cv::putText(kltTrackCanvas, kltText, cv::Point(xp, yp), font, fontScale, color);
     }
+
     cv::Mat kltCanvas;
     cv::Mat canvas;
     cv::hconcat(kltLeftCanvas, kltRightCanvas, kltCanvas);
@@ -310,16 +313,17 @@ int main(int argc, char** argv)
     srand(SEED);
     defaultDescriptorShape(DESCRIPTORSCALE);
 
-    cv::VideoWriter video = cv::VideoWriter(outputBenchmarkVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(512*3, 512*2), true);
+    cv::VideoWriter video;
+    if (WRITEVIDEO) video = cv::VideoWriter(outputBenchmarkVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(512 * 3, 512 * 2), true);
 
     cv::Mat benchImage = cv::imread("bench.png", cv::IMREAD_COLOR);
     while (cv::waitKey(100) != 27) {
         cv::Mat mat = testFrame(benchImage);
-        for (int i = 0; i < 5; i++) video.write(mat);
+        if (WRITEVIDEO) for (int i = 0; i < 5; i++) video.write(mat);
         cv::waitKey(1);
     }
 
-    video.release();
+    if (WRITEVIDEO) video.release();
 
     return 0;
 }
