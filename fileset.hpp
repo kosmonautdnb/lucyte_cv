@@ -3,9 +3,9 @@
 
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
-const int outputVideoFrameRate = 25;
+const double outputVideoFrameRate = 25;
 
-#define FILESET 6
+#define FILESET 7
 
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";
@@ -42,4 +42,10 @@ const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street6/auto%04d.jp
 const int firstFrame = 1600;
 const int lastFrame = 7284;
 const int frameStep = 1;
+#endif
+#if FILESET == 7
+const char* fileNames = "C:/!mad/Daten/Odometry/DataSets/Selection/DancingTheatreGirl/dancing%04d.png ";
+const int firstFrame = 2;
+const int lastFrame = 509;
+const int frameStep = 2;
 #endif

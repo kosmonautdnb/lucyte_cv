@@ -132,7 +132,7 @@ int main(int argc, char** argv)
     defaultDescriptorShape(DESCRIPTORSCALE);
 
     cv::Mat mat1 = loadImage(firstFrame);
-    cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate, cv::Size(mat1.cols, mat1.rows), true);
+    cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
