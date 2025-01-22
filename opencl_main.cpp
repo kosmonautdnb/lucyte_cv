@@ -169,6 +169,7 @@ int main(int argc, char** argv)
     }
 
     long long t0 = _Query_perf_counter();;
+    long long t00 = _Query_perf_counter();;
     long long fr = _Query_perf_frequency();
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
@@ -179,6 +180,7 @@ int main(int argc, char** argv)
         const bool openCL = true; 
         if (!openCL) 
         {
+            t00 = _Query_perf_counter();
             for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
 #pragma omp parallel for num_threads(32)
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
@@ -205,10 +207,11 @@ int main(int argc, char** argv)
             }
         }
         else {
+            t00 = _Query_perf_counter();
             refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING ? 1 : 0, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         }
         long long t1 = _Query_perf_counter();
-        printf("seconds: % f\n", double(t1 - t0) / fr);
+        printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
         t0 = _Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
