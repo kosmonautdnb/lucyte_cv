@@ -1,19 +1,12 @@
 // Created on: 17.01.2025 by Stefan Mader
+#include "config.hpp"
 #include <math.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 #include <omp.h>
 #include "refinement.hpp"
-#include "fileset.hpp"
 
-const unsigned int SEED = 0x13337;
-const float MIPSCALE = 0.5;
-const float SCALEINVARIANCE = 0.5 / 2.f; // 0.5 / 2 is good
-const float ROTATIONINVARIANCE = 20.f / 2.f; // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
-const int STEPCOUNT = 100;
-const float STEPSIZE = 0.002f;
-const float DESCRIPTORSCALE = 5.f;
-const bool BOOLSTEPPING = false;
+const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
 const float MIPEND = 1.0;

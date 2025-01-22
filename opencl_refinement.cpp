@@ -8,7 +8,8 @@
     #include <CL/cl2.hpp>
 #endif
 
-const bool ONLYVALID = false;
+extern bool ONLYVALID;
+
 #define CLBLOCKING CL_TRUE
 cl::Platform openCLPlatform;
 cl::Device openCLDevice;

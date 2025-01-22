@@ -1,12 +1,18 @@
 // Created on: 21.01.2025 by Stefan Mader
+#include "config.hpp"
 #include "refinement.hpp"
 #include <math.h>
 #include <omp.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
-#include "fileset.hpp"
 
-const bool ONLYVALID = false;
+const int SEED = 0x13337;
+const bool CHECKVARIANCE = true;
+const float MAXVARIANCEINPIXELS = 1.0;
+const float MIPEND = 1.0;
+const int KEYPOINTCOUNT = 1000;
+const bool RESAMPLEONVARIANCE = true;
+const float RESAMPLEONVARIANCERADIUS = 1.f;
 
 #define FORWARD_BITCHECK  if (b1 && (!b2))
 #define BACKWARD_BITCHECK if ((!b1) && b2)
@@ -112,21 +118,6 @@ inline int sign(int f) {
 REFINEMENT_TEMPLATE(refineKeyPoint_combinestep, COMBINESTEP_FEATUREREFINE)
 REFINEMENT_TEMPLATE(refineKeyPoint_silvesbift, SILVESBIFT_FEATUREREFINE)
 #define REFINEMENTFUNCTION refineKeyPoint_combinestep
-
-const unsigned int SEED = 0x13337;
-const float MIPSCALE = 0.5;
-const float SCALEINVARIANCE = 0.5 / 2.f; // 0.5 / 2 is good
-const float ROTATIONINVARIANCE = 20.f / 2.f; // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
-const int STEPCOUNT = 100;
-const float STEPSIZE = 0.002f;
-const float DESCRIPTORSCALE = 5.f;
-const bool BOOLSTEPPING = false;
-const bool CHECKVARIANCE = true;
-const float MAXVARIANCEINPIXELS = 1.0;
-const float MIPEND = 1.0;
-const int KEYPOINTCOUNT = 1000;
-const bool RESAMPLEONVARIANCE = true;
-const float RESAMPLEONVARIANCERADIUS = 1.f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
