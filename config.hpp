@@ -1,6 +1,11 @@
 // Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
+#define CONFIG_GOOD 0
+#define CONFIG_FAST 1
+#define CONFIG CONFIG_FAST
+
+#if CONFIG == 0
 float MIPSCALE = 0.5f;
 float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
 float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
@@ -9,6 +14,18 @@ float STEPSIZE = 0.002f;
 float DESCRIPTORSCALE = 5.f;
 bool BOOLSTEPPING = false;
 bool ONLYVALID = false;
+#endif
+
+#if CONFIG == 1
+float MIPSCALE = 0.5f;
+float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
+float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
+int STEPCOUNT = 25;
+float STEPSIZE = 0.002f;
+float DESCRIPTORSCALE = 5.f;
+bool BOOLSTEPPING = false;
+bool ONLYVALID = false;
+#endif
 
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
