@@ -208,7 +208,7 @@ int main(int argc, char** argv)
             refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING ? 1 : 0, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         }
         long long t1 = _Query_perf_counter();
-        printf("duration: % f\n", double(t1 - t0) / fr);
+        printf("seconds: % f\n", double(t1 - t0) / fr);
         t0 = _Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));

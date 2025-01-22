@@ -15,7 +15,7 @@ cl::Device openCLDevice;
 cl::Context openCLContext; 
 cl::Program openCLProgram;
 cl::CommandQueue openCLQueue;
-std::vector<cl::Buffer> openCLMipMaps;
+cl::Image2D openCLMipMaps[16];
 cl::Buffer openCLMipMapWidths;
 cl::Buffer openCLMipMapHeights;
 std::vector<unsigned char *> openCLMipMapPointers;
@@ -71,44 +71,15 @@ void initOpenCL() {
     openCLQueue = cl::CommandQueue(openCLContext, openCLDevice);
 
     std::string sampleDescriptor_kernel =
-        "   int tex(global const unsigned char *s, const float x, const float y, const int width, const int height) {\n"
-        "       const int xr8 = (int)(floor(x * 1024.f));\n"
-        "       const int yr8 = (int)(floor(y * 1024.f));\n"
-        "       const int xr = xr8 >> 10;\n"
-        "       const int yr = yr8 >> 10;\n"
-        "       if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1))\n"
-        "           return -abs(xr) - abs(yr);\n" // invalid but put some value in so that the compares always have the same result here
-        "       s += xr + yr * width;\n"
-        "       const int xn = xr8 & 1023;\n"
-        "       const int yn = yr8 & 1023;\n"
-        "       const int a0 = *s;\n"
-        "       const int a1 = *(s+1);\n"
-        "       const int b0 = *(s+width);\n"
-        "       const int b1 = *(s+width+1);\n"
-        "       const int xc1 = (((a1 - a0) * xn) >> 9) + (a0 << 1);\n"
-        "       const int xc2 = (((b1 - b0) * xn) >> 9) + (b0 << 1);\n"
-        "       return (((xc2 - xc1) * yn) >> 9) + (xc1 << 1);\n" // 10 bit
-        "   }\n"
-        "\n"
-        //"   int tex_new(global const unsigned char *s, const float x, const float y, const int width, const int height) {\n"
-        //"       if (x >= (float)(width - 1) || y >= (float)(height - 1))\n"
-        //"           return -fabs(x) - fabs(y);\n" // invalid but put some value in so that the compares always have the same result here
-        //"       float fx = floor(x);\n"
-        //"       float fy = floor(y);\n"
-        //"       s += (int)fx + ((int)fy) * width;\n"
-        //"       const float a0 = (float)*s;\n"
-        //"       const float a1 = (float)*(s+1);\n"
-        //"       const float b0 = (float)*(s+width);\n"
-        //"       const float b1 = (float)*(s+width+1);\n"
-        //"       const float xc1 = (a1 - a0) * (x-fx) + a0;\n"
-        //"       const float xc2 = (b1 - b0) * (x-fx) + b0;\n"
-        //"       const float yc  = (xc2 - xc1) * (y-fy) + xc1;\n"
-        //"       return (int)(yc*16.f);\n"
-        //"   }\n"
+        "   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;"
+        "   int tex(const image2d_t s, const float x, const float y, const int width, const int height) {\n"
+        "         float2 coord; coord.x = x; coord.y = y;\n"
+        "         return (int)(read_imagef(s,sampler,coord).r*1024.f);\n"
+        "     }\n"
         "\n"
         "   void kernel sampleDescriptor_kernel(global const int* ints, global const float* floats,\n"
         "                                global const float *keyPointsX, global const float *keyPointsY,\n"
-        "                                global const unsigned char *s,\n"
+        "                                image2d_t s,\n"
         "                                global const float* descriptorsX1, global const float* descriptorsY1, global const float* descriptorsX2, global const float* descriptorsY2,\n"
         "                                global unsigned char* dBits, global unsigned char* dValid, global float *debug) {\n"
         "       const int KEYPOINTCOUNT = ints[0];\n"
@@ -139,7 +110,7 @@ void initOpenCL() {
         "       return (float)(b & 0xffff) / (float)0x10000;\n"
         "   }\n"
         "\n"
-        "   void refineKeyPoint(global const unsigned char *s, global unsigned char* dBits, global unsigned char* dValid, const int keyPointIndex, const float kpx, const float kpy, \n"
+        "   void refineKeyPoint( const image2d_t s, global unsigned char* dBits, global unsigned char* dValid, const int keyPointIndex, const float kpx, const float kpy, \n"
         "                           const float mipScale, const float descriptorScale, const float angle, const float step, const int DESCRIPTORSIZE, \n"
         "                           const int ONLYVALID,const int width,const int height,const int stepping,\n"
         "                           global const float* descriptorsX1, global const float* descriptorsY1, global const float* descriptorsX2, global const float* descriptorsY2,\n"
@@ -217,22 +188,22 @@ void initOpenCL() {
         "\n"
         "   void kernel refineKeyPoints_kernel(global const int* ints, global const float* floats,\n"
         "                        global const float *keyPointsX, global const float *keyPointsY,\n"
-        "                        global const unsigned char *s0,\n"
-        "                        global const unsigned char *s1,\n"
-        "                        global const unsigned char *s2,\n"
-        "                        global const unsigned char *s3,\n"
-        "                        global const unsigned char *s4,\n"
-        "                        global const unsigned char *s5,\n"
-        "                        global const unsigned char *s6,\n"
-        "                        global const unsigned char *s7,\n"
-        "                        global const unsigned char *s8,\n"
-        "                        global const unsigned char *s9,\n"
-        "                        global const unsigned char *s10,\n"
-        "                        global const unsigned char *s11,\n"
-        "                        global const unsigned char *s12,\n"
-        "                        global const unsigned char *s13,\n"
-        "                        global const unsigned char *s14,\n"
-        "                        global const unsigned char *s15,\n"
+        "                        const image2d_t s0,\n"
+        "                        const image2d_t s1,\n"
+        "                        const image2d_t s2,\n"
+        "                        const image2d_t s3,\n"
+        "                        const image2d_t s4,\n"
+        "                        const image2d_t s5,\n"
+        "                        const image2d_t s6,\n"
+        "                        const image2d_t s7,\n"
+        "                        const image2d_t s8,\n"
+        "                        const image2d_t s9,\n"
+        "                        const image2d_t s10,\n"
+        "                        const image2d_t s11,\n"
+        "                        const image2d_t s12,\n"
+        "                        const image2d_t s13,\n"
+        "                        const image2d_t s14,\n"
+        "                        const image2d_t s15,\n"
         "                        global const unsigned char* dBits0,\n"
         "                        global const unsigned char* dBits1,\n"
         "                        global const unsigned char* dBits2,\n"
@@ -271,25 +242,8 @@ void initOpenCL() {
         "                        global float *dKeyPointsX, global float *dKeyPointsY,\n"
         "                        global float *dVariancePointsX, global float *dVariancePointsY,\n"
         "                        global float *debug) {\n"
-        "       global const unsigned char *s[16];\n"
         "       global const unsigned char *dBits[16];\n"
         "       global const unsigned char *dValid[16];\n"
-        "       s[0] = s0;\n"
-        "       s[1] = s1;\n"
-        "       s[2] = s2;\n"
-        "       s[3] = s3;\n"
-        "       s[4] = s4;\n"
-        "       s[5] = s5;\n"
-        "       s[6] = s6;\n"
-        "       s[7] = s7;\n"
-        "       s[8] = s8;\n"
-        "       s[9] = s9;\n"
-        "       s[10] = s10;\n"
-        "       s[11] = s11;\n"
-        "       s[12] = s12;\n"
-        "       s[13] = s13;\n"
-        "       s[14] = s14;\n"
-        "       s[15] = s15;\n"
         "       dBits[0] = dBits0;\n"
         "       dBits[1] = dBits1;\n"
         "       dBits[2] = dBits2;\n"
@@ -346,15 +300,28 @@ void initOpenCL() {
         "               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;\n"
         "               const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;\n"
         "               float ret[2];\n"
-        "               refineKeyPoint(s[i],dBits[i],dValid[i],j,kpx,kpy,\n"
-        "                               mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,\n"
-        "                               ONLYVALID, width, height, stepping,\n"
-        "                               descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2,\n"
-        "                               ret, debug);\n"
+        "               switch(i) {\n"
+        "                   case 0: refineKeyPoint(s0,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 1: refineKeyPoint(s1,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 2: refineKeyPoint(s2,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 3: refineKeyPoint(s3,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 4: refineKeyPoint(s4,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 5: refineKeyPoint(s5,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 6: refineKeyPoint(s6,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 7: refineKeyPoint(s7,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); debug[0]=tex(s7, 0, 0, width, height); debug[1]=tex(s7, 10.5, 10, width, height); debug[2]=tex(s7, 11, 10, width, height); break;\n"
+        "                   case 8: refineKeyPoint(s8,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 9: refineKeyPoint(s9,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 10: refineKeyPoint(s10,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 11: refineKeyPoint(s11,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 12: refineKeyPoint(s12,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 13: refineKeyPoint(s13,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 14: refineKeyPoint(s14,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "                   case 15: refineKeyPoint(s15,dBits[i],dValid[i],j,kpx,kpy,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptorsX1, descriptorsY1, descriptorsX2, descriptorsY2, ret, debug); break;\n"
+        "               };\n"
         "               kpx = ret[0];\n"
         "               kpy = ret[1];\n"
         "            }\n"
-        "       }\n"
+            "   }\n"
         "       switch (v) {\n"
         "           case 0: dKeyPointsX[j] = kpx; dKeyPointsY[j] = kpy; break;\n"
         "           case 1: dVariancePointsX[j] = kpx; dVariancePointsY[j] = kpy; break;\n"
@@ -368,26 +335,35 @@ void initOpenCL() {
         printf("Error building: %s\n", openCLProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(openCLDevice).c_str());
         exit(1);
     }
-    openCLInts = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(openCLInt));
-    openCLFloats = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(openCLFloat));
+    openCLInts = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLInt));
+    openCLFloats = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLFloat));
     openCLDebug = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(clDebug));
-    openCLDescriptorsX1 = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(descriptorsX1));
-    openCLDescriptorsY1 = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(descriptorsY1));
-    openCLDescriptorsX2 = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(descriptorsX2));
-    openCLDescriptorsY2 = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(descriptorsY2));
+    openCLDescriptorsX1 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(descriptorsX1));
+    openCLDescriptorsY1 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(descriptorsY1));
+    openCLDescriptorsX2 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(descriptorsX2));
+    openCLDescriptorsY2 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(descriptorsY2));
     sampleDescriptor_cl = cl::Kernel(openCLProgram, "sampleDescriptor_kernel");
     refineKeyPoints_cl = cl::Kernel(openCLProgram, "refineKeyPoints_kernel");
 }
 
 void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
-    if (mipMaps.size() != openCLMipMaps.size()) {
-        openCLMipMaps.resize(mipMaps.size());
+    if (mipMaps.size() != openCLMipMapPointers.size()) {
         openCLMipMapPointers.resize(mipMaps.size());
-        for (int i = 0; i < mipMaps.size(); i++) openCLMipMaps[i] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(unsigned char) * (mipMaps[i].cols * mipMaps[i].rows));
-        openCLMipMapWidths = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(unsigned int) * mipMaps.size());
-        openCLMipMapHeights = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(unsigned int) * mipMaps.size());
+        for (int i = 0; i < mipMaps.size(); i++) {
+            int success = 0;
+            openCLMipMaps[i] = cl::Image2D(openCLContext, CL_MEM_READ_ONLY, cl::ImageFormat(CL_R, CL_UNORM_INT8), mipMaps[i].cols, mipMaps[i].rows, 0, nullptr, &success);
+            if (success != CL_SUCCESS) 
+                exit(1);
+        }
+        openCLMipMapWidths = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(unsigned int) * mipMaps.size());
+        openCLMipMapHeights = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(unsigned int) * mipMaps.size());
     }
-    for (int i = 0; i < mipMaps.size(); i++) openCLQueue.enqueueWriteBuffer(openCLMipMaps[i], CLBLOCKING, 0, sizeof(unsigned char) * (mipMaps[i].cols * mipMaps[i].rows), mipMaps[i].data);
+    for (int i = 0; i < mipMaps.size(); i++) {
+        cl::array<cl::size_type, 2> origin = { 0,0 };
+        cl::array<cl::size_type, 2> region = { mipMaps[i].cols, mipMaps[i].rows };
+        if (openCLQueue.enqueueWriteImage(openCLMipMaps[i], CLBLOCKING, origin, region, 0, 0, (uchar* const)mipMaps[i].data) != CL_SUCCESS) 
+            exit(1);
+    }
     for (int i = 0; i < mipMaps.size(); i++) openCLMipMapPointers[i] = mipMaps[i].data;
     std::vector<unsigned int> mipMapWidths;
     std::vector<unsigned int> mipMapHeights;
@@ -410,12 +386,12 @@ void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {
     if (keyPoints.size() != openCLKpx.size()) {
         openCLKpx.resize(keyPoints.size());
         openCLKpy.resize(keyPoints.size());
-        openCLKeyPointsX = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(float) * keyPoints.size());
-        openCLKeyPointsY = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(float) * keyPoints.size());
-        openCLNewKeyPointsX = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(float) * keyPoints.size());
-        openCLNewKeyPointsY = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(float) * keyPoints.size());
-        openCLNewVariancePointsX = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(float) * keyPoints.size());
-        openCLNewVariancePointsY = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(float) * keyPoints.size());
+        openCLKeyPointsX = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float) * keyPoints.size());
+        openCLKeyPointsY = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float) * keyPoints.size());
+        openCLNewKeyPointsX = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
+        openCLNewKeyPointsY = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
+        openCLNewVariancePointsX = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
+        openCLNewVariancePointsY = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
     }
     for (int i = keyPoints.size() - 1; i >= 0; i--) {
         openCLKpx[i] = keyPoints[i].x;
@@ -510,7 +486,7 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<Ke
     refineKeyPoints_cl.setArg(a, openCLKeyPointsX); a++;
     refineKeyPoints_cl.setArg(a, openCLKeyPointsY); a++;
     for (int i = 0; i < 16; i++) {
-        refineKeyPoints_cl.setArg(a, i < openCLMipMaps.size() ? openCLMipMaps[i] : openCLMipMaps[0]); a++;
+        refineKeyPoints_cl.setArg(a, i < openCLMipMapPointers.size() ? openCLMipMaps[i] : openCLMipMaps[0]); a++;
     }
     for (int i = 0; i < 16; i++) {
         refineKeyPoints_cl.setArg(a, i < openCLBits.size() ? openCLBits[i] : openCLBits[0]); a++;
