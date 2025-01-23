@@ -161,7 +161,7 @@ int main(int argc, char** argv)
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
         t00 = _Query_perf_counter();
         for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
-#pragma omp parallel for num_threads(32)
+#pragma omp parallel for num_threads(64)
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
                 KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
                 for (int i = mipEnd; i >= 0; i--) {
@@ -224,7 +224,7 @@ int main(int argc, char** argv)
                 const float mipScale = powf(MIPSCALE, float(i));
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
-#pragma omp parallel for num_threads(32)
+#pragma omp parallel for num_threads(64)
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     float varianceX = variancePoints[j].x - keyPoints[j].x;
                     float varianceY = variancePoints[j].y - keyPoints[j].y;

@@ -58,30 +58,28 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     const float gdyx = -sina; const float gdyy = cosa;
     float xa = 0;
     float ya = 0;
-#pragma omp parallel for num_threads(32)
+#pragma omp parallel for num_threads(64)
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {
         if (ONLYVALID) {
-            int v1 = (toSearch.valid[b / 32] >> (b & 31)) & 1;
-            int v2 = (current.valid[b / 32] >> (b & 31)) & 1;
+            int v1 = (toSearch.valid[b>>5] >> (b & 31)) & 1;
+            int v2 = (current.valid[b>>5] >> (b & 31)) & 1;
             if ((v1 != 1 || v2 != 1)) {
                 continue;
             }
         }
-        int b1 = (toSearch.bits[b / 32] >> (b & 31)) & 1;
-        int b2 = (current.bits[b / 32] >> (b & 31)) & 1;
+        const int b1 = (toSearch.bits[b>>5] >> (b & 31)) & 1;
+        const int b2 = (current.bits[b>>5] >> (b & 31)) & 1;
         if (b2 != b1) {
-            const float d1x = (cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);
-            const float d1y = (-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);
-            const float d2x = (cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);
-            const float d2y = (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);
+            const float d1x = kp2.x + (cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);
+            const float d1y = kp2.y + (-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);
+            const float d2x = kp2.x + (cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);
+            const float d2y = kp2.y + (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);
             // get x and y gradient at both points
-            const int g1x = tex(s, kp2.x + d1x - gdxx, kp2.y + d1y - gdxy, width, height) - tex(s, kp2.x + d1x + gdxx, kp2.y + d1y + gdxy, width, height);
-            const int g1y = tex(s, kp2.x + d1x - gdyx, kp2.y + d1y - gdyy, width, height) - tex(s, kp2.x + d1x + gdyx, kp2.y + d1y + gdyy, width, height);
-            const int g2x = tex(s, kp2.x + d2x - gdxx, kp2.y + d2y - gdxy, width, height) - tex(s, kp2.x + d2x + gdxx, kp2.y + d2y + gdxy, width, height);
-            const int g2y = tex(s, kp2.x + d2x - gdyx, kp2.y + d2y - gdyy, width, height) - tex(s, kp2.x + d2x + gdyx, kp2.y + d2y + gdyy, width, height);
+            int gx = tex(s, d2x - gdxx, d2y - gdxy, width, height) - tex(s, d2x + gdxx, d2y + gdxy, width, height);
+            int gy = tex(s, d2x - gdyx, d2y - gdyy, width, height) - tex(s, d2x + gdyx, d2y + gdyy, width, height);
+            gx -= tex(s, d1x - gdxx, d1y - gdxy, width, height) - tex(s, d1x + gdxx, d1y + gdxy, width, height);
+            gy -= tex(s, d1x - gdyx, d1y - gdyy, width, height) - tex(s, d1x + gdyx, d1y + gdyy, width, height);
             // go in correct direction by the gradients for the bits to flip from (b2 != b1) to (b2 == b1)
-            int gx = g2x - g1x;
-            int gy = g2y - g1y;
             if (b2 != 0) {
                 gx = -gx;
                 gy = -gy;
