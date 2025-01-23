@@ -53,9 +53,9 @@ void initOpenCL() {
         exit(1);
     }
     for (int i = 0; i < platforms.size(); i++)
-        printf("- Available openCL platform: %s\n", platforms[i].getInfo<CL_PLATFORM_NAME>().c_str());
+        printf("Available openCL platform: %s\n", platforms[i].getInfo<CL_PLATFORM_NAME>().c_str());
     openCLPlatform = platforms[0];
-    printf("Using openCL platform: %s\n", openCLPlatform.getInfo<CL_PLATFORM_NAME>().c_str());
+    printf("- Using openCL platform: %s\n", openCLPlatform.getInfo<CL_PLATFORM_NAME>().c_str());
 
     std::vector<cl::Device> devices;
     openCLPlatform.getDevices(CL_DEVICE_TYPE_GPU, &devices);
@@ -64,9 +64,9 @@ void initOpenCL() {
         exit(1);
     }
     for (int i = 0; i < devices.size(); i++)
-        printf("- Available openCL device: %s\n", devices[i].getInfo<CL_DEVICE_NAME>().c_str());
+        printf("Available openCL device: %s\n", devices[i].getInfo<CL_DEVICE_NAME>().c_str());
     openCLDevice = devices[0];
-    printf("Using openCL device: %s\n", openCLDevice.getInfo<CL_DEVICE_NAME>().c_str());
+    printf("- Using openCL device: %s\n", openCLDevice.getInfo<CL_DEVICE_NAME>().c_str());
 
     openCLContext = cl::Context({ openCLDevice });
     openCLQueue = cl::CommandQueue(openCLContext, openCLDevice);
@@ -141,16 +141,14 @@ void initOpenCL() {
         "           }\n"
         "           int b1 = dBits[dIndex+b];\n"
         "           if (b2 != b1) {\n"
-        "               const float d1x = (cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);\n"
-        "               const float d1y = (-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);\n"
-        "               const float d2x = (cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);\n"
-        "               const float d2y = (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);\n"
-        "               const int g1x = tex(s, kp2x + d1x - gdxx, kp2y + d1y - gdxy, width, height) - tex(s, kp2x + d1x + gdxx, kp2y + d1y + gdxy, width, height);\n"
-        "               const int g1y = tex(s, kp2x + d1x - gdyx, kp2y + d1y - gdyy, width, height) - tex(s, kp2x + d1x + gdyx, kp2y + d1y + gdyy, width, height);\n"
-        "               const int g2x = tex(s, kp2x + d2x - gdxx, kp2y + d2y - gdxy, width, height) - tex(s, kp2x + d2x + gdxx, kp2y + d2y + gdxy, width, height);\n"
-        "               const int g2y = tex(s, kp2x + d2x - gdyx, kp2y + d2y - gdyy, width, height) - tex(s, kp2x + d2x + gdyx, kp2y + d2y + gdyy, width, height);\n"
-        "               int gx = g2x - g1x;\n"
-        "               int gy = g2y - g1y;\n"
+        "               const float d1x = kp2x + (cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);\n"
+        "               const float d1y = kp2y + (-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);\n"
+        "               const float d2x = kp2x + (cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);\n"
+        "               const float d2y = kp2y + (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);\n"
+        "               int gx = tex(s, d2x - gdxx, d2y - gdxy, width, height) - tex(s, d2x + gdxx, d2y + gdxy, width, height);\n"
+        "               int gy = tex(s, d2x - gdyx, d2y - gdyy, width, height) - tex(s, d2x + gdyx, d2y + gdyy, width, height);\n"
+        "               gx -= tex(s, d1x - gdxx, d1y - gdxy, width, height) - tex(s, d1x + gdxx, d1y + gdxy, width, height);\n"
+        "               gy -= tex(s, d1x - gdyx, d1y - gdyy, width, height) - tex(s, d1x + gdyx, d1y + gdyy, width, height);\n"
         "               if (b2 != 0) {\n"
         "                   gx = -gx;\n"
         "                   gy = -gy;\n"
