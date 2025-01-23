@@ -54,7 +54,7 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     const float sinad = (sina * descriptorSize * 1024.f);
     const float cosad = (cosa * descriptorSize * 1024.f);
     const int gdxx = int(cosa * 1024.f); const int gdxy = int(sina * 1024.f);
-    const int gdyx = int(- sina * 1024.f); const int gdyy = int(cosa * 1024.f);
+    const int gdyx = int(-sina * 1024.f); const int gdyy = int(cosa * 1024.f);
     float xa = 0;
     float ya = 0;
 #pragma omp parallel for num_threads(64)
