@@ -1,12 +1,13 @@
-// Created on: 17.01.2025 by Stefan Mader
+// Created on: 21.01.2025 by Stefan Mader
 #include "config.hpp"
 #include <math.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
-#include <omp.h>
 #include "refinement.hpp"
+#include "opencl_refinement.hpp"
 
 const int SEED = 0x13337;
+const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
 const float MIPEND = 1.0;
 const bool RESAMPLEONVARIANCE = true;
@@ -14,6 +15,13 @@ const float RESAMPLEONVARIANCERADIUS = 1.f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
+
+const float randomLike(const int index) {
+    int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
+    b = b ^ (b << 8) ^ (b * 23);
+    b >>= 3;
+    return (float)(b & 0xffff) / (float)0x10000;
+}
 
 float frrand(float rad) {
     return ((float)(rand() % RAND_MAX) / RAND_MAX) * rad * 2.f - rad;
@@ -24,7 +32,7 @@ float frrand2(float rad) {
 }
 
 int validKeyPoints = 0;
-cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<KeyPoint>& lastFrameVariancePoints, cv::Mat &overlay) {
+cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<KeyPoint>& lastFrameVariancePoints, cv::Mat& overlay) {
     cv::Mat mat = image.clone();
     validKeyPoints = 0;
     for (int i = 0; i < keyPoints.size(); i++) {
@@ -36,8 +44,8 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
         float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
         if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS) {
             validKeyPoints++;
-            float distanceX = lastFrameVariancePoints[i].x - keyPoints[i].x;
-            float distanceY = lastFrameVariancePoints[i].y - keyPoints[i].y;
+            float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
+            float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
             float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
             const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
             const float sx = 2.f;
@@ -55,10 +63,10 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
     for (int y = 0; y < overlay.rows; y++) {
         for (int x = 0; x < overlay.cols; x++) {
             mat.at<cv::Vec3b>(x, y) *= 0.75;
-            mat.at<cv::Vec3b>(x, y) += cv::Vec3b(10,10,10);
+            mat.at<cv::Vec3b>(x, y) += cv::Vec3b(10, 10, 10);
             if (overlay.at<cv::Vec3b>(x, y)[0] > 128)
             {
-                mat.at<cv::Vec3b>(x, y) = cv::Vec3b(0,0,255);
+                mat.at<cv::Vec3b>(x, y) = cv::Vec3b(0, 0, 255);
             }
         }
     }
@@ -165,9 +173,13 @@ int main(int argc, char** argv)
 {
     srand(SEED);
     defaultDescriptorShape(DESCRIPTORSCALE);
+    initOpenCL();
+    uploadDescriptorShape_openCL();
 
     cv::Mat mat1 = loadImage(firstFrame);
+    cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
+    uploadMipMaps_openCL(mipmaps1);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
@@ -178,6 +190,7 @@ int main(int argc, char** argv)
         keyPoints[i].x = frrand2(mipmaps1[0].cols);
         keyPoints[i].y = frrand2(mipmaps1[0].rows);
     }
+    uploadKeyPoints_openCL(keyPoints);
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
@@ -187,11 +200,13 @@ int main(int argc, char** argv)
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
-        for (int j = 0; j < keyPoints.size(); ++j) {
-            sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps1[i].data, descriptorScale, width, height, mipScale);
-        }
+        uploadDescriptors_openCL(i, searchForDescriptors);
+        sampleDescriptors_openCL(i, searchForDescriptors, mipmaps1[i].data, descriptorScale, width, height, mipScale);
     }
 
+    long long t0 = _Query_perf_counter();;
+    long long t00 = _Query_perf_counter();;
+    long long fr = _Query_perf_frequency();
     cv::Point2f currentPosition = cv::Point2f(0, 0);
     std::vector<cv::Point2f> positions;
     cv::Mat R, T;
@@ -207,32 +222,46 @@ int main(int argc, char** argv)
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
+        uploadMipMaps_openCL(mipmaps2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
-        for (int v = 0; v < 2; v++) {
+        const bool openCL = true;
+        if (!openCL)
+        {
+            t00 = _Query_perf_counter();
+            for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
 #pragma omp parallel for num_threads(32)
-            for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
-                for (int i = mipEnd; i >= 0; i--) {
-                    const int width = mipmaps2[i].cols;
-                    const int height = mipmaps2[i].rows;
-                    for (int k = 0; k < STEPCOUNT; k++) {
-                        float descriptorScale = (1 << i);
-                        const float mipScale = powf(MIPSCALE, float(i));
-                        const float step = STEPSIZE * descriptorScale;
-                        descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
-                        const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
-                        Descriptor foundDescriptor;
-                        sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height, mipScale);
-                        kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
+                for (int j = keyPoints.size() - 1; j >= 0; j--) {
+                    KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
+                    for (int i = mipEnd; i >= 0; i--) {
+                        const int width = mipmaps2[i].cols;
+                        const int height = mipmaps2[i].rows;
+                        for (int k = 0; k < STEPCOUNT; k++) {
+                            float descriptorScale = (1 << i);
+                            const float mipScale = powf(MIPSCALE, float(i));
+                            const float step = STEPSIZE * descriptorScale;
+                            descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
+                            const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
+                            Descriptor foundDescriptor;
+                            sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                            kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
+                        }
                     }
-                }
-                switch (v) {
-                case 0: keyPoints[j] = kp;
-                case 1: variancePoints[j] = kp; break;
+                    switch (v) {
+                    case 0: keyPoints[j] = kp;
+                    case 1: variancePoints[j] = kp; break;
+                    }
                 }
             }
         }
+        else {
+            t00 = _Query_perf_counter();
+            refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING ? 1 : 0, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        }
+        long long t1 = _Query_perf_counter();
+        printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
+        t0 = _Query_perf_counter();
+
         if (cv::waitKey(1) == 27)
             break;
 
@@ -269,7 +298,9 @@ int main(int argc, char** argv)
             positions.push_back(position);
             cv::Mat odometryOutput = overlay(positions);
             output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints, odometryOutput);
+            cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         }
+
 
         const bool readd = true;
         if (readd) {
@@ -296,24 +327,33 @@ int main(int argc, char** argv)
             }
         }
 
+        uploadKeyPoints_openCL(keyPoints);
+
         const bool resample = true;
         if (resample) {
+            std::vector<std::vector<Descriptor>> resampledDescriptors;
+            resampledDescriptors.resize(mipmaps2.size());
             for (int i = mipEnd; i >= 0; i--) {
                 const float descriptorScale = 1 << i;
                 const float mipScale = powf(MIPSCALE, float(i));
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
-#pragma omp parallel for num_threads(32)
+                resampledDescriptors[i].resize(keyPoints.size());
+                sampleDescriptors_openCL(i, resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     float varianceX = variancePoints[j].x - keyPoints[j].x;
                     float varianceY = variancePoints[j].y - keyPoints[j].y;
                     float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                    if ((!RESAMPLEONVARIANCE) || (variance < RESAMPLEONVARIANCERADIUS))
-                        sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                    if ((!RESAMPLEONVARIANCE) || (variance < RESAMPLEONVARIANCERADIUS)) {
+                        searchForDescriptors[i][j] = resampledDescriptors[i][j];
+                    }
                 }
+                uploadDescriptors_openCL(i, searchForDescriptors);
             }
         }
     }
+
+    video.release();
 
     return 0;
 }

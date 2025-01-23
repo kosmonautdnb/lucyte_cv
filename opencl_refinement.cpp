@@ -320,7 +320,7 @@ void initOpenCL() {
         "               kpx = ret[0];\n"
         "               kpy = ret[1];\n"
         "            }\n"
-            "   }\n"
+        "       }\n"
         "       switch (v) {\n"
         "           case 0: dKeyPointsX[j] = kpx; dKeyPointsY[j] = kpy; break;\n"
         "           case 1: dVariancePointsX[j] = kpx; dVariancePointsY[j] = kpy; break;\n"

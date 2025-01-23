@@ -45,7 +45,7 @@ const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
 
-#define FILESET 9
+#define FILESET 2
 
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";
