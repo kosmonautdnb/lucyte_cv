@@ -3,7 +3,8 @@
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
-#define CONFIG CONFIG_FAST
+#define CONFIG_OK 2
+#define CONFIG CONFIG_GOOD
 
 #if CONFIG == 0
 float MIPSCALE = 0.5f;
@@ -27,11 +28,22 @@ bool BOOLSTEPPING = false;
 bool ONLYVALID = false;
 #endif
 
+#if CONFIG == 2
+float MIPSCALE = 0.5f;
+float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
+float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
+int STEPCOUNT = 50;
+float STEPSIZE = 0.004f;
+float DESCRIPTORSCALE = 5.f;
+bool BOOLSTEPPING = false;
+bool ONLYVALID = false;
+#endif
+
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
 
-#define FILESET 6
+#define FILESET 1
 
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";
