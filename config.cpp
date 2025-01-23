@@ -1,51 +1,20 @@
 // Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define CONFIG_GOOD 0
-#define CONFIG_FAST 1
-#define CONFIG_OK 2
-#define CONFIG CONFIG_GOOD
-
-const int KEYPOINTCOUNT = 1000;
-
-#if CONFIG == 0
-float MIPSCALE = 0.5f;
-float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
-float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
-int STEPCOUNT = 100;
-float STEPSIZE = 0.002f;
-float DESCRIPTORSCALE = 5.f;
-bool BOOLSTEPPING = false;
-bool ONLYVALID = false;
-#endif
-
-#if CONFIG == 1
-float MIPSCALE = 0.5f;
-float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
-float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
-int STEPCOUNT = 25;
-float STEPSIZE = 0.002f;
-float DESCRIPTORSCALE = 5.f;
-bool BOOLSTEPPING = false;
-bool ONLYVALID = false;
-#endif
-
-#if CONFIG == 2
-float MIPSCALE = 0.5f;
-float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
-float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
-int STEPCOUNT = 50;
-float STEPSIZE = 0.004f;
-float DESCRIPTORSCALE = 5.f;
-bool BOOLSTEPPING = false;
-bool ONLYVALID = false;
-#endif
+const float MIPSCALE = 0.5f;
+const float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
+const float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
+const int STEPCOUNT = 100;
+const float STEPSIZE = 0.002f;
+const float DESCRIPTORSCALE = 5.f;
+const bool BOOLSTEPPING = false;
+const bool ONLYVALID = false;
 
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
 
-#define FILESET 9
+#define FILESET 6
 
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";
@@ -94,10 +63,4 @@ const char* fileNames = "C:/!mad/Daten/Odometry/DataSets/Selection/kpopgirl_danc
 const int firstFrame = 1;
 const int lastFrame = 231;
 const int frameStep = 1;
-#endif
-#if FILESET == 9
-const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street7/auto%04d.jpg";
-const int firstFrame = 0;
-const int lastFrame = 2162;
-const int frameStep = 5;
 #endif

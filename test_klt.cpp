@@ -8,7 +8,6 @@
 
 const int SEED = 0x13337;
 const float MAXVARIANCEINPIXELS = 1.0;
-const unsigned int KEYPOINTCOUNT = 1000;
 const float MARGIN = 0.1;
 const double OUTLIERDISTANCE = 20;
 const double RANDOMX = 50;
