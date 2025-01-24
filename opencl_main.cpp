@@ -130,7 +130,7 @@ int main(int argc, char** argv)
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
 
         t00 = _Query_perf_counter();
-        refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING ? 1 : 0, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = _Query_perf_counter();
         printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
         t0 = _Query_perf_counter();

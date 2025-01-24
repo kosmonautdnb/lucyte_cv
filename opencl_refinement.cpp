@@ -442,14 +442,14 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     }
 }
 
-void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<KeyPoint>& destVariancePoints, const int mipEnd, const int STEPCOUNT, const int stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<KeyPoint>& destVariancePoints, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
     destVariancePoints.resize(destKeyPoints.size());
     openCLInt[0] = openCLKpx.size();
     openCLInt[1] = DESCRIPTORSIZE;
     openCLInt[2] = mipEnd;
     openCLInt[3] = STEPCOUNT;
-    openCLInt[4] = ONLYVALID;
-    openCLInt[5] = stepping;
+    openCLInt[4] = ONLYVALID ? 1 : 0;
+    openCLInt[5] = stepping ? 1 : 0;
     openCLFloat[0] = MIPSCALE;
     openCLFloat[1] = STEPSIZE;
     openCLFloat[2] = SCALEINVARIANCE;

@@ -6,6 +6,7 @@
 #include "refinement.hpp"
 #include "opencl_refinement.hpp"
 
+const int KEYPOINTCOUNT2 = 5000;
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
@@ -34,6 +35,7 @@ float frrand2(float rad) {
 int validKeyPoints = 0;
 cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<KeyPoint>& lastFrameVariancePoints) {
     cv::Mat mat = image.clone();
+    cv::Subdiv2D subdiv = cv::Subdiv2D(cv::Rect(0, 0, image.cols, image.rows));
     validKeyPoints = 0;
     for (int i = 0; i < keyPoints.size(); i++) {
         float varianceX = variancePoints[i].x - keyPoints[i].x;
@@ -44,22 +46,32 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
         float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
         if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS) {
             validKeyPoints++;
-            float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
-            float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
-            float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-            const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
-            const float sx = 2.f;
-            const float sy = 4.f;
-            if (distance >= MAXVARIANCEINPIXELS) {
-                cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
-                cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
-                cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
-            }
-            else {
-                cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), MAXVARIANCEINPIXELS, cv::Scalar(255, 255, 255));
-            }
+            if (keyPoints[i].x >= 0 && keyPoints[i].y >= 0 && keyPoints[i].x < image.cols && keyPoints[i].y < image.rows) subdiv.insert(cv::Point2f(keyPoints[i].x, keyPoints[i].y));
         }
     }
+    std::vector<std::vector<cv::Point2f>> facetList;
+    std::vector<cv::Point2f> facetCenters;
+    subdiv.getVoronoiFacetList(std::vector<int>(), facetList, facetCenters);
+    std::vector<cv::Point> ifacet;
+    for (int i = 0; i < facetList.size(); i++) {
+        ifacet.resize(facetList[i].size());
+        for (size_t j = 0; j < facetList[i].size(); j++)
+            ifacet[j] = facetList[i][j]; 
+        int j = 0;
+        for (; j < keyPoints.size(); ++j) 
+            if ((facetCenters[i].x - keyPoints[j].x) * (facetCenters[i].x - keyPoints[j].x) + (facetCenters[i].y - keyPoints[j].y) * (facetCenters[i].y - keyPoints[j].y) < 1.f) 
+                break;
+        float distanceX = keyPoints[j].x - lastFrameKeyPoints[j].x;
+        float distanceY = keyPoints[j].y - lastFrameKeyPoints[j].y;
+        float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+        float l = distance*255.f*0.025f;
+        if (l > 255.f) l = 255.f;
+        float r = l;
+        float g = l;
+        float b = l;
+        cv::fillConvexPoly(mat, ifacet, cv::Scalar(r, g, b));
+    }
+    mat += image;
     imshow(windowName, mat);
     return mat;
 }
@@ -96,61 +108,27 @@ int main(int argc, char** argv)
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(mipmaps1);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
-    std::vector<std::vector<Descriptor>> searchForDescriptors;
-    searchForDescriptors.resize(mipmaps1.size());
 
     std::vector<KeyPoint> keyPoints;
     std::vector<KeyPoint> variancePoints;
-    std::vector<bool> found;
-    float rectangleLeft = 600;
-    float rectangleTop = 130;
-    float rectangleRight = 680;
-    float rectangleBottom = 430;
-    keyPoints.resize(KEYPOINTCOUNT);
-    found.resize(KEYPOINTCOUNT);
-    while (true) {
-        int left = 0;
-        for (int i = 0; i < KEYPOINTCOUNT; i++) {
-            if (!found[i]) {
-                left++;
-                keyPoints[i].x = frrand2(1.f)*(rectangleRight - rectangleLeft) + rectangleLeft;
-                keyPoints[i].y = frrand2(1.f)*(rectangleBottom - rectangleTop) + rectangleTop;
-            }
-        }
-        if (left == 0) break;
-        printf("%d,", left);
-        uploadKeyPoints_openCL(keyPoints);
-        for (int i = mipEnd; i >= 0; i--) {
-            const float descriptorScale = 1 << i;
-            const float mipScale = powf(MIPSCALE, float(i));
-            const int width = mipmaps1[i].cols;
-            const int height = mipmaps1[i].rows;
-            searchForDescriptors[i].resize(keyPoints.size());
-            uploadDescriptors_openCL(i, searchForDescriptors);
-            sampleDescriptors_openCL(i, searchForDescriptors, mipmaps1[i].data, descriptorScale, width, height, mipScale);
-        }
-        refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-        for (int i = 0; i < KEYPOINTCOUNT; i++) {
-            if (!found[i]) {
-                float varianceX = variancePoints[i].x - keyPoints[i].x;
-                float varianceY = variancePoints[i].y - keyPoints[i].y;
-                float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                if (variance < MAXVARIANCEINPIXELS) {
-                    found[i] = true;
-                }
-            }
-        }
+    keyPoints.resize(KEYPOINTCOUNT2);
+    variancePoints.resize(KEYPOINTCOUNT2);
+    for (int i = 0; i < keyPoints.size(); ++i) {
+        keyPoints[i].x = frrand2(mipmaps1[0].cols);
+        keyPoints[i].y = frrand2(mipmaps1[0].rows);
     }
-    printf("\n");
+    uploadKeyPoints_openCL(keyPoints);
 
+    std::vector<std::vector<Descriptor>> searchForDescriptors;
+    searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
         const float descriptorScale = 1 << i;
         const float mipScale = powf(MIPSCALE, float(i));
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
-        uploadDescriptors_openCL(i,searchForDescriptors);
-        sampleDescriptors_openCL(i,searchForDescriptors,mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        uploadDescriptors_openCL(i, searchForDescriptors);
+        sampleDescriptors_openCL(i, searchForDescriptors, mipmaps1[i].data, descriptorScale, width, height, mipScale);
     }
 
     long long t0 = _Query_perf_counter();;
@@ -162,6 +140,7 @@ int main(int argc, char** argv)
         uploadMipMaps_openCL(mipmaps2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
+
         t00 = _Query_perf_counter();
         refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = _Query_perf_counter();
@@ -169,9 +148,33 @@ int main(int argc, char** argv)
         t0 = _Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
-        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
-        if (cv::waitKey(1) == 27) 
+        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT2));
+        if (cv::waitKey(1) == 27)
             break;
+        const bool readd = true;
+        if (readd) {
+            const int width = mipmaps2[0].cols;
+            const int height = mipmaps2[0].rows;
+            for (int j = keyPoints.size() - 1; j >= 0; j--) {
+                KeyPoint& k = keyPoints[j];
+                const float LEFT = 10;
+                const float RIGHT = 10;
+                const float TOP = 10;
+                const float BOTTOM = 10;
+                if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM)) {
+                    k.x = frrand2(width);
+                    k.y = frrand2(height);
+                }
+                float varianceX = variancePoints[j].x - keyPoints[j].x;
+                float varianceY = variancePoints[j].y - keyPoints[j].y;
+                float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
+                if (variance >= MAXVARIANCEINPIXELS) {
+                    k.x = frrand2(width);
+                    k.y = frrand2(height);
+                }
+                variancePoints[j] = k;
+            }
+        }
 
         uploadKeyPoints_openCL(keyPoints);
 
@@ -185,7 +188,7 @@ int main(int argc, char** argv)
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
                 resampledDescriptors[i].resize(keyPoints.size());
-                sampleDescriptors_openCL(i,resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                sampleDescriptors_openCL(i, resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     float varianceX = variancePoints[j].x - keyPoints[j].x;
                     float varianceY = variancePoints[j].y - keyPoints[j].y;
