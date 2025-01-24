@@ -12,3 +12,5 @@ Complicated light with Lucyte and KLT: https://www.youtube.com/watch?v=P3CnGRe1M
 Luminance agnostic demo: https://www.youtube.com/watch?v=FZHaOj7gu7E
 
 Object tracking base: https://www.youtube.com/watch?v=Vfx42kb2aPM
+
+Lucyte is not yet fast even with OpenCL. However, most feature tracking tasks can take larger time steps and be executed in parallel.
