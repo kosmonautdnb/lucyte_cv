@@ -1,12 +1,14 @@
 // Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
+#define FILESET 12
+
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
 #define CONFIG_OK 2
 #define CONFIG CONFIG_GOOD
 
-const int KEYPOINTCOUNT = 1000;
+const int KEYPOINTCOUNT = 5000;
 
 #if CONFIG == 0
 float MIPSCALE = 0.5f;
@@ -44,8 +46,6 @@ bool ONLYVALID = false;
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
-
-#define FILESET 1
 
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";
@@ -100,4 +100,22 @@ const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street7/auto%04d.jp
 const int firstFrame = 0;
 const int lastFrame = 2162;
 const int frameStep = 5;
+#endif
+#if FILESET == 10
+const char* fileNames = "c:/!mad/Daten/Odometry/DataSets/Selection/schwebegirl/schwebegirl%04d.png";
+const int firstFrame = 0;
+const int lastFrame = 275;
+const int frameStep = 1;
+#endif
+#if FILESET == 11
+const char* fileNames = "c:/!mad/Daten/Odometry/DataSets/Selection/!!!!anime_girls_dancing/dancing2%04d.png";
+const int firstFrame = 1;
+const int lastFrame = 211;
+const int frameStep = 1;
+#endif
+#if FILESET == 12
+const char* fileNames = "c:/!mad/Daten/Odometry/DataSets/Selection/dance/dance%04d.jpg";
+const int firstFrame = 1;
+const int lastFrame = 210;
+const int frameStep = 1;
 #endif
