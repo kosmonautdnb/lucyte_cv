@@ -1,4 +1,4 @@
-// Created on: 17.01.2025 by Stefan Mader
+// Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 #include <stdint.h>
 #include <string.h>

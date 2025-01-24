@@ -1,4 +1,4 @@
-// Created on: 24.01.2025 by Stefan Mader
+// Lucyte Created on: 24.01.2025 by Stefan Mader
 #include "descriptors.hpp"
 #include <math.h>
 

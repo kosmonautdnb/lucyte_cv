@@ -1,4 +1,4 @@
-// Created on: 19.01.2025 by Stefan Mader
+// Lucyte Created on: 19.01.2025 by Stefan Mader
 #include "config.hpp"
 #include <math.h>
 #include <opencv2/opencv.hpp>

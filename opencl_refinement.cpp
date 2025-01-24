@@ -1,4 +1,4 @@
-// Created on: 21.01.2025 by Stefan Mader
+// Lucyte Created on: 21.01.2025 by Stefan Mader
 #include "refinement.hpp"
 #include <opencv2/opencv.hpp>
 // not optimized, yet
@@ -74,7 +74,7 @@ void initOpenCL() {
         "   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;"
         "\n"
         "   inline float tex(const image2d_t s, const float2 coord) {\n"
-        "         return read_imagef(s,sampler,coord).r;\n"
+        "         return read_imagef(s,sampler,coord).x;\n"
         "   }\n"
         "\n"
         "   void kernel sampleDescriptor_kernel(global const int* ints, global const float* floats,\n"
@@ -159,7 +159,7 @@ void initOpenCL() {
         "           if (r.y >= h - 1) r.y = h - 1;\n"
         "       }\n"
         "       return r;\n"
-        "}\n"
+        "   }\n"
         "\n"
         "   void kernel refineKeyPoints_kernel(global const int* ints, global const float* floats,\n"
         "                        global const float *keyPointsX, global const float *keyPointsY,\n"

@@ -1,4 +1,4 @@
-// Created on: 21.01.2025 by Stefan Mader
+// Lucyte Created on: 21.01.2025 by Stefan Mader
 #include "config.hpp"
 #include "refinement.hpp"
 #include <math.h>
