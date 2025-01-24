@@ -14,7 +14,7 @@ const int KEYPOINTCOUNT = 1000;
 #define CONFIG CONFIG_GOOD
 
 #define DESCRIPTORSHAPE_64 0
-#define DESCRIPTORSHAPE_23 1
+#define DESCRIPTORSHAPE_38 1
 #define DESCRIPTORSHAPE DESCRIPTORSHAPE_64
 
 #if CONFIG == 0
@@ -56,8 +56,8 @@ int DESCRIPTORSIZE = 64;
 #endif
 
 #if DESCRIPTORSHAPE == 1
-int DESCRIPTORSIZE = 23;
-#define defaultDescriptorShape defaultDescriptorShape23
+int DESCRIPTORSIZE = 38;
+#define defaultDescriptorShape defaultDescriptorShape38
 #endif
 
 #if FILESET == 1

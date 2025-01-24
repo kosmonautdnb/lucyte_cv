@@ -66,9 +66,10 @@ void defaultDescriptorShape64(const float rad) {
             i++;
         }
     }
+    // 6 + 8 + 32 + 18
 }
 
-void defaultDescriptorShape23(const float rad) {
+void defaultDescriptorShape38(const float rad) {
     int i = 0;
     cross2(i, 0, 0, rad);
     i++;
@@ -76,16 +77,11 @@ void defaultDescriptorShape23(const float rad) {
     i++;
     cross2(i, 0 + rad * 0.3, 0 + rad * 0.3, rad * 0.6);
     i++;
-    for (int y = 0; y < 2; y++) {
-        for (int x = 0; x < 2; x++) {
-            cross2(i, -rad * 0.5 + rad * x, -rad * 0.5 + rad * y, rad * 0.5);
-            i++;
-        }
-    }
     for (int y = 0; y < 4; y++) {
         for (int x = 0; x < 4; x++) {
-            cross2(i, -rad * 0.75 + rad * 0.5 * x, -rad * 0.75 + rad * 0.5 * y, rad * 0.25);
+            cross(i, -rad * 0.75 + rad * 0.5 * x, -rad * 0.75 + rad * 0.5 * y, rad * 0.25);
             i++;
         }
     }
+    // 6 + 32
 }

@@ -7,5 +7,5 @@ extern float descriptorsY1[MAXDESCRIPTORSIZE];
 extern float descriptorsX2[MAXDESCRIPTORSIZE];
 extern float descriptorsY2[MAXDESCRIPTORSIZE];
 
-void defaultDescriptorShape23(const float rad);
+void defaultDescriptorShape38(const float rad);
 void defaultDescriptorShape64(const float rad);
