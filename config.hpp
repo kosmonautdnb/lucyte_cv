@@ -1,7 +1,8 @@
 // Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define FILESET 2
+#define FILESET 1
+#define STEREO_FILESET 1
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
@@ -60,6 +61,13 @@ int DESCRIPTORSIZE = 38;
 #define defaultDescriptorShape defaultDescriptorShape38
 #endif
 
+#if STEREO_FILESET == 1
+const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/STREETDRIVES/Street8/auto%04d.jpg";
+const char* stereoFileNamesRight = "c:/!mad/Daten/Odometry/STREETDRIVES/Street8/auto%04d.jpg";
+const int stereoFirstFrame = 0;
+const int stereoLastFrame = 2162;
+const int stereoFrameStep = 1;
+#endif
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";
 const int firstFrame = 0;
@@ -130,5 +138,11 @@ const int frameStep = 1;
 const char* fileNames = "c:/!mad/Daten/Odometry/DataSets/Selection/dance/dance%04d.jpg";
 const int firstFrame = 1;
 const int lastFrame = 210;
+const int frameStep = 1;
+#endif
+#if FILESET == 13
+const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street8/auto%04d.jpg";
+const int firstFrame = 0;
+const int lastFrame = 2162;
 const int frameStep = 1;
 #endif

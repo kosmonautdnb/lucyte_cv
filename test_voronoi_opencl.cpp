@@ -6,7 +6,6 @@
 #include "refinement.hpp"
 #include "opencl_refinement.hpp"
 
-const int KEYPOINTCOUNT2 = 5000;
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
@@ -111,8 +110,8 @@ int main(int argc, char** argv)
 
     std::vector<KeyPoint> keyPoints;
     std::vector<KeyPoint> variancePoints;
-    keyPoints.resize(KEYPOINTCOUNT2);
-    variancePoints.resize(KEYPOINTCOUNT2);
+    keyPoints.resize(KEYPOINTCOUNT);
+    variancePoints.resize(KEYPOINTCOUNT);
     for (int i = 0; i < keyPoints.size(); ++i) {
         keyPoints[i].x = frrand2(mipmaps1[0].cols);
         keyPoints[i].y = frrand2(mipmaps1[0].rows);
@@ -148,7 +147,7 @@ int main(int argc, char** argv)
         t0 = _Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
-        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT2));
+        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27)
             break;
         const bool readd = true;
