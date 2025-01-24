@@ -71,47 +71,6 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     return mipmaps;
 }
 
-void cross(int index, double centerx, double centery, double size) {
-    float a = (float)rand() * 2.f * 3.14159f / RAND_MAX;
-    descriptorsX1[index * 2 + 0] = centerx + cosf(a) * size * 1.5f;
-    descriptorsY1[index * 2 + 0] = centery + sinf(a) * size * 1.5f;
-    descriptorsX2[index * 2 + 0] = centerx - cosf(a) * size;
-    descriptorsY2[index * 2 + 0] = centery - sinf(a) * size;
-    a += 3.14159f * 0.5 * 0.75;
-    descriptorsX1[index * 2 + 1] = centerx + cosf(a) * size * 1.5f;
-    descriptorsY1[index * 2 + 1] = centery + sinf(a) * size * 1.5f;
-    descriptorsX2[index * 2 + 1] = centerx - cosf(a) * size;
-    descriptorsY2[index * 2 + 1] = centery - sinf(a) * size;
-}
-
-void defaultDescriptorShape(const double rad) {
-    int i = 0;
-    cross(i, 0, 0, rad);
-    i++;
-    cross(i, 0 - rad * 0.3, 0 - rad * 0.3, rad * 0.6);
-    i++;
-    cross(i, 0 + rad * 0.3, 0 + rad * 0.3, rad * 0.6);
-    i++;
-    for (int y = 0; y < 2; y++) {
-        for (int x = 0; x < 2; x++) {
-            cross(i, -rad * 0.5 + rad * x, -rad * 0.5 + rad * y, rad * 0.5);
-            i++;
-        }
-    }
-    for (int y = 0; y < 4; y++) {
-        for (int x = 0; x < 4; x++) {
-            cross(i, -rad * 0.75 + rad * 0.5 * x, -rad * 0.75 + rad * 0.5 * y, rad * 0.25);
-            i++;
-        }
-    }
-    for (int y = 0; y < 3; y++) {
-        for (int x = 0; x < 3; x++) {
-            cross(i, -rad * 0.25 + rad * 0.25 * x, -rad * 0.25 + rad * 0.25 * y, rad * 0.3);
-            i++;
-        }
-    }
-}
-
 cv::Mat loadImage(int frame) {
     char buffer[2000];
     snprintf(buffer, 2000, fileNames, frame);

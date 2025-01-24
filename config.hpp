@@ -2,13 +2,20 @@
 #pragma once
 
 #define FILESET 1
+const char* outputVideoFileName = "c:/!mad/video.avi";
+const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
+const double outputVideoFrameRate = 25;
+
+const int KEYPOINTCOUNT = 1000;
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
 #define CONFIG_OK 2
 #define CONFIG CONFIG_GOOD
 
-const int KEYPOINTCOUNT = 1000;
+#define DESCRIPTORSHAPE_64 0
+#define DESCRIPTORSHAPE_23 1
+#define DESCRIPTORSHAPE DESCRIPTORSHAPE_64
 
 #if CONFIG == 0
 float MIPSCALE = 0.5f;
@@ -43,9 +50,15 @@ bool BOOLSTEPPING = false;
 bool ONLYVALID = false;
 #endif
 
-const char* outputVideoFileName = "c:/!mad/video.avi";
-const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
-const double outputVideoFrameRate = 25;
+#if DESCRIPTORSHAPE == 0
+int DESCRIPTORSIZE = 64;
+#define defaultDescriptorShape defaultDescriptorShape64
+#endif
+
+#if DESCRIPTORSHAPE == 1
+int DESCRIPTORSIZE = 23;
+#define defaultDescriptorShape defaultDescriptorShape23
+#endif
 
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";

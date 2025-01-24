@@ -2,12 +2,7 @@
 #pragma once
 #include <stdint.h>
 #include <string.h>
-
-const int DESCRIPTORSIZE = 32 * 2;
-extern float descriptorsX1[DESCRIPTORSIZE];
-extern float descriptorsY1[DESCRIPTORSIZE];
-extern float descriptorsX2[DESCRIPTORSIZE];
-extern float descriptorsY2[DESCRIPTORSIZE];
+#include "descriptors.hpp"
 
 class KeyPoint {
 public:
@@ -17,7 +12,7 @@ public:
 class Descriptor
 {
 public:
-    static const int uint32count = (DESCRIPTORSIZE + 31) / 32;
+    static const int uint32count = (MAXDESCRIPTORSIZE + 31) / 32;
     uint32_t bits[uint32count];
     uint32_t valid[uint32count];
     void clear()

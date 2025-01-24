@@ -3,11 +3,8 @@
 #include <math.h>
 #include <omp.h>
 
-float descriptorsX1[DESCRIPTORSIZE];
-float descriptorsY1[DESCRIPTORSIZE];
-float descriptorsX2[DESCRIPTORSIZE];
-float descriptorsY2[DESCRIPTORSIZE];
 extern bool ONLYVALID;
+extern int DESCRIPTORSIZE;
 
 int texf(const unsigned char* s, const int x, const int y, const int width, const int height) {
     const int xr = x >> 10;

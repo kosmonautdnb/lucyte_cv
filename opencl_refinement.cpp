@@ -9,6 +9,7 @@
 #endif
 
 extern bool ONLYVALID;
+extern int DESCRIPTORSIZE;
 
 #define CLBLOCKING CL_TRUE
 cl::Platform openCLPlatform;
@@ -309,8 +310,8 @@ void initOpenCL() {
     openCLInts = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLInt));
     openCLFloats = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLFloat));
     openCLDebug = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(clDebug));
-    openCLDescriptors1 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(descriptorsX1)*2);
-    openCLDescriptors2 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(descriptorsX2)*2);
+    openCLDescriptors1 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float)*2*MAXDESCRIPTORSIZE);
+    openCLDescriptors2 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float)*2*MAXDESCRIPTORSIZE);
     sampleDescriptor_cl = cl::Kernel(openCLProgram, "sampleDescriptor_kernel");
     refineKeyPoints_cl = cl::Kernel(openCLProgram, "refineKeyPoints_kernel");
 }
@@ -355,8 +356,8 @@ void uploadDescriptorShape_openCL() {
         descriptors2[i * 2 + 0] = descriptorsX2[i];
         descriptors2[i * 2 + 1] = descriptorsY2[i];
     }
-    openCLQueue.enqueueWriteBuffer(openCLDescriptors1, CLBLOCKING, 0, sizeof(descriptorsX1)*2, &(descriptors1[0]));
-    openCLQueue.enqueueWriteBuffer(openCLDescriptors2, CLBLOCKING, 0, sizeof(descriptorsX2)*2, &(descriptors2[0]));
+    openCLQueue.enqueueWriteBuffer(openCLDescriptors1, CLBLOCKING, 0, sizeof(float)*2*DESCRIPTORSIZE, &(descriptors1[0]));
+    openCLQueue.enqueueWriteBuffer(openCLDescriptors2, CLBLOCKING, 0, sizeof(float)*2*DESCRIPTORSIZE, &(descriptors2[0]));
 }
 
 void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {
