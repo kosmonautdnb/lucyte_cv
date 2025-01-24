@@ -309,9 +309,9 @@ void initOpenCL() {
     }
     openCLInts = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLInt));
     openCLFloats = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLFloat));
-    openCLDebug = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(clDebug));
-    openCLDescriptors1 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float)*2*MAXDESCRIPTORSIZE);
-    openCLDescriptors2 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float)*2*MAXDESCRIPTORSIZE);
+    openCLDebug = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(clDebug));
+    openCLDescriptors1 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float)*2*MAXDESCRIPTORSIZE);
+    openCLDescriptors2 = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float)*2*MAXDESCRIPTORSIZE);
     sampleDescriptor_cl = cl::Kernel(openCLProgram, "sampleDescriptor_kernel");
     refineKeyPoints_cl = cl::Kernel(openCLProgram, "refineKeyPoints_kernel");
 }
@@ -321,12 +321,12 @@ void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
         openCLMipMapPointers.resize(mipMaps.size());
         for (int i = 0; i < mipMaps.size(); i++) {
             int success = 0;
-            openCLMipMaps[i] = cl::Image2D(openCLContext, CL_MEM_READ_ONLY, cl::ImageFormat(CL_R, CL_UNORM_INT8), mipMaps[i].cols, mipMaps[i].rows, 0, nullptr, &success);
+            openCLMipMaps[i] = cl::Image2D(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, cl::ImageFormat(CL_R, CL_UNORM_INT8), mipMaps[i].cols, mipMaps[i].rows, 0, nullptr, &success);
             if (success != CL_SUCCESS) 
                 exit(1);
         }
-        openCLMipMapWidths = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(unsigned int) * mipMaps.size());
-        openCLMipMapHeights = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(unsigned int) * mipMaps.size());
+        openCLMipMapWidths = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * mipMaps.size());
+        openCLMipMapHeights = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * mipMaps.size());
     }
     for (int i = 0; i < mipMaps.size(); i++) {
         cl::array<cl::size_type, 2> origin = { 0,0 };
@@ -364,12 +364,12 @@ void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {
     if (keyPoints.size() != openCLKpx.size()) {
         openCLKpx.resize(keyPoints.size());
         openCLKpy.resize(keyPoints.size());
-        openCLKeyPointsX = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float) * keyPoints.size());
-        openCLKeyPointsY = cl::Buffer(openCLContext, CL_MEM_READ_ONLY, sizeof(float) * keyPoints.size());
-        openCLNewKeyPointsX = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
-        openCLNewKeyPointsY = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
-        openCLNewVariancePointsX = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
-        openCLNewVariancePointsY = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY, sizeof(float) * keyPoints.size());
+        openCLKeyPointsX = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
+        openCLKeyPointsY = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
+        openCLNewKeyPointsX = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
+        openCLNewKeyPointsY = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
+        openCLNewVariancePointsX = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
+        openCLNewVariancePointsY = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
     }
     for (int i = keyPoints.size() - 1; i >= 0; i--) {
         openCLKpx[i] = keyPoints[i].x;
@@ -388,8 +388,8 @@ void uploadDescriptors_openCL(const int mipMap, const std::vector<std::vector<De
             openCLBits.resize(mipMap + 1);
             openCLValid.resize(mipMap + 1);
         }
-        openCLBits[mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(unsigned char) * openCLDescriptorBits.size());
-        openCLValid[mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE, sizeof(unsigned char) * openCLDescriptorValid.size());
+        openCLBits[mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorBits.size());
+        openCLValid[mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorValid.size());
     }
     for (int i = descriptors.size() - 1; i >= 0; i--) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
