@@ -7,7 +7,7 @@ Demo: https://www.youtube.com/watch?v=A_0tm-1DTm4
 
 Lucyte Algorithm vs. Optical Flow(KLT) by Kanade Lucas Tomasi: https://www.youtube.com/watch?v=pYw6Db9fh_Y
 
-Complicated light with Lucyte and KLT: https://www.youtube.com/watch?v=P3CnGRe1MFs
+Complicated light with Lucyte vs. KLT: https://www.youtube.com/watch?v=P3CnGRe1MFs
 
 Luminance agnostic demo: https://www.youtube.com/watch?v=FZHaOj7gu7E
 
