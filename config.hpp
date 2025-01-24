@@ -1,14 +1,14 @@
 // Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define FILESET 12
+#define FILESET 1
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
 #define CONFIG_OK 2
 #define CONFIG CONFIG_GOOD
 
-const int KEYPOINTCOUNT = 5000;
+const int KEYPOINTCOUNT = 1000;
 
 #if CONFIG == 0
 float MIPSCALE = 0.5f;

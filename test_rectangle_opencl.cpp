@@ -213,30 +213,6 @@ int main(int argc, char** argv)
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27) 
             break;
-        //const bool readd = true;
-        //if (readd) {
-        //    const int width = mipmaps2[0].cols;
-        //    const int height = mipmaps2[0].rows;
-        //    for (int j = keyPoints.size() - 1; j >= 0; j--) {
-        //        KeyPoint &k = keyPoints[j];
-        //        const float LEFT = 10;
-        //        const float RIGHT = 10;
-        //        const float TOP = 10;
-        //        const float BOTTOM = 10;
-        //        if ((k.x < LEFT) || (k.x >= width-RIGHT) || (k.y < TOP) || (k.y >= height-BOTTOM)) {
-        //            k.x = frrand2(width);
-        //            k.y = frrand2(height);
-        //        }
-        //        float varianceX = variancePoints[j].x - keyPoints[j].x;
-        //        float varianceY = variancePoints[j].y - keyPoints[j].y;
-        //        float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-        //        if (variance >= MAXVARIANCEINPIXELS) {
-        //            k.x = frrand2(width);
-        //            k.y = frrand2(height);
-        //        }
-        //        variancePoints[j] = k;
-        //    }
-        //}
 
         uploadKeyPoints_openCL(keyPoints);
 
