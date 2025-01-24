@@ -128,39 +128,9 @@ int main(int argc, char** argv)
         uploadMipMaps_openCL(mipmaps2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
-        const bool openCL = true; 
-        if (!openCL) 
-        {
-            t00 = _Query_perf_counter();
-            for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
-#pragma omp parallel for num_threads(32)
-                for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
-                    for (int i = mipEnd; i >= 0; i--) {
-                        const int width = mipmaps2[i].cols;
-                        const int height = mipmaps2[i].rows;
-                        for (int k = 0; k < STEPCOUNT; k++) {
-                            float descriptorScale = (1 << i);
-                            const float mipScale = powf(MIPSCALE, float(i));
-                            const float step = STEPSIZE * descriptorScale;
-                            descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
-                            const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
-                            Descriptor foundDescriptor;
-                            sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height, mipScale);
-                            kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
-                        }
-                    }
-                    switch (v) {
-                    case 0: keyPoints[j] = kp;
-                    case 1: variancePoints[j] = kp; break;
-                    }
-                }
-            }
-        }
-        else {
-            t00 = _Query_perf_counter();
-            refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING ? 1 : 0, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-        }
+
+        t00 = _Query_perf_counter();
+        refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING ? 1 : 0, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = _Query_perf_counter();
         printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
         t0 = _Query_perf_counter();
