@@ -8,10 +8,10 @@
 
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
-const float MAXVARIANCEINPIXELS = 1.0;
+const float MAXVARIANCEINPIXELS = 2.5;
 const float MIPEND = 1.0;
 const bool RESAMPLEONVARIANCE = true;
-const float RESAMPLEONVARIANCERADIUS = 1.f;
+const float RESAMPLEONVARIANCERADIUS = 2.5f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
@@ -33,12 +33,12 @@ float frrand2(float rad) {
 }
 
 int validKeyPoints = 0;
-cv::Mat output(const std::string& windowName, const cv::Mat& image, 
+cv::Mat output(const std::string& windowName, const cv::Mat& limage, const cv::Mat& rimage,
     std::vector<KeyPoint>& keyPointsLeft, std::vector<KeyPoint>& variancePointsLeft, std::vector<KeyPoint>& lastFrameKeyPointsLeft, std::vector<KeyPoint>& lastFrameVariancePointsLeft,
     std::vector<KeyPoint>& keyPointsRight, std::vector<KeyPoint>& variancePointsRight, std::vector<KeyPoint>& lastFrameKeyPointsRight, std::vector<KeyPoint>& lastFrameVariancePointsRight
     ) {
-    cv::Mat mat = image.clone();
-    cv::Subdiv2D subdiv = cv::Subdiv2D(cv::Rect(0, 0, image.cols, image.rows));
+    cv::Mat mat = limage.clone();
+    cv::Subdiv2D subdiv = cv::Subdiv2D(cv::Rect(0, 0, limage.cols, limage.rows));
     validKeyPoints = 0;
     for (int i = 0; i < keyPointsLeft.size(); i++) {
         float varianceLeftX = variancePointsLeft[i].x - keyPointsLeft[i].x;
@@ -55,13 +55,15 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image,
         float lastFrameVarianceRight = sqrtf(lastFrameVarianceRightX * lastFrameVarianceRightX + lastFrameVarianceRightY * lastFrameVarianceRightY);
         if (varianceLeft < MAXVARIANCEINPIXELS && lastFrameVarianceLeft < MAXVARIANCEINPIXELS && varianceRight < MAXVARIANCEINPIXELS && lastFrameVarianceRight < MAXVARIANCEINPIXELS) {
             validKeyPoints++;
-            if (keyPointsLeft[i].x >= 0 && keyPointsLeft[i].y >= 0 && keyPointsLeft[i].x < image.cols && keyPointsLeft[i].y < image.rows) subdiv.insert(cv::Point2f(keyPointsLeft[i].x, keyPointsLeft[i].y));
+            if (keyPointsLeft[i].x >= 0 && keyPointsLeft[i].y >= 0 && keyPointsLeft[i].x < limage.cols && keyPointsLeft[i].y < limage.rows) subdiv.insert(cv::Point2f(keyPointsLeft[i].x, keyPointsLeft[i].y));
         }
     }
     std::vector<std::vector<cv::Point2f>> facetList;
     std::vector<cv::Point2f> facetCenters;
     subdiv.getVoronoiFacetList(std::vector<int>(), facetList, facetCenters);
     std::vector<cv::Point> ifacet;
+    cv::Mat lbottom = limage.clone();
+    cv::Mat rbottom = rimage.clone();
     for (int i = 0; i < facetList.size(); i++) {
         ifacet.resize(facetList[i].size());
         for (size_t j = 0; j < facetList[i].size(); j++)
@@ -70,17 +72,51 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image,
         for (; j < keyPointsLeft.size(); ++j) 
             if ((facetCenters[i].x - keyPointsLeft[j].x) * (facetCenters[i].x - keyPointsLeft[j].x) + (facetCenters[i].y - keyPointsLeft[j].y) * (facetCenters[i].y - keyPointsLeft[j].y) < 1.f)
                 break;
-        float distanceX = keyPointsRight[j].x - keyPointsRight[j].x;
-        float distanceY = keyPointsRight[j].y - keyPointsRight[j].y;
+        float distanceX = keyPointsRight[j].x - keyPointsLeft[j].x;
+        float distanceY = keyPointsRight[j].y - keyPointsLeft[j].y;
         float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-        float l = distance*255.f*0.1f;
+        float l = distance*255.f*0.015f;
         if (l > 255.f) l = 255.f;
         float r = l;
         float g = l;
         float b = l;
         cv::fillConvexPoly(mat, ifacet, cv::Scalar(r, g, b));
+        {
+            float distanceX = lastFrameKeyPointsLeft[j].x - keyPointsLeft[j].x;
+            float distanceY = lastFrameKeyPointsLeft[j].y - keyPointsLeft[j].y;
+            float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+            const float a = atan2(keyPointsLeft[j].x - lastFrameKeyPointsLeft[j].x, keyPointsLeft[j].y - lastFrameKeyPointsLeft[j].y);
+            const float sx = 2.f;
+            const float sy = 4.f;
+            cv::line(lbottom, cv::Point(keyPointsLeft[j].x, keyPointsLeft[j].y), cv::Point(keyPointsLeft[j].x - sy * sin(a) - sx * cos(a), keyPointsLeft[j].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
+            cv::line(lbottom, cv::Point(keyPointsLeft[j].x, keyPointsLeft[j].y), cv::Point(keyPointsLeft[j].x - sy * sin(a) + sx * cos(a), keyPointsLeft[j].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
+            cv::line(lbottom, cv::Point(keyPointsLeft[j].x, keyPointsLeft[j].y), cv::Point(lastFrameKeyPointsLeft[j].x, lastFrameKeyPointsLeft[j].y), cv::Scalar(255, 255, 255));
+        }
+        {
+            float distanceX = lastFrameKeyPointsRight[j].x - keyPointsRight[j].x;
+            float distanceY = lastFrameKeyPointsRight[j].y - keyPointsRight[j].y;
+            float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+            const float a = atan2(keyPointsRight[j].x - lastFrameKeyPointsRight[j].x, keyPointsRight[j].y - lastFrameKeyPointsRight[j].y);
+            const float sx = 2.f;
+            const float sy = 4.f;
+            cv::line(rbottom, cv::Point(keyPointsRight[j].x, keyPointsRight[j].y), cv::Point(keyPointsRight[j].x - sy * sin(a) - sx * cos(a), keyPointsRight[j].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
+            cv::line(rbottom, cv::Point(keyPointsRight[j].x, keyPointsRight[j].y), cv::Point(keyPointsRight[j].x - sy * sin(a) + sx * cos(a), keyPointsRight[j].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
+            cv::line(rbottom, cv::Point(keyPointsRight[j].x, keyPointsRight[j].y), cv::Point(lastFrameKeyPointsRight[j].x, lastFrameKeyPointsRight[j].y), cv::Scalar(255, 255, 255));
+        }
     }
-    mat += image;
+    cv::Mat image = limage.clone();
+    cv::Scalar color = cv::Scalar(255, 255, 255);
+    const int font = cv::HersheyFonts::FONT_HERSHEY_DUPLEX;
+    const double fontScale = 0.7;
+    const double yp = 30;
+    const double xp = 5;
+    cv::putText(lbottom, "Left camera", cv::Point(xp, yp), font, fontScale, color);
+    cv::putText(rbottom, "Right camera", cv::Point(xp, yp), font, fontScale, color);
+    cv::putText(mat, "Depth from features", cv::Point(xp, yp), font, fontScale, color);
+    cv::putText(image, "Video", cv::Point(xp, yp), font, fontScale, color);
+    cv::hconcat(image, mat, mat);
+    cv::hconcat(lbottom, rbottom, lbottom);
+    cv::vconcat(mat, lbottom, mat);
     imshow(windowName, mat);
     return mat;
 }
@@ -109,17 +145,6 @@ cv::Mat loadImageRight(int frame) {
     char buffer[2000];
     snprintf(buffer, 2000, stereoFileNamesRight, frame);
     cv::Mat r =  cv::imread(buffer, cv::IMREAD_COLOR);
-    //cv::Mat affine;
-    //affine.create(2, 3, CV_32F);
-    //affine = cv::Mat::zeros(2, 3, CV_32F);
-    //float disparity = 20;
-    //affine.at<float>(0, 0) = 1;
-    //affine.at<float>(0, 1) = 0;
-    //affine.at<float>(0, 2) = disparity;
-    //affine.at<float>(1, 0) = 0;
-    //affine.at<float>(1, 1) = 1;
-    //affine.at<float>(1, 2) = 0;
-    //cv::warpAffine(r, r, affine, cv::Size(r.cols, r.rows));
     return r;
 }
 
@@ -131,7 +156,7 @@ int main(int argc, char** argv)
     uploadDescriptorShape_openCL();
 
     cv::Mat mat1 = loadImageLeft(stereoFirstFrame);
-    cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(stereoFrameStep), cv::Size(mat1.cols, mat1.rows), true);
+    cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), stereoOutputVideoFrameRate / double(stereoFrameStep), cv::Size(mat1.cols*2, mat1.rows*2), true);
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(mipmaps1);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
@@ -187,8 +212,8 @@ int main(int argc, char** argv)
         printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
         t0 = _Query_perf_counter();
 
-        video.write(output("keypoints", mat2, keyPointsLeft, variancePointsLeft, lastFrameKeyPointsLeft, lastFrameVariancePointsLeft, keyPointsRight, variancePointsRight, 
-            lastFrameKeyPointsRight, lastFrameVariancePointsRight));
+        video.write(output("keypoints", mat2, mat3, keyPointsLeft, variancePointsLeft, lastFrameKeyPointsLeft, lastFrameVariancePointsLeft, 
+                                                    keyPointsRight,variancePointsRight,lastFrameKeyPointsRight, lastFrameVariancePointsRight));
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - stereoFirstFrame) + " of " + std::to_string(stereoLastFrame - stereoFirstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27)
             break;
@@ -202,16 +227,21 @@ int main(int argc, char** argv)
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
+                const float MARGIN = 50;
                 if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM)) {
-                    k.x = frrand2(width);
-                    k.y = frrand2(height);
+                    k.x = frrand2(width - MARGIN * 2) + MARGIN;
+                    k.y = frrand2(height - MARGIN * 2) + MARGIN;
+                    keyPointsRight[j] = k;
+                    variancePointsRight[j] = k;
                 }
                 float varianceX = variancePointsLeft[j].x - keyPointsLeft[j].x;
                 float varianceY = variancePointsLeft[j].y - keyPointsLeft[j].y;
                 float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
                 if (variance >= MAXVARIANCEINPIXELS) {
-                    k.x = frrand2(width);
-                    k.y = frrand2(height);
+                    k.x = frrand2(width - MARGIN * 2) + MARGIN;
+                    k.y = frrand2(height - MARGIN * 2) + MARGIN;
+                    keyPointsRight[j] = k;
+                    variancePointsRight[j] = k;
                 }
                 variancePointsLeft[j] = k;
             }

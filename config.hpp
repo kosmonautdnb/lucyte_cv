@@ -2,12 +2,12 @@
 #pragma once
 
 #define FILESET 1
-#define STEREO_FILESET 1
+#define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
-
-const int KEYPOINTCOUNT = 1000;
+const double stereoOutputVideoFrameRate = 8;
+const int KEYPOINTCOUNT = 8000;
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
@@ -62,10 +62,24 @@ int DESCRIPTORSIZE = 38;
 #endif
 
 #if STEREO_FILESET == 1
-const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/STREETDRIVES/Street8/auto%04d.jpg";
-const char* stereoFileNamesRight = "c:/!mad/Daten/Odometry/STREETDRIVES/Street8/auto%04d.jpg";
-const int stereoFirstFrame = 0;
-const int stereoLastFrame = 2162;
+const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/left/2018-07-11-14-48-52/left%04d.jpg";
+const char* stereoFileNamesRight = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/right/2018-07-11-14-48-52/right%04d.jpg";
+const int stereoFirstFrame = 1;
+const int stereoLastFrame = 1720;
+const int stereoFrameStep = 1;
+#endif
+#if STEREO_FILESET == 2
+const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/left/2018-08-01-11-13-14/left%04d.jpg";
+const char* stereoFileNamesRight = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/right/2018-08-01-11-13-14/right%04d.jpg";
+const int stereoFirstFrame = 1;
+const int stereoLastFrame = 1532;
+const int stereoFrameStep = 1;
+#endif
+#if STEREO_FILESET == 3
+const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/left/2018-10-11-16-03-19/left%04d.jpg";
+const char* stereoFileNamesRight = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/right/2018-10-11-16-03-19/right%04d.jpg";
+const int stereoFirstFrame = 1;
+const int stereoLastFrame = 1637;
 const int stereoFrameStep = 1;
 #endif
 #if FILESET == 1
