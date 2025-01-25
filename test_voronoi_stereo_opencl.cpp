@@ -212,8 +212,9 @@ int main(int argc, char** argv)
         printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
         t0 = _Query_perf_counter();
 
-        video.write(output("keypoints", mat2, mat3, keyPointsLeft, variancePointsLeft, lastFrameKeyPointsLeft, lastFrameVariancePointsLeft, 
-                                                    keyPointsRight,variancePointsRight,lastFrameKeyPointsRight, lastFrameVariancePointsRight));
+        cv::Mat m = output("keypoints", mat2, mat3, keyPointsLeft, variancePointsLeft, lastFrameKeyPointsLeft, lastFrameVariancePointsLeft,
+            keyPointsRight, variancePointsRight, lastFrameKeyPointsRight, lastFrameVariancePointsRight);
+        video.write(m);
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - stereoFirstFrame) + " of " + std::to_string(stereoLastFrame - stereoFirstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27)
             break;

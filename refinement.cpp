@@ -46,7 +46,7 @@ float sampleDescriptor(const KeyPoint& kp, Descriptor& d, const unsigned char* s
     return float(h) / float(DESCRIPTORSIZE * 1024);
 }
 
-KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const Descriptor& current, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const const float mipScale) {
+KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const const float mipScale) {
     const int kp2x = floorf(kp.x * mipScale * 1024.f);
     const int kp2y = floorf(kp.y * mipScale * 1024.f);
     const float descriptorSize = mipScale * descriptorScale;
@@ -59,20 +59,22 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     float xa = 0;
     float ya = 0;
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {
+        const int d1x = kp2x + int(cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);
+        const int d1y = kp2y + int(-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);
+        const int d2x = kp2x + int(cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);
+        const int d2y = kp2y + int(-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);
+        const int l1 = texf(s, d1x, d1y, width, height);
+        const int l2 = texf(s, d2x, d2y, width, height);
         if (ONLYVALID) {
             int v1 = (toSearch.valid[b>>5] >> (b & 31)) & 1;
-            int v2 = (current.valid[b>>5] >> (b & 31)) & 1;
+            int v2 = ((l1 < 0 || l2 < 0) ? 0 : 1);
             if ((v1 != 1 || v2 != 1)) {
                 continue;
             }
         }
         const int b1 = (toSearch.bits[b>>5] >> (b & 31)) & 1;
-        const int b2 = (current.bits[b>>5] >> (b & 31)) & 1;
+        const int b2 = (l2 < l1 ? 1 : 0);
         if (b2 != b1) {
-            const int d1x = kp2x + int(cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);
-            const int d1y = kp2y + int(-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);
-            const int d2x = kp2x + int(cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);
-            const int d2y = kp2y + int(-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);
             // get x and y gradient at both points
             int gx = texf(s, d2x - gdxx, d2y - gdxy, width, height) - texf(s, d2x + gdxx, d2y + gdxy, width, height);
             int gy = texf(s, d2x - gdyx, d2y - gdyy, width, height) - texf(s, d2x + gdyx, d2y + gdyy, width, height);

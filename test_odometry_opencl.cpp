@@ -202,8 +202,7 @@ int main(int argc, char** argv)
                             descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
                             const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
                             Descriptor foundDescriptor;
-                            sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height, mipScale);
-                            kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
+                            kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
                         }
                     }
                     switch (v) {

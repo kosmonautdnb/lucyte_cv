@@ -50,7 +50,7 @@ const float RESAMPLEONVARIANCERADIUS = 1.f;
     }
 #define SILVESBIFT_FEATUREREFINE SILVESBIFT(signcmp(i0adx,i1adx), signcmp(i0ady,i1ady), *=, /=, true)
 
-#define REFINEMENT_TEMPLATE(__NAME__,__FUNCTION__) KeyPoint __NAME__(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const Descriptor& current, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const const float mipScale) {\
+#define REFINEMENT_TEMPLATE(__NAME__,__FUNCTION__) KeyPoint __NAME__(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const const float mipScale) {\
     KeyPoint kp2 = kp;\
     kp2.x *= mipScale;\
     kp2.y *= mipScale;\
@@ -64,24 +64,26 @@ const float RESAMPLEONVARIANCERADIUS = 1.f;
     float movementX = 0;\
     float movementY = 0;\
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {\
+        const float d1x = kp2.x + (cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);\
+        const float d1y = kp2.y + (-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);\
+        const float d2x = kp2.x + (cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);\
+        const float d2y = kp2.y + (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);\
+        const int l1 = tex(s, d1x, d1y, width, height);\
+        const int l2 = tex(s, d2x, d2y, width, height);\
         if (ONLYVALID) {\
             int v1 = (toSearch.valid[b / 32] >> (b & 31)) & 1;\
-            int v2 = (current.valid[b / 32] >> (b & 31)) & 1;\
+            int v2 = ((l1 < 0 || l2 < 0) ? 0 : 1);\
             if ((v1 != 1 || v2 != 1)) {\
                 continue;\
             }\
         }\
         int b1 = (toSearch.bits[b / 32] >> (b & 31)) & 1;\
-        int b2 = (current.bits[b / 32] >> (b & 31)) & 1;\
+        int b2 = (l2 < l1 ? 1 : 0);\
         if (b2 != b1) {\
-            const float d1x = (cosad * descriptorsX1[b] + sinad * descriptorsY1[b]);\
-            const float d1y = (-sinad * descriptorsX1[b] + cosad * descriptorsY1[b]);\
-            const float d2x = (cosad * descriptorsX2[b] + sinad * descriptorsY2[b]);\
-            const float d2y = (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);\
-            const int i0adx = tex(s, kp2.x + d1x - gdxx, kp2.y + d1y - gdxy, width, height) - tex(s, kp2.x + d1x + gdxx, kp2.y + d1y + gdxy, width, height);\
-            const int i0ady = tex(s, kp2.x + d1x - gdyx, kp2.y + d1y - gdyy, width, height) - tex(s, kp2.x + d1x + gdyx, kp2.y + d1y + gdyy, width, height);\
-            const int i1adx = tex(s, kp2.x + d2x - gdxx, kp2.y + d2y - gdxy, width, height) - tex(s, kp2.x + d2x + gdxx, kp2.y + d2y + gdxy, width, height);\
-            const int i1ady = tex(s, kp2.x + d2x - gdyx, kp2.y + d2y - gdyy, width, height) - tex(s, kp2.x + d2x + gdyx, kp2.y + d2y + gdyy, width, height);\
+            const int i0adx = tex(s, d1x - gdxx, d1y - gdxy, width, height) - tex(s, d1x + gdxx, d1y + gdxy, width, height);\
+            const int i0ady = tex(s, d1x - gdyx, d1y - gdyy, width, height) - tex(s, d1x + gdyx, d1y + gdyy, width, height);\
+            const int i1adx = tex(s, d2x - gdxx, d2y - gdxy, width, height) - tex(s, d2x + gdxx, d2y + gdxy, width, height);\
+            const int i1ady = tex(s, d2x - gdyx, d2y - gdyy, width, height) - tex(s, d2x + gdyx, d2y + gdyy, width, height);\
             __FUNCTION__\
         }\
     }\
@@ -233,8 +235,7 @@ int main(int argc, char** argv)
                         descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
                         Descriptor foundDescriptor;
-                        sampleDescriptor(kp, foundDescriptor, mipmaps2[i].data, descriptorScale, width, height, mipScale);
-                        kp = REFINEMENTFUNCTION(BOOLSTEPPING, kp, searchForDescriptors[i][j], foundDescriptor, mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
+                        kp = REFINEMENTFUNCTION(BOOLSTEPPING, kp, searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
                     }
                 }
                 switch (v) {
