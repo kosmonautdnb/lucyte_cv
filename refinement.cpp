@@ -31,13 +31,14 @@ float sampleDescriptor(const KeyPoint& kp, Descriptor& d, const unsigned char* s
     KeyPoint kp2 = kp;
     kp2.x *= mipScale;
     kp2.y *= mipScale;
-    const float descriptorSize = mipScale * descriptorScale;
+    const float descriptorSize = mipScale * descriptorScale * 1024.f;
     d.clear();
     int h = 0;
-#pragma omp parallel for num_threads(64)
+    int kp2x = int(floorf(kp2.x * 1024.f));
+    int kp2y = int(floorf(kp2.y * 1024.f));
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {
-        const int l1 = tex(s, kp2.x + (descriptorSize * descriptorsX1[b]), kp2.y + (descriptorSize * descriptorsY1[b]), width, height);
-        const int l2 = tex(s, kp2.x + (descriptorSize * descriptorsX2[b]), kp2.y + (descriptorSize * descriptorsY2[b]), width, height);
+        const int l1 = texf(s, kp2x + int(descriptorSize * descriptorsX1[b]), kp2y + int(descriptorSize * descriptorsY1[b]), width, height);
+        const int l2 = texf(s, kp2x + int(descriptorSize * descriptorsX2[b]), kp2y + int(descriptorSize * descriptorsY2[b]), width, height);
         h += abs(l2 - l1);
         d.bits[b / 32]  |= (l2 < l1 ? 1 : 0) << (b & 31);
         d.valid[b / 32] |= ((l1 < 0 || l2 < 0) ? 0 : 1) << (b & 31);
@@ -57,7 +58,6 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     const int gdyx = int(-sina * 1024.f); const int gdyy = int(cosa * 1024.f);
     float xa = 0;
     float ya = 0;
-#pragma omp parallel for num_threads(64)
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {
         if (ONLYVALID) {
             int v1 = (toSearch.valid[b>>5] >> (b & 31)) & 1;

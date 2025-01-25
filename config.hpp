@@ -1,7 +1,7 @@
 // Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define FILESET 2
+#define FILESET 13
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
@@ -80,7 +80,7 @@ const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/www.drivingstereo-data
 const char* stereoFileNamesRight = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/right/2018-10-11-16-03-19/right%04d.jpg";
 const int stereoFirstFrame = 1;
 const int stereoLastFrame = 1637;
-const int stereoFrameStep = 1;
+const int stereoFrameStep = 10;
 #endif
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";

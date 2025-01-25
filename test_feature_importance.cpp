@@ -6,13 +6,13 @@
 #include "refinement.hpp"
 #include "opencl_refinement.hpp"
 
-const int KEYPOINTCOUNT2 = KEYPOINTCOUNT / 10;
+const int KEYPOINTCOUNT2 = KEYPOINTCOUNT;
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
-const float MAXVARIANCEINPIXELS = 2.0;
+const float MAXVARIANCEINPIXELS = 1.0;
 const float MIPEND = 1.0;
 const bool RESAMPLEONVARIANCE = true;
-const float RESAMPLEONVARIANCERADIUS = 2.f;
+const float RESAMPLEONVARIANCERADIUS = 1.f;
 const float DESCRIPTIVITYSTEPS = 10;
 
 std::vector<cv::Mat> mipmaps1;
@@ -55,7 +55,7 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
             cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
             cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
             cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
-            cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), 3.0, cv::Scalar(255, 255, 255));
+            cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), 2.0, cv::Scalar(255, 255, 255));
         }
     }
     imshow(windowName, mat);
