@@ -1,13 +1,13 @@
 // Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define FILESET 13
+#define FILESET 15
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
 const double stereoOutputVideoFrameRate = 8;
-const int KEYPOINTCOUNT = 1000;
+const int KEYPOINTCOUNT = 3000;
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
@@ -158,5 +158,17 @@ const int frameStep = 1;
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street8/auto%04d.jpg";
 const int firstFrame = 0;
 const int lastFrame = 2162;
+const int frameStep = 1;
+#endif
+#if FILESET == 14
+const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street10/auto%04d.jpg";
+const int firstFrame = 1000;
+const int lastFrame = 7000;
+const int frameStep = 5;
+#endif
+#if FILESET == 15
+const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street11/walk%04d.jpg";
+const int firstFrame = 0;
+const int lastFrame = 720;
 const int frameStep = 1;
 #endif

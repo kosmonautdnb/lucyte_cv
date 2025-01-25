@@ -6,7 +6,6 @@
 #include "refinement.hpp"
 #include "opencl_refinement.hpp"
 
-const int KEYPOINTCOUNT2 = KEYPOINTCOUNT;
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
@@ -84,7 +83,7 @@ float descriptivity(std::vector<cv::Mat>& mipMaps, const KeyPoint& k, const int 
         const float mipScale = powf(MIPSCALE, float(i));
         const int width = mipMaps[i].cols;
         const int height = mipMaps[i].rows;
-        h += sampleDescriptor(k, d, mipMaps[i].data, descriptorScale, width, height, mipScale);
+        h += sampleDescriptor(k, d, mipMaps[i].data, descriptorScale, width, height, mipScale)*mipScale;
     }
     h /= float(mipEnd + 1);
     return h;
@@ -111,8 +110,8 @@ int main(int argc, char** argv)
 
     std::vector<KeyPoint> keyPoints;
     std::vector<KeyPoint> variancePoints;
-    keyPoints.resize(KEYPOINTCOUNT2);
-    variancePoints.resize(KEYPOINTCOUNT2);
+    keyPoints.resize(KEYPOINTCOUNT);
+    variancePoints.resize(KEYPOINTCOUNT);
     for (int i = 0; i < keyPoints.size(); ++i) {
         float dBest = -1;
         KeyPoint kHere, kBest;
@@ -159,7 +158,7 @@ int main(int argc, char** argv)
         t0 = _Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
-        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT2) + ", readd " + std::to_string(readded));
+        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT) + ", readd " + std::to_string(readded));
         readded = 0;
         if (cv::waitKey(1) == 27) 
             break;
@@ -173,25 +172,10 @@ int main(int argc, char** argv)
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
-                if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM)) {
-                    float dBest = -1;
-                    KeyPoint kHere, kBest;
-                    for (int t = 0; t < DESCRIPTIVITYSTEPS; t++) {
-                        kHere.x = frrand2(mipmaps1[0].cols);
-                        kHere.y = frrand2(mipmaps1[0].rows);
-                        float d = descriptivity(mipmaps1, kHere, mipEnd);
-                        if (d > dBest) {
-                            dBest = d;
-                            kBest = kHere;
-                        }
-                    }
-                    k = kBest;
-                    readded++;
-                }
                 float varianceX = variancePoints[j].x - keyPoints[j].x;
                 float varianceY = variancePoints[j].y - keyPoints[j].y;
                 float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                if (variance >= MAXVARIANCEINPIXELS) {
+                if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM) || variance >= MAXVARIANCEINPIXELS) {
                     float dBest = -1;
                     KeyPoint kHere, kBest;
                     for (int t = 0; t < DESCRIPTIVITYSTEPS; t++) {
