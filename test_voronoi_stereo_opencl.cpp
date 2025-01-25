@@ -233,6 +233,7 @@ int main(int argc, char** argv)
                     k.y = frrand2(height - MARGIN * 2) + MARGIN;
                     keyPointsRight[j] = k;
                     variancePointsRight[j] = k;
+                    variancePointsLeft[j] = k;
                 }
                 float varianceX = variancePointsLeft[j].x - keyPointsLeft[j].x;
                 float varianceY = variancePointsLeft[j].y - keyPointsLeft[j].y;
@@ -242,8 +243,8 @@ int main(int argc, char** argv)
                     k.y = frrand2(height - MARGIN * 2) + MARGIN;
                     keyPointsRight[j] = k;
                     variancePointsRight[j] = k;
+                    variancePointsLeft[j] = k;
                 }
-                variancePointsLeft[j] = k;
             }
         }
 

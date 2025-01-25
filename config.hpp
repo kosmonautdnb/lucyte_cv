@@ -7,7 +7,8 @@ const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
 const double stereoOutputVideoFrameRate = 8;
-const int KEYPOINTCOUNT = 3000;
+
+const int KEYPOINTCOUNT = 8000;
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
@@ -80,7 +81,7 @@ const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/www.drivingstereo-data
 const char* stereoFileNamesRight = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/right/2018-10-11-16-03-19/right%04d.jpg";
 const int stereoFirstFrame = 1;
 const int stereoLastFrame = 1637;
-const int stereoFrameStep = 10;
+const int stereoFrameStep = 1;
 #endif
 #if FILESET == 1
 const char* fileNames = "c:/!mad/Daten/Odometry/STREETDRIVES/Street3/wandern%04d.png";

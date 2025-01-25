@@ -243,6 +243,7 @@ int main(int argc, char** argv)
                 if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM)) {
                     k.x = frrand2(width);
                     k.y = frrand2(height);
+                    variancePoints[j] = k;
                 }
                 float varianceX = variancePoints[j].x - keyPoints[j].x;
                 float varianceY = variancePoints[j].y - keyPoints[j].y;
@@ -250,8 +251,8 @@ int main(int argc, char** argv)
                 if (variance >= MAXVARIANCEINPIXELS) {
                     k.x = frrand2(width);
                     k.y = frrand2(height);
+                    variancePoints[j] = k;
                 }
-                variancePoints[j] = k;
             }
         }
 

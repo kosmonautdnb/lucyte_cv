@@ -44,10 +44,10 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
         float lastFrameVarianceY = lastFrameVariancePoints[i].y - lastFrameKeyPoints[i].y;
         float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
         if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS) {
-            validKeyPoints++;
             float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
             float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
             float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+            validKeyPoints++;
             const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
             const float sx = 2.f;
             const float sy = 4.f;
@@ -189,8 +189,8 @@ int main(int argc, char** argv)
                     }
                     k = kBest;
                     readded++;
+                    variancePoints[j] = k;
                 }
-                variancePoints[j] = k;
             }
         }
 
