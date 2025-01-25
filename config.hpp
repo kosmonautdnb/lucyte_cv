@@ -8,7 +8,7 @@ const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
 const double stereoOutputVideoFrameRate = 8;
 
-const int KEYPOINTCOUNT = 8000;
+const int KEYPOINTCOUNT = 1000;
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
