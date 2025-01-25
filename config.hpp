@@ -1,13 +1,13 @@
 // Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define FILESET 1
+#define FILESET 2
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const double outputVideoFrameRate = 25;
 const double stereoOutputVideoFrameRate = 8;
-const int KEYPOINTCOUNT = 8000;
+const int KEYPOINTCOUNT = 1000;
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
