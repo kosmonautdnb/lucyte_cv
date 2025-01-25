@@ -15,4 +15,6 @@ Object tracking base: https://www.youtube.com/watch?v=Vfx42kb2aPM
 
 Stereo Vision Disparity/Depth: https://www.youtube.com/watch?v=sh3JB8mnVaY
 
+![ScreenShot](https://raw.github.com/kosmonautdnb/lucyte_cv/main/desc.png)
+
 Lucyte is not yet very fast even with OpenCL. However, most feature tracking tasks can take larger time steps and may be executed in parallel on dedicated hardware.
