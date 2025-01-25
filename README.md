@@ -13,4 +13,6 @@ Luminance agnostic demo: https://www.youtube.com/watch?v=FZHaOj7gu7E
 
 Object tracking base: https://www.youtube.com/watch?v=Vfx42kb2aPM
 
+Stereo Vision Disparity/Depth: https://www.youtube.com/watch?v=sh3JB8mnVaY
+
 Lucyte is not yet very fast even with OpenCL. However, most feature tracking tasks can take larger time steps and may be executed in parallel on dedicated hardware.
