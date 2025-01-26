@@ -50,7 +50,7 @@ const float RESAMPLEONVARIANCERADIUS = 1.f;
     }
 #define SILVESBIFT_FEATUREREFINE SILVESBIFT(signcmp(i0adx,i1adx), signcmp(i0ady,i1ady), *=, /=, true)
 
-#define REFINEMENT_TEMPLATE(__NAME__,__FUNCTION__) KeyPoint __NAME__(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const const float mipScale) {\
+#define REFINEMENT_TEMPLATE(__NAME__,__FUNCTION__) KeyPoint __NAME__(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const float mipScale) {\
     KeyPoint kp2 = kp;\
     kp2.x *= mipScale;\
     kp2.y *= mipScale;\

@@ -205,8 +205,8 @@ int main(int argc, char** argv)
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptorsLeft[i].resize(keyPointsLeft.size());
-        uploadDescriptors_openCL(i, searchForDescriptorsLeft);
         sampleDescriptors_openCL(i, searchForDescriptorsLeft, mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        uploadDescriptors_openCL(i, searchForDescriptorsLeft);
     }
 
     long long t0 = _Query_perf_counter();;

@@ -37,10 +37,14 @@ cl::Buffer openCLInts;
 cl::Buffer openCLFloats;
 std::vector<cl::Buffer> openCLBits;
 std::vector<cl::Buffer> openCLValid;
+cl::Buffer openCLBitsFull;
+cl::Buffer openCLValidFull;
 cl::Kernel sampleDescriptor_cl;
 cl::Kernel refineKeyPoints_cl;
-std::vector<unsigned char> openCLDescriptorBits;
-std::vector<unsigned char> openCLDescriptorValid;
+std::vector<unsigned int> openCLDescriptorBits;
+std::vector<unsigned int> openCLDescriptorValid;
+std::vector<unsigned char> openCLDescriptorBitsFull;
+std::vector<unsigned char> openCLDescriptorValidFull;
 cl::Buffer openCLDebug;
 float clDebug[10];
 
@@ -110,7 +114,7 @@ void initOpenCL() {
         "       return (float)(b & 0xffff) / (float)0x10000;\n"
         "   }\n"
         "\n"
-        "   float2 refineKeyPoint( const image2d_t s, global unsigned char* dBits, global unsigned char* dValid, const int keyPointIndex, const float2 kpxy, \n"
+        "   float2 refineKeyPoint( const image2d_t s, global unsigned int* dBits, global unsigned int* dValid, const int keyPointIndex, const float2 kpxy, \n"
         "                           const float mipScale, const float descriptorScale, const float angle, const float step, const int DESCRIPTORSIZE, \n"
         "                           const int ONLYVALID,const int width,const int height,const int stepping,\n"
         "                           constant const float2* descriptors1, constant const float2* descriptors2,\n"
@@ -126,6 +130,7 @@ void initOpenCL() {
         "       const float2 gdy = (float2)(-sina,cosa);\n"
         "       float2 xya = (float2)(0,0);\n"
         "       for (int b = 0; b < DESCRIPTORSIZE; ++b) {\n"
+        "           const int db = dIndex + b;\n"
         "           const float2 dp1 = descriptors1[b];"
         "           const float2 dp2 = descriptors2[b];"
         "           const float2 d1 = kp + (float2)(dot(cosid,dp1), dot(nsicd,dp1));\n"
@@ -133,14 +138,14 @@ void initOpenCL() {
         "           const float l1 = tex(s, d1);\n"
         "           const float l2 = tex(s, d2);\n"
         "           if (ONLYVALID!=0) {\n"
-        "               int v1 = dValid[dIndex+b];\n"
+        "               int v1 = (dValid[db>>5]>>(db & 31)) & 1;\n"
         "               int v2 = ((l1 < 0 || l2 < 0) ? 0 : 1);\n"
         "               if ((v1 == 0 || v2 == 0)) {\n"
         "                   continue;\n"
         "               }\n"
         "           }\n"
         "           const int b2 = (l2 < l1 ? 1 : 0);\n"
-        "           if (b2 != dBits[dIndex+b]) {\n"
+        "           if (b2 != ( (dBits[db>>5]>>(db & 31)) & 1 )) {\n"
         "               float2  gr  = (float2)( tex(s, d2 - gdx) - tex(s, d2 + gdx) , tex(s, d2 - gdy) - tex(s, d2 + gdy) )\n" 
         "                            -(float2)( tex(s, d1 - gdx) - tex(s, d1 + gdx) , tex(s, d1 - gdy) - tex(s, d1 + gdy) ); \n"
         "               if (b2 != 0) gr = -gr;\n"
@@ -179,46 +184,46 @@ void initOpenCL() {
         "                        const image2d_t s13,\n"
         "                        const image2d_t s14,\n"
         "                        const image2d_t s15,\n"
-        "                        global const unsigned char* dBits0,\n"
-        "                        global const unsigned char* dBits1,\n"
-        "                        global const unsigned char* dBits2,\n"
-        "                        global const unsigned char* dBits3,\n"
-        "                        global const unsigned char* dBits4,\n"
-        "                        global const unsigned char* dBits5,\n"
-        "                        global const unsigned char* dBits6,\n"
-        "                        global const unsigned char* dBits7,\n"
-        "                        global const unsigned char* dBits8,\n"
-        "                        global const unsigned char* dBits9,\n"
-        "                        global const unsigned char* dBits10,\n"
-        "                        global const unsigned char* dBits11,\n"
-        "                        global const unsigned char* dBits12,\n"
-        "                        global const unsigned char* dBits13,\n"
-        "                        global const unsigned char* dBits14,\n"
-        "                        global const unsigned char* dBits15,\n"
-        "                        global const unsigned char* dValid0,\n"
-        "                        global const unsigned char* dValid1,\n"
-        "                        global const unsigned char* dValid2,\n"
-        "                        global const unsigned char* dValid3,\n"
-        "                        global const unsigned char* dValid4,\n"
-        "                        global const unsigned char* dValid5,\n"
-        "                        global const unsigned char* dValid6,\n"
-        "                        global const unsigned char* dValid7,\n"
-        "                        global const unsigned char* dValid8,\n"
-        "                        global const unsigned char* dValid9,\n"
-        "                        global const unsigned char* dValid10,\n"
-        "                        global const unsigned char* dValid11,\n"
-        "                        global const unsigned char* dValid12,\n"
-        "                        global const unsigned char* dValid13,\n"
-        "                        global const unsigned char* dValid14,\n"
-        "                        global const unsigned char* dValid15,\n"
+        "                        global const unsigned int* dBits0,\n"
+        "                        global const unsigned int* dBits1,\n"
+        "                        global const unsigned int* dBits2,\n"
+        "                        global const unsigned int* dBits3,\n"
+        "                        global const unsigned int* dBits4,\n"
+        "                        global const unsigned int* dBits5,\n"
+        "                        global const unsigned int* dBits6,\n"
+        "                        global const unsigned int* dBits7,\n"
+        "                        global const unsigned int* dBits8,\n"
+        "                        global const unsigned int* dBits9,\n"
+        "                        global const unsigned int* dBits10,\n"
+        "                        global const unsigned int* dBits11,\n"
+        "                        global const unsigned int* dBits12,\n"
+        "                        global const unsigned int* dBits13,\n"
+        "                        global const unsigned int* dBits14,\n"
+        "                        global const unsigned int* dBits15,\n"
+        "                        global const unsigned int* dValid0,\n"
+        "                        global const unsigned int* dValid1,\n"
+        "                        global const unsigned int* dValid2,\n"
+        "                        global const unsigned int* dValid3,\n"
+        "                        global const unsigned int* dValid4,\n"
+        "                        global const unsigned int* dValid5,\n"
+        "                        global const unsigned int* dValid6,\n"
+        "                        global const unsigned int* dValid7,\n"
+        "                        global const unsigned int* dValid8,\n"
+        "                        global const unsigned int* dValid9,\n"
+        "                        global const unsigned int* dValid10,\n"
+        "                        global const unsigned int* dValid11,\n"
+        "                        global const unsigned int* dValid12,\n"
+        "                        global const unsigned int* dValid13,\n"
+        "                        global const unsigned int* dValid14,\n"
+        "                        global const unsigned int* dValid15,\n"
         "                        global const int *widths,\n"
         "                        global const int *heights,\n"
         "                        constant const float2* descriptors1, constant const float2* descriptors2,\n"
         "                        global float *dKeyPointsX, global float *dKeyPointsY,\n"
         "                        global float *dVariancePointsX, global float *dVariancePointsY,\n"
         "                        global float *debug) {\n"
-        "       global const unsigned char *dBits[16];\n"
-        "       global const unsigned char *dValid[16];\n"
+        "       global const unsigned int *dBits[16];\n"
+        "       global const unsigned int *dValid[16];\n"
         "       dBits[0] = dBits0;\n"
         "       dBits[1] = dBits1;\n"
         "       dBits[2] = dBits2;\n"
@@ -380,30 +385,40 @@ void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {
 
 void uploadDescriptors_openCL(const int mipMap, const std::vector<std::vector<Descriptor>>& sourceMips) {
     const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
-    if ((descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits.size()) {
-        openCLDescriptorBits.resize(descriptors.size() * Descriptor::uint32count * 32);
-        openCLDescriptorValid.resize(descriptors.size() * Descriptor::uint32count * 32);
-        if (mipMap >= openCLBits.size()) {
-            openCLBits.resize(mipMap + 1);
-            openCLValid.resize(mipMap + 1);
+
+    if (mipMap >= openCLBits.size() || (descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits.size()) {
+        if ((descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits.size()) {
+            openCLDescriptorBits.resize(descriptors.size() * Descriptor::uint32count);
+            openCLDescriptorValid.resize(descriptors.size() * Descriptor::uint32count);
         }
-        openCLBits[mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorBits.size());
-        openCLValid[mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorValid.size());
+        openCLBits.resize(mipMap + 1);
+        openCLValid.resize(mipMap + 1);
+        for (int i = 0; i < mipMap + 1; i++) {
+            openCLBits[i] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorBits.size());
+            openCLValid[i] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorValid.size());
+        }
     }
+
     for (int i = descriptors.size() - 1; i >= 0; i--) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
-            for (int k = 0; k < 32; k++) {
-                openCLDescriptorBits[(j + i * Descriptor::uint32count) * 32 + k] = (descriptors[i].bits[j]>>k) & 1;
-                openCLDescriptorValid[(j + i * Descriptor::uint32count) * 32 + k] = (descriptors[i].valid[j]>>k) & 1;
-            }
+            openCLDescriptorBits[j + i * Descriptor::uint32count] = descriptors[i].bits[j];
+            openCLDescriptorValid[j + i * Descriptor::uint32count] = descriptors[i].valid[j];
         }
     }
-    openCLQueue.enqueueWriteBuffer(openCLBits[mipMap], CLBLOCKING, 0, sizeof(unsigned char) * openCLDescriptorBits.size(), &(openCLDescriptorBits[0]));
-    openCLQueue.enqueueWriteBuffer(openCLValid[mipMap], CLBLOCKING, 0, sizeof(unsigned char) * openCLDescriptorValid.size(), &(openCLDescriptorValid[0]));
+    openCLQueue.enqueueWriteBuffer(openCLBits[mipMap], CLBLOCKING, 0, sizeof(unsigned int) * openCLDescriptorBits.size(), &(openCLDescriptorBits[0]));
+    openCLQueue.enqueueWriteBuffer(openCLValid[mipMap], CLBLOCKING, 0, sizeof(unsigned int) * openCLDescriptorValid.size(), &(openCLDescriptorValid[0]));
 }
 
 void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descriptor>>& destMips, const unsigned char* s, const float descriptorScale, const int width, const int height, const float mipScale) {
     std::vector<Descriptor>& dest = destMips[mipMap];
+
+    if ((dest.size() * Descriptor::uint32count * 32) != openCLDescriptorBitsFull.size()) {
+        openCLDescriptorBitsFull.resize(dest.size() * Descriptor::uint32count * 32);
+        openCLDescriptorValidFull.resize(dest.size() * Descriptor::uint32count * 32);
+        openCLBitsFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorBitsFull.size());
+        openCLValidFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorValidFull.size());
+    }
+
     openCLInt[0] = dest.size();
     openCLInt[1] = DESCRIPTORSIZE;
     openCLInt[2] = width;
@@ -419,14 +434,14 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     sampleDescriptor_cl.setArg(4, openCLMipMaps[mipMap]);
     sampleDescriptor_cl.setArg(5, openCLDescriptors1);
     sampleDescriptor_cl.setArg(6, openCLDescriptors2);
-    sampleDescriptor_cl.setArg(7, openCLBits[mipMap]);
-    sampleDescriptor_cl.setArg(8, openCLValid[mipMap]);
+    sampleDescriptor_cl.setArg(7, openCLBitsFull);
+    sampleDescriptor_cl.setArg(8, openCLValidFull);
     sampleDescriptor_cl.setArg(9, openCLDebug);
     openCLQueue.enqueueNDRangeKernel(sampleDescriptor_cl, cl::NullRange, cl::NDRange(openCLKpx.size() * DESCRIPTORSIZE), cl::NullRange);
     openCLQueue.flush();
     sampleDescriptor_cl();
-    openCLQueue.enqueueReadBuffer(openCLBits[mipMap], CLBLOCKING, 0, openCLDescriptorBits.size() * sizeof(unsigned char), &(openCLDescriptorBits[0]));
-    openCLQueue.enqueueReadBuffer(openCLValid[mipMap], CLBLOCKING, 0, openCLDescriptorValid.size() * sizeof(unsigned char), &(openCLDescriptorValid[0]));
+    openCLQueue.enqueueReadBuffer(openCLBitsFull, CLBLOCKING, 0, openCLDescriptorBitsFull.size() * sizeof(unsigned char), &(openCLDescriptorBitsFull[0]));
+    openCLQueue.enqueueReadBuffer(openCLValidFull, CLBLOCKING, 0, openCLDescriptorValidFull.size() * sizeof(unsigned char), &(openCLDescriptorValidFull[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
     openCLQueue.flush();
     for (int i = 0; i < dest.size(); ++i) {
@@ -434,8 +449,8 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
             dest[i].bits[j] = 0;
             dest[i].valid[j] = 0;
             for (int k = 0; k < 32; k++) {
-                dest[i].bits[j] |= (openCLDescriptorBits[i * Descriptor::uint32count * 32 + j * 32 + k] != 0 ? 1 : 0)<<k;
-                dest[i].valid[j] |= (openCLDescriptorValid[i * Descriptor::uint32count * 32 + j * 32 + k] != 0 ? 1 : 0)<<k;
+                dest[i].bits[j] |= (openCLDescriptorBitsFull[i * Descriptor::uint32count * 32 + j * 32 + k] != 0 ? 1 : 0)<<k;
+                dest[i].valid[j] |= (openCLDescriptorValidFull[i * Descriptor::uint32count * 32 + j * 32 + k] != 0 ? 1 : 0)<<k;
             }
         }
     }

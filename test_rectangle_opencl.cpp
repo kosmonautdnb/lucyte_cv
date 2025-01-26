@@ -126,8 +126,8 @@ int main(int argc, char** argv)
             const int width = mipmaps1[i].cols;
             const int height = mipmaps1[i].rows;
             searchForDescriptors[i].resize(keyPoints.size());
-            uploadDescriptors_openCL(i, searchForDescriptors);
             sampleDescriptors_openCL(i, searchForDescriptors, mipmaps1[i].data, descriptorScale, width, height, mipScale);
+            uploadDescriptors_openCL(i, searchForDescriptors);
         }
         refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         for (int i = 0; i < KEYPOINTCOUNT; i++) {
@@ -142,16 +142,6 @@ int main(int argc, char** argv)
         }
     }
     printf("\n");
-
-    for (int i = mipEnd; i >= 0; i--) {
-        const float descriptorScale = 1 << i;
-        const float mipScale = powf(MIPSCALE, float(i));
-        const int width = mipmaps1[i].cols;
-        const int height = mipmaps1[i].rows;
-        searchForDescriptors[i].resize(keyPoints.size());
-        uploadDescriptors_openCL(i,searchForDescriptors);
-        sampleDescriptors_openCL(i,searchForDescriptors,mipmaps1[i].data, descriptorScale, width, height, mipScale);
-    }
 
     long long t0 = _Query_perf_counter();;
     long long t00 = _Query_perf_counter();;

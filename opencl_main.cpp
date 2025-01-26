@@ -115,11 +115,13 @@ int main(int argc, char** argv)
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
-        uploadDescriptors_openCL(i,searchForDescriptors);
         sampleDescriptors_openCL(i,searchForDescriptors,mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        uploadDescriptors_openCL(i, searchForDescriptors);
     }
 
     long long t0 = _Query_perf_counter();;
+    long long t2 = _Query_perf_counter();;
+    long long t3 = _Query_perf_counter();;
     long long t00 = _Query_perf_counter();;
     long long fr = _Query_perf_frequency();
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
@@ -132,13 +134,15 @@ int main(int argc, char** argv)
         t00 = _Query_perf_counter();
         refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = _Query_perf_counter();
-        printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
+        printf("Overall seconds: %f; Feature refinement seconds: %f; Feature add seconds:%f\n", double(t1 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
         t0 = _Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27) 
             break;
+
+        t2 = _Query_perf_counter();
         const bool readd = true;
         if (readd) {
             const int width = mipmaps2[0].cols;
@@ -189,6 +193,7 @@ int main(int argc, char** argv)
                 uploadDescriptors_openCL(i, searchForDescriptors);
             }
         }
+        t3 = _Query_perf_counter();
     }
 
     video.release();
