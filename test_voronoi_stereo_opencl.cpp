@@ -209,9 +209,6 @@ int main(int argc, char** argv)
         uploadDescriptors_openCL(i, searchForDescriptorsLeft);
     }
 
-    long long t0 = _Query_perf_counter();;
-    long long t00 = _Query_perf_counter();;
-    long long fr = _Query_perf_frequency();
     for (int steps = stereoFirstFrame; steps <= stereoLastFrame; steps += stereoFrameStep) {
         std::vector<KeyPoint> lastFrameKeyPointsLeft = keyPointsLeft;
         std::vector<KeyPoint> lastFrameVariancePointsLeft = variancePointsLeft;
@@ -224,15 +221,10 @@ int main(int argc, char** argv)
         mipmaps2 = mipMaps(mat2);
         mipmaps3 = mipMaps(mat3);
 
-        t00 = _Query_perf_counter();
         uploadMipMaps_openCL(mipmaps3);
         refineKeyPoints_openCL(keyPointsRight, variancePointsRight, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         uploadMipMaps_openCL(mipmaps2);
         refineKeyPoints_openCL(keyPointsLeft, variancePointsLeft, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-       
-        long long t1 = _Query_perf_counter();
-        printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
-        t0 = _Query_perf_counter();
 
         cv::Mat m = output("keypoints", mat2, mat3, keyPointsLeft, variancePointsLeft, lastFrameKeyPointsLeft, lastFrameVariancePointsLeft,
             keyPointsRight, variancePointsRight, lastFrameKeyPointsRight, lastFrameVariancePointsRight);

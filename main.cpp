@@ -6,6 +6,14 @@
 #include <omp.h>
 #include "refinement.hpp"
 
+#ifdef _MSC_VER
+#define X_Query_perf_counter() _Query_perf_counter()
+#define X_Query_perf_frequency() _Query_perf_frequency()
+#else
+#define X_Query_perf_counter() 0
+#define X_Query_perf_frequency() 1
+#endif
+
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
@@ -109,15 +117,15 @@ int main(int argc, char** argv)
         }
     }
 
-    long long t0 = _Query_perf_counter();;
-    long long t00 = _Query_perf_counter();;
-    long long fr = _Query_perf_frequency();
+    long long t0 = X_Query_perf_counter();;
+    long long t00 = X_Query_perf_counter();;
+    long long fr = X_Query_perf_frequency();
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
-        t00 = _Query_perf_counter();
+        t00 = X_Query_perf_counter();
         for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
 #pragma omp parallel for num_threads(64)
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
@@ -140,9 +148,9 @@ int main(int argc, char** argv)
                 }
             }
         }
-        long long t1 = _Query_perf_counter();
+        long long t1 = X_Query_perf_counter();
         printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
-        t0 = _Query_perf_counter();
+        t0 = X_Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
         cv::setWindowTitle("keypoints", std::string("Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));

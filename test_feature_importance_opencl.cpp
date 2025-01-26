@@ -161,9 +161,6 @@ int main(int argc, char** argv)
         uploadDescriptors_openCL(i, searchForDescriptors);
     }
 
-    long long t0 = _Query_perf_counter();;
-    long long t00 = _Query_perf_counter();;
-    long long fr = _Query_perf_frequency();
     int readded = 0;
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
@@ -172,11 +169,7 @@ int main(int argc, char** argv)
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
 
-        t00 = _Query_perf_counter();
         refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-        long long t1 = _Query_perf_counter();
-        printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
-        t0 = _Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT) + ", readd " + std::to_string(readded));

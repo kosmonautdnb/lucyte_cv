@@ -182,9 +182,6 @@ int main(int argc, char** argv)
         uploadDescriptors_openCL(i, searchForDescriptors);
     }
 
-    long long t0 = _Query_perf_counter();;
-    long long t00 = _Query_perf_counter();;
-    long long fr = _Query_perf_frequency();
     cv::Point2f currentPosition = cv::Point2f(0, 0);
     std::vector<cv::Point2f> positions;
     cv::Mat R, T;
@@ -206,7 +203,6 @@ int main(int argc, char** argv)
         const bool openCL = true;
         if (!openCL)
         {
-            t00 = _Query_perf_counter();
             for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
 #pragma omp parallel for num_threads(32)
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
@@ -232,12 +228,8 @@ int main(int argc, char** argv)
             }
         }
         else {
-            t00 = _Query_perf_counter();
             refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         }
-        long long t1 = _Query_perf_counter();
-        printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
-        t0 = _Query_perf_counter();
 
         if (cv::waitKey(1) == 27)
             break;

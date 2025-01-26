@@ -67,9 +67,6 @@ int main(int argc, char** argv)
     }
 
     cv::Mat m1, m2;
-    long long t0 = _Query_perf_counter();;
-    long long t00 = _Query_perf_counter();;
-    long long fr = _Query_perf_frequency();
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         cv::cvtColor(mat2, matg2, cv::COLOR_RGB2GRAY);
