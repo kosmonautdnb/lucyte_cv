@@ -12,6 +12,8 @@ const float MAXVARIANCEINPIXELS = 1.0;
 const float MIPEND = 1.0;
 const bool RESAMPLEONVARIANCE = true;
 const float RESAMPLEONVARIANCERADIUS = 1.f;
+const float OUTLIERPERCENTAGE = 20.f;
+const float OUTLIEREXPAND = 200.f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
@@ -31,10 +33,27 @@ float frrand2(float rad) {
     return ((float)(rand() % RAND_MAX) / RAND_MAX) * rad;
 }
 
+float nonOutlierLength(std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& lastFrameKeyPoints, const float outlierPercent = OUTLIERPERCENTAGE, const float expand = OUTLIEREXPAND) {
+    float maxLength = 0.f;
+    if (!keyPoints.empty()) {
+        std::vector<float> lengths; lengths.resize(keyPoints.size());
+        for (int i = 0; i < keyPoints.size(); i++) {
+            float dx = keyPoints[i].x - lastFrameKeyPoints[i].x;
+            float dy = keyPoints[i].y - lastFrameKeyPoints[i].y;
+            lengths[i] = sqrt(dx * dx + dy * dy);
+        }
+        std::sort(lengths.begin(), lengths.end(), [](const float& a, const float& b)->bool {return a < b; });
+        const int cut = int(lengths.size() * (1.0 - outlierPercent * 0.01f));
+        maxLength = lengths[cut] + expand;
+    }
+    return maxLength;
+}
+
 int validKeyPoints = 0;
 cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<KeyPoint>& lastFrameVariancePoints, cv::Mat& overlay) {
     cv::Mat mat = image.clone();
     validKeyPoints = 0;
+    const float maxLength = nonOutlierLength(keyPoints, lastFrameKeyPoints);
     for (int i = 0; i < keyPoints.size(); i++) {
         float varianceX = variancePoints[i].x - keyPoints[i].x;
         float varianceY = variancePoints[i].y - keyPoints[i].y;
@@ -42,11 +61,11 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
         float lastFrameVarianceX = lastFrameVariancePoints[i].x - lastFrameKeyPoints[i].x;
         float lastFrameVarianceY = lastFrameVariancePoints[i].y - lastFrameKeyPoints[i].y;
         float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
-        if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS) {
+        float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
+        float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
+        float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+        if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS && distance < maxLength) {
             validKeyPoints++;
-            float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
-            float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
-            float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
             const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
             const float sx = 2.f;
             const float sy = 4.f;
@@ -223,6 +242,7 @@ int main(int argc, char** argv)
         if (cv::waitKey(1) == 27)
             break;
 
+        const float maxLength = nonOutlierLength(keyPoints, lastFrameKeyPoints);
         std::vector<cv::Point2f> cvPoints1;
         std::vector<cv::Point2f> cvPoints2;
         for (int i = 0; i < KEYPOINTCOUNT; i++) {
@@ -235,7 +255,7 @@ int main(int argc, char** argv)
             const double varianceX = variancePoints[i].x - keyPoints[i].x;
             const double varianceY = variancePoints[i].y - keyPoints[i].y;
             const double variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-            if (variance < MAXVARIANCEINPIXELS && lastVariance < MAXVARIANCEINPIXELS) {
+            if (variance < MAXVARIANCEINPIXELS && lastVariance < MAXVARIANCEINPIXELS && distance < maxLength) {
                 cvPoints1.push_back(cv::Point2f(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y));
                 cvPoints2.push_back(cv::Point2f(keyPoints[i].x, keyPoints[i].y));
             }

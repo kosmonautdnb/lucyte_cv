@@ -12,6 +12,8 @@ const float MAXVARIANCEINPIXELS = 2.5;
 const float MIPEND = 1.0;
 const bool RESAMPLEONVARIANCE = true;
 const float RESAMPLEONVARIANCERADIUS = 2.5f;
+const float OUTLIERPERCENTAGE = 20.f;
+const float OUTLIEREXPAND = 200.f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
@@ -32,6 +34,22 @@ float frrand2(float rad) {
     return ((float)(rand() % RAND_MAX) / RAND_MAX) * rad;
 }
 
+float nonOutlierLength(std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& lastFrameKeyPoints, const float outlierPercent = OUTLIERPERCENTAGE, const float expand = OUTLIEREXPAND) {
+    float maxLength = 0.f;
+    if (!keyPoints.empty()) {
+        std::vector<float> lengths; lengths.resize(keyPoints.size());
+        for (int i = 0; i < keyPoints.size(); i++) {
+            float dx = keyPoints[i].x - lastFrameKeyPoints[i].x;
+            float dy = keyPoints[i].y - lastFrameKeyPoints[i].y;
+            lengths[i] = sqrt(dx * dx + dy * dy);
+        }
+        std::sort(lengths.begin(), lengths.end(), [](const float& a, const float& b)->bool {return a < b; });
+        const int cut = int(lengths.size() * (1.0 - outlierPercent * 0.01f));
+        maxLength = lengths[cut] + expand;
+    }
+    return maxLength;
+}
+
 int validKeyPoints = 0;
 cv::Mat output(const std::string& windowName, const cv::Mat& limage, const cv::Mat& rimage,
     std::vector<KeyPoint>& keyPointsLeft, std::vector<KeyPoint>& variancePointsLeft, std::vector<KeyPoint>& lastFrameKeyPointsLeft, std::vector<KeyPoint>& lastFrameVariancePointsLeft,
@@ -40,6 +58,7 @@ cv::Mat output(const std::string& windowName, const cv::Mat& limage, const cv::M
     cv::Mat mat = limage.clone();
     cv::Subdiv2D subdiv = cv::Subdiv2D(cv::Rect(0, 0, limage.cols, limage.rows));
     validKeyPoints = 0;
+    const float maxLength = nonOutlierLength(keyPointsLeft, lastFrameKeyPointsLeft);
     for (int i = 0; i < keyPointsLeft.size(); i++) {
         float varianceLeftX = variancePointsLeft[i].x - keyPointsLeft[i].x;
         float varianceLeftY = variancePointsLeft[i].y - keyPointsLeft[i].y;
@@ -53,7 +72,10 @@ cv::Mat output(const std::string& windowName, const cv::Mat& limage, const cv::M
         float lastFrameVarianceRightX = lastFrameVariancePointsRight[i].x - lastFrameKeyPointsRight[i].x;
         float lastFrameVarianceRightY = lastFrameVariancePointsRight[i].y - lastFrameKeyPointsRight[i].y;
         float lastFrameVarianceRight = sqrtf(lastFrameVarianceRightX * lastFrameVarianceRightX + lastFrameVarianceRightY * lastFrameVarianceRightY);
-        if (varianceLeft < MAXVARIANCEINPIXELS && lastFrameVarianceLeft < MAXVARIANCEINPIXELS && varianceRight < MAXVARIANCEINPIXELS && lastFrameVarianceRight < MAXVARIANCEINPIXELS) {
+        float distanceX = keyPointsRight[i].x - keyPointsLeft[i].x;
+        float distanceY = keyPointsRight[i].y - keyPointsLeft[i].y;
+        float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+        if (varianceLeft < MAXVARIANCEINPIXELS && lastFrameVarianceLeft < MAXVARIANCEINPIXELS && varianceRight < MAXVARIANCEINPIXELS && lastFrameVarianceRight < MAXVARIANCEINPIXELS && distance < maxLength) {
             validKeyPoints++;
             if (keyPointsLeft[i].x >= 0 && keyPointsLeft[i].y >= 0 && keyPointsLeft[i].x < limage.cols && keyPointsLeft[i].y < limage.rows) subdiv.insert(cv::Point2f(keyPointsLeft[i].x, keyPointsLeft[i].y));
         }
