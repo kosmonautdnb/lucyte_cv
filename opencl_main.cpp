@@ -9,7 +9,7 @@
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
-const float MIPEND = 1.0;
+const float MIPEND = 1;
 const bool RESAMPLEONVARIANCE = true;
 const float RESAMPLEONVARIANCERADIUS = 1.f;
 

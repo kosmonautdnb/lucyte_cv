@@ -43,8 +43,8 @@ cl::Kernel sampleDescriptor_cl;
 cl::Kernel refineKeyPoints_cl;
 std::vector<unsigned int> openCLDescriptorBits;
 std::vector<unsigned int> openCLDescriptorValid;
-std::vector<unsigned char> openCLDescriptorBitsFull;
-std::vector<unsigned char> openCLDescriptorValidFull;
+std::vector<unsigned int> openCLDescriptorBitsFull;
+std::vector<unsigned int> openCLDescriptorValidFull;
 cl::Buffer openCLDebug;
 float clDebug[10];
 
@@ -85,8 +85,7 @@ void initOpenCL() {
         "                                global const float *keyPointsX, global const float *keyPointsY,\n"
         "                                image2d_t s,\n"
         "                                constant const float2* descriptors1, constant const float2* descriptors2,\n"
-        "                                global unsigned char* dBits, global unsigned char* dValid, global float *debug) {\n"
-        "       const int KEYPOINTCOUNT = ints[0];\n"
+        "                                global unsigned int* dBits, global unsigned unsigned int* dValid, global float *debug) {\n"
         "       const int DESCRIPTORSIZE = ints[1];\n"
         "       const int width = ints[2];\n"
         "       const int height = ints[3];\n"
@@ -94,17 +93,24 @@ void initOpenCL() {
         "       const float mipScale = floats[1];\n"
         "\n"
         "       const float descriptorSize = descriptorScale * mipScale;\n"
-        "       const int keyPointIndex = get_global_id(0)/DESCRIPTORSIZE;\n"
-        "       const int descriptorIndex =  get_global_id(0)%DESCRIPTORSIZE;\n"
+        "       const int keyPointIndex = get_global_id(0);\n"
         "\n"
         "       const float kp2x = keyPointsX[keyPointIndex] * mipScale;\n"
         "       const float kp2y = keyPointsY[keyPointIndex] * mipScale;\n"
+        "       unsigned int b = 0, v = 0;"
+        "       for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
+        "       {\n"
+        "           const float l1 = tex(s, (float2)(kp2x + (descriptorSize * descriptors1[i].x), kp2y + (descriptorSize * descriptors1[i].y)));\n"
+        "           const float l2 = tex(s, (float2)(kp2x + (descriptorSize * descriptors2[i].x), kp2y + (descriptorSize * descriptors2[i].y)));\n"
         "\n"
-        "       const float l1 = tex(s, (float2)(kp2x + (descriptorSize * descriptors1[descriptorIndex].x), kp2y + (descriptorSize * descriptors1[descriptorIndex].y)));\n"
-        "       const float l2 = tex(s, (float2)(kp2x + (descriptorSize * descriptors2[descriptorIndex].x), kp2y + (descriptorSize * descriptors2[descriptorIndex].y)));\n"
-        "\n"
-        "       dBits[descriptorIndex+keyPointIndex*DESCRIPTORSIZE] = (l2 < l1 ? 1 : 0);\n"
-        "       dValid[descriptorIndex+keyPointIndex*DESCRIPTORSIZE] = ((l1 < 0 || l2 < 0) ? 0 : 1);\n"
+        "           if ((i & 31)==0) {\n"
+        "               b=0;v=0;\n"
+        "           }\n"
+        "           b |= (l2 < l1 ? 1 : 0) << (i & 31);\n"
+        "           v |= ((l1 < 0 || l2 < 0) ? 0 : 1) << (i & 31);\n"
+        "           dBits[(i+keyPointIndex*DESCRIPTORSIZE)/32]=b;"
+        "           dValid[(i+keyPointIndex*DESCRIPTORSIZE)/32]=v;"
+        "       }\n"
         "   }\n"
         "\n"
         "   const float randomLike(const int index) {"
@@ -412,11 +418,11 @@ void uploadDescriptors_openCL(const int mipMap, const std::vector<std::vector<De
 void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descriptor>>& destMips, const unsigned char* s, const float descriptorScale, const int width, const int height, const float mipScale) {
     std::vector<Descriptor>& dest = destMips[mipMap];
 
-    if ((dest.size() * Descriptor::uint32count * 32) != openCLDescriptorBitsFull.size()) {
-        openCLDescriptorBitsFull.resize(dest.size() * Descriptor::uint32count * 32);
-        openCLDescriptorValidFull.resize(dest.size() * Descriptor::uint32count * 32);
-        openCLBitsFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorBitsFull.size());
-        openCLValidFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned char) * openCLDescriptorValidFull.size());
+    if ((dest.size() * Descriptor::uint32count) != openCLDescriptorBitsFull.size()) {
+        openCLDescriptorBitsFull.resize(dest.size() * Descriptor::uint32count);
+        openCLDescriptorValidFull.resize(dest.size() * Descriptor::uint32count);
+        openCLBitsFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorBitsFull.size());
+        openCLValidFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorValidFull.size());
     }
 
     openCLInt[0] = dest.size();
@@ -437,21 +443,17 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     sampleDescriptor_cl.setArg(7, openCLBitsFull);
     sampleDescriptor_cl.setArg(8, openCLValidFull);
     sampleDescriptor_cl.setArg(9, openCLDebug);
-    openCLQueue.enqueueNDRangeKernel(sampleDescriptor_cl, cl::NullRange, cl::NDRange(openCLKpx.size() * DESCRIPTORSIZE), cl::NullRange);
+    openCLQueue.enqueueNDRangeKernel(sampleDescriptor_cl, cl::NullRange, cl::NDRange(openCLKpx.size()), cl::NullRange);
     openCLQueue.flush();
     sampleDescriptor_cl();
-    openCLQueue.enqueueReadBuffer(openCLBitsFull, CLBLOCKING, 0, openCLDescriptorBitsFull.size() * sizeof(unsigned char), &(openCLDescriptorBitsFull[0]));
-    openCLQueue.enqueueReadBuffer(openCLValidFull, CLBLOCKING, 0, openCLDescriptorValidFull.size() * sizeof(unsigned char), &(openCLDescriptorValidFull[0]));
+    openCLQueue.enqueueReadBuffer(openCLBitsFull, CLBLOCKING, 0, openCLDescriptorBitsFull.size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[0]));
+    openCLQueue.enqueueReadBuffer(openCLValidFull, CLBLOCKING, 0, openCLDescriptorValidFull.size() * sizeof(unsigned int), &(openCLDescriptorValidFull[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
     openCLQueue.flush();
     for (int i = 0; i < dest.size(); ++i) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
-            dest[i].bits[j] = 0;
-            dest[i].valid[j] = 0;
-            for (int k = 0; k < 32; k++) {
-                dest[i].bits[j] |= (openCLDescriptorBitsFull[i * Descriptor::uint32count * 32 + j * 32 + k] != 0 ? 1 : 0)<<k;
-                dest[i].valid[j] |= (openCLDescriptorValidFull[i * Descriptor::uint32count * 32 + j * 32 + k] != 0 ? 1 : 0)<<k;
-            }
+             dest[i].bits[j] |= openCLDescriptorBitsFull[i * Descriptor::uint32count + j];
+             dest[i].valid[j] |= openCLDescriptorValidFull[i * Descriptor::uint32count + j];
         }
     }
 }
