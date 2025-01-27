@@ -200,8 +200,8 @@ int main(int argc, char** argv)
     std::vector<std::vector<Descriptor>> searchForDescriptorsLeft;
     searchForDescriptorsLeft.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
-        const float descriptorScale = 1 << i;
         const float mipScale = powf(MIPSCALE, float(i));
+        const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptorsLeft[i].resize(keyPointsLeft.size());
@@ -270,8 +270,8 @@ int main(int argc, char** argv)
             std::vector<std::vector<Descriptor>> resampledDescriptors;
             resampledDescriptors.resize(mipmaps2.size());
             for (int i = mipEnd; i >= 0; i--) {
-                const float descriptorScale = 1 << i;
                 const float mipScale = powf(MIPSCALE, float(i));
+                const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
                 resampledDescriptors[i].resize(keyPointsLeft.size());

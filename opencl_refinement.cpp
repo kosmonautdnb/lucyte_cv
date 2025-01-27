@@ -85,7 +85,7 @@ void initOpenCL() {
         "                                global const float *keyPointsX, global const float *keyPointsY,\n"
         "                                image2d_t s,\n"
         "                                constant const float2* descriptors1, constant const float2* descriptors2,\n"
-        "                                global unsigned int* dBits, global unsigned unsigned int* dValid, global float *debug) {\n"
+        "                                global unsigned int* dBits, global unsigned int* dValid, global float *debug) {\n"
         "       const int DESCRIPTORSIZE = ints[1];\n"
         "       const int width = ints[2];\n"
         "       const int height = ints[3];\n"
@@ -278,8 +278,8 @@ void initOpenCL() {
         "           const int width = widths[i];\n"
         "           const int height = heights[i];\n"
         "           for (int k = 0; k < STEPCOUNT; k++) {\n"
-        "               float descriptorScale = (float)(1 << i);\n"
         "               const float mipScale = pow(MIPSCALE, (float)i);\n"
+        "               float descriptorScale = 1.f / mipScale;\n"
         "               const float step = STEPSIZE * descriptorScale;\n"
         "               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;\n"
         "               const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;\n"
@@ -443,16 +443,14 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     sampleDescriptor_cl.setArg(8, openCLValidFull);
     sampleDescriptor_cl.setArg(9, openCLDebug);
     openCLQueue.enqueueNDRangeKernel(sampleDescriptor_cl, cl::NullRange, cl::NDRange(openCLKpx.size()), cl::NullRange);
-    openCLQueue.flush();
-    sampleDescriptor_cl();
     openCLQueue.enqueueReadBuffer(openCLBitsFull, CLBLOCKING, 0, openCLDescriptorBitsFull.size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[0]));
     openCLQueue.enqueueReadBuffer(openCLValidFull, CLBLOCKING, 0, openCLDescriptorValidFull.size() * sizeof(unsigned int), &(openCLDescriptorValidFull[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
-    openCLQueue.flush();
+    openCLQueue.finish();
     for (int i = 0; i < dest.size(); ++i) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
-             dest[i].bits[j] |= openCLDescriptorBitsFull[i * Descriptor::uint32count + j];
-             dest[i].valid[j] |= openCLDescriptorValidFull[i * Descriptor::uint32count + j];
+             dest[i].bits[j] = openCLDescriptorBitsFull[i * Descriptor::uint32count + j];
+             dest[i].valid[j] = openCLDescriptorValidFull[i * Descriptor::uint32count + j];
         }
     }
 }
@@ -495,7 +493,6 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<Ke
     refineKeyPoints_cl.setArg(a, openCLNewVariancePointsY); a++;
     refineKeyPoints_cl.setArg(a, openCLDebug); a++;
     openCLQueue.enqueueNDRangeKernel(refineKeyPoints_cl, cl::NullRange, cl::NDRange(openCLKpx.size() * 2), cl::NullRange);
-    openCLQueue.flush();
     std::vector<float> destKeyPointsX; destKeyPointsX.resize(destKeyPoints.size());
     std::vector<float> destKeyPointsY; destKeyPointsY.resize(destKeyPoints.size());
     std::vector<float> destVariancePointsX; destVariancePointsX.resize(destKeyPoints.size());
@@ -505,7 +502,7 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<Ke
     openCLQueue.enqueueReadBuffer(openCLNewVariancePointsX, CLBLOCKING, 0, destVariancePointsX.size() * sizeof(float), &(destVariancePointsX[0]));
     openCLQueue.enqueueReadBuffer(openCLNewVariancePointsY, CLBLOCKING, 0, destVariancePointsY.size() * sizeof(float), &(destVariancePointsY[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
-    openCLQueue.flush();
+    openCLQueue.finish();
     for (int i = 0; i < destKeyPoints.size(); i++) {
         destKeyPoints[i].x = destKeyPointsX[i];
         destKeyPoints[i].y = destKeyPointsY[i];

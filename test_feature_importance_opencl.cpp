@@ -100,8 +100,8 @@ float descriptivity(std::vector<cv::Mat>& mipMaps, const KeyPoint& k, const int 
     Descriptor d;
     float h = 0;
     for (int i = mipEnd; i >= 0; i--) {
-        const float descriptorScale = 1 << i;
         const float mipScale = powf(MIPSCALE, float(i));
+        const float descriptorScale = 1.f / mipScale;
         const int width = mipMaps[i].cols;
         const int height = mipMaps[i].rows;
         h += sampleDescriptor(k, d, mipMaps[i].data, descriptorScale, width, height, mipScale)*mipScale;
@@ -152,8 +152,8 @@ int main(int argc, char** argv)
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
-        const float descriptorScale = 1 << i;
         const float mipScale = powf(MIPSCALE, float(i));
+        const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
@@ -215,8 +215,8 @@ int main(int argc, char** argv)
             std::vector<std::vector<Descriptor>> resampledDescriptors;
             resampledDescriptors.resize(mipmaps2.size());
             for (int i = mipEnd; i >= 0; i--) {
-                const float descriptorScale = 1 << i;
                 const float mipScale = powf(MIPSCALE, float(i));
+                const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
                 resampledDescriptors[i].resize(keyPoints.size());

@@ -107,8 +107,8 @@ int main(int argc, char** argv)
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
-        const float descriptorScale = 1 << i;
         const float mipScale = powf(MIPSCALE, float(i));
+        const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
@@ -134,8 +134,8 @@ int main(int argc, char** argv)
                     const int width = mipmaps2[i].cols;
                     const int height = mipmaps2[i].rows;
                     for (int k = 0; k < STEPCOUNT; k++) {
-                        float descriptorScale = (1 << i);
                         const float mipScale = powf(MIPSCALE, float(i));
+                        float descriptorScale = 1.f / mipScale;
                         const float step = STEPSIZE * descriptorScale;
                         descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
@@ -185,8 +185,8 @@ int main(int argc, char** argv)
         const bool resample = true;
         if (resample) {
             for (int i = mipEnd; i >= 0; i--) {
-                const float descriptorScale = 1 << i;
                 const float mipScale = powf(MIPSCALE, float(i));
+                const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
 #pragma omp parallel for num_threads(64)

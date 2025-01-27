@@ -173,8 +173,8 @@ int main(int argc, char** argv)
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
-        const float descriptorScale = 1 << i;
         const float mipScale = powf(MIPSCALE, float(i));
+        const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
@@ -211,8 +211,8 @@ int main(int argc, char** argv)
                         const int width = mipmaps2[i].cols;
                         const int height = mipmaps2[i].rows;
                         for (int k = 0; k < STEPCOUNT; k++) {
-                            float descriptorScale = (1 << i);
                             const float mipScale = powf(MIPSCALE, float(i));
+                            float descriptorScale = 1.f / mipScale;
                             const float step = STEPSIZE * descriptorScale;
                             descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
                             const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
@@ -305,8 +305,8 @@ int main(int argc, char** argv)
             std::vector<std::vector<Descriptor>> resampledDescriptors;
             resampledDescriptors.resize(mipmaps2.size());
             for (int i = mipEnd; i >= 0; i--) {
-                const float descriptorScale = 1 << i;
                 const float mipScale = powf(MIPSCALE, float(i));
+                const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
                 resampledDescriptors[i].resize(keyPoints.size());

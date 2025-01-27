@@ -69,8 +69,8 @@ std::pair<KeyPoint,float> trackPoint(const std::vector<cv::Mat> & mipmapsSource,
     std::vector<Descriptor> searchForDescriptors;
     searchForDescriptors.resize(mipmapsSource.size());
     for (int i = mipmapsSource.size()-1; i >= 0; i--) {
-        const float descriptorScale = 1 << i;
         const float mipScale = powf(MIPSCALE, float(i));
+        const float descriptorScale = 1.f / mipScale;
         const int width = mipmapsSource[i].cols;
         const int height = mipmapsSource[i].rows;
         sampleDescriptor(keyPointSource, searchForDescriptors[i], mipmapsSource[i].data, descriptorScale, width, height, mipScale);
@@ -84,8 +84,8 @@ std::pair<KeyPoint,float> trackPoint(const std::vector<cv::Mat> & mipmapsSource,
             const int width = mipmapsDest[i].cols;
             const int height = mipmapsDest[i].rows;
             for (int k = 0; k < STEPCOUNT; k++) {
-                float descriptorScale = (1 << i);
                 const float mipScale = powf(MIPSCALE, float(i));
+                float descriptorScale = 1.f / mipScale;
                 const float step = STEPSIZE * descriptorScale;
                 descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
                 const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
