@@ -85,3 +85,21 @@ void defaultDescriptorShape38(const float rad) {
     }
     // 6 + 32
 }
+
+void defaultDescriptorShapeSpiral(const float rad, int descriptorSize) {
+    for (int i = 0; i < descriptorSize; i += 2) {
+        const float ri = (float)i / descriptorSize;
+        const float a1 = ri * 2 * 3.14159f * 2.5 + 3.14159*0.5;
+        const float a2 = ri * 2 * 3.14159f * 4.75;
+        const float rad1 = ri * 0.5 * rad;
+        const float rad2 = (1-ri*0.75) * rad;
+        descriptorsX1[i] = sin(a1) * rad1;
+        descriptorsY1[i] = cos(a1) * rad1;
+        descriptorsX2[i] = sin(a2) * rad2;
+        descriptorsY2[i] = cos(a2) * rad2;
+        descriptorsX1[i+1] = cos(a1) * rad1;
+        descriptorsY1[i+1] = -sin(a1) * rad1;
+        descriptorsX2[i+1] = cos(a2) * rad2;
+        descriptorsY2[i+1] = -sin(a2) * rad2;
+    }
+}

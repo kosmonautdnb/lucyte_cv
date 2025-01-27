@@ -9,3 +9,4 @@ extern float descriptorsY2[MAXDESCRIPTORSIZE];
 
 void defaultDescriptorShape38(const float rad);
 void defaultDescriptorShape64(const float rad);
+void defaultDescriptorShapeSpiral(const float rad, const int descriptorSize);

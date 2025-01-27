@@ -1,7 +1,7 @@
 // Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define FILESET 1
+#define FILESET 2
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
@@ -18,7 +18,8 @@ const int KEYPOINTCOUNT = 1000;
 
 #define DESCRIPTORSHAPE_64 0
 #define DESCRIPTORSHAPE_38 1
-#define DESCRIPTORSHAPE DESCRIPTORSHAPE_64
+#define DESCRIPTORSHAPE_SPIRAL 2
+#define DESCRIPTORSHAPE DESCRIPTORSHAPE_SPIRAL
 
 #if CONFIG == 0
 float MIPSCALE = 0.5f;
@@ -72,6 +73,11 @@ int DESCRIPTORSIZE = 64;
 #if DESCRIPTORSHAPE == 1
 int DESCRIPTORSIZE = 38;
 #define defaultDescriptorShape defaultDescriptorShape38
+#endif
+
+#if DESCRIPTORSHAPE == 2
+int DESCRIPTORSIZE = 128;
+#define defaultDescriptorShape(__RAD__) defaultDescriptorShapeSpiral(__RAD__, DESCRIPTORSIZE);
 #endif
 
 #if STEREO_FILESET == 1
