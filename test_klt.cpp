@@ -77,7 +77,7 @@ std::pair<KeyPoint,float> trackPoint(const std::vector<cv::Mat> & mipmapsSource,
     }
 
     KeyPoint keyPoint;
-    KeyPoint varianceKeyPoint;
+    float error;
     for (int v = 0; v < 2; v++) {
         KeyPoint kp = { float(mipmapsDest[0].cols) * 0.5f, float(mipmapsDest[0].rows) * 0.5f };
         for (int i = mipmapsDest.size() - 1; i >= 0; i--) {
@@ -95,13 +95,10 @@ std::pair<KeyPoint,float> trackPoint(const std::vector<cv::Mat> & mipmapsSource,
         }
         switch (v) {
         case 0: keyPoint = kp;
-        case 1: varianceKeyPoint = kp; break;
+        case 1: error = sqrt((kp.x - keyPoint.x) * (kp.x - keyPoint.x) + (kp.y - keyPoint.y) * (kp.y - keyPoint.y)); keyPoint.x = (kp.x + keyPoint.x) * 0.5f; keyPoint.y = (kp.y + keyPoint.y) * 0.5f; break;
         }
     }
-    const float varianceX = varianceKeyPoint.x - keyPoint.x;
-    const float varianceY = varianceKeyPoint.y - keyPoint.y;
-    const float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-    return { keyPoint, variance };
+    return { keyPoint, error };
 }
 
 cv::Mat testFrame(const cv::Mat &image) {

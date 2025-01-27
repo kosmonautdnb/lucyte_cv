@@ -40,17 +40,11 @@ float frrand2(float rad) {
 }
 
 int validKeyPoints = 0;
-cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<KeyPoint>& lastFrameVariancePoints) {
+cv::Mat output(const std::string& windowName, const cv::Mat& image, const std::vector<KeyPoint>& keyPoints, const std::vector<float>& errors, const std::vector<KeyPoint>& lastFrameKeyPoints, const std::vector<float>& lastFrameErrors) {
     cv::Mat mat = image.clone();
     validKeyPoints = 0;
     for (int i = 0; i < keyPoints.size(); i++) {
-        float varianceX = variancePoints[i].x - keyPoints[i].x;
-        float varianceY = variancePoints[i].y - keyPoints[i].y;
-        float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-        float lastFrameVarianceX = lastFrameVariancePoints[i].x - lastFrameKeyPoints[i].x;
-        float lastFrameVarianceY = lastFrameVariancePoints[i].y - lastFrameKeyPoints[i].y;
-        float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
-        if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS) {
+        if (errors[i] < MAXVARIANCEINPIXELS && lastFrameErrors[i] < MAXVARIANCEINPIXELS) {
             validKeyPoints++;
             float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
             float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
@@ -106,9 +100,9 @@ int main(int argc, char** argv)
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
-    std::vector<KeyPoint> variancePoints;
+    std::vector<float> errors;
     keyPoints.resize(KEYPOINTCOUNT);
-    variancePoints.resize(KEYPOINTCOUNT);
+    errors.resize(KEYPOINTCOUNT);
     for (int i = 0; i < keyPoints.size(); ++i) {
         keyPoints[i].x = frrand2(mipmaps1[0].cols);
         keyPoints[i].y = frrand2(mipmaps1[0].rows);
@@ -137,13 +131,13 @@ int main(int argc, char** argv)
         mipmaps2 = mipMaps(mat2);
         uploadMipMaps_openCL(mipmaps2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
-        std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
+        std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = X_Query_perf_counter();
 
-        video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
+        video.write(output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors));
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27) 
             break;
@@ -163,18 +157,10 @@ int main(int argc, char** argv)
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
-                if ((k.x < LEFT) || (k.x >= width-RIGHT) || (k.y < TOP) || (k.y >= height-BOTTOM)) {
+                if ((k.x < LEFT) || (k.x >= width-RIGHT) || (k.y < TOP) || (k.y >= height-BOTTOM) || errors[j] >= MAXVARIANCEINPIXELS) {
                     k.x = frrand2(width);
                     k.y = frrand2(height);
-                    variancePoints[j] = k;
-                }
-                float varianceX = variancePoints[j].x - keyPoints[j].x;
-                float varianceY = variancePoints[j].y - keyPoints[j].y;
-                float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                if (variance >= MAXVARIANCEINPIXELS) {
-                    k.x = frrand2(width);
-                    k.y = frrand2(height);
-                    variancePoints[j] = k;
+                    errors[j] = 0;
                 }
             }
         }
@@ -193,10 +179,7 @@ int main(int argc, char** argv)
                 resampledDescriptors[i].resize(keyPoints.size());
                 sampleDescriptors_openCL(i,resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    float varianceX = variancePoints[j].x - keyPoints[j].x;
-                    float varianceY = variancePoints[j].y - keyPoints[j].y;
-                    float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                    if ((!RESAMPLEONVARIANCE) || (variance < RESAMPLEONVARIANCERADIUS)) {
+                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
                     }
                 }

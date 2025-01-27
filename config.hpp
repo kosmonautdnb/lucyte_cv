@@ -1,7 +1,7 @@
 // Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
-#define FILESET 2
+#define FILESET 3
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";

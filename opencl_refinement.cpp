@@ -76,7 +76,7 @@ void initOpenCL() {
     openCLQueue = cl::CommandQueue(openCLContext, openCLDevice);
 
     std::string sampleDescriptor_kernel =
-        "   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;"
+        "   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;"
         "\n"
         "   inline float tex(const image2d_t s, const float2 coord) {\n"
         "         return read_imagef(s,sampler,coord).x;\n"
@@ -555,7 +555,9 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     }
 }
 
-void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<KeyPoint>& destVariancePoints, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<float>& destErrors, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+    destErrors.resize(destKeyPoints.size());
+    std::vector<KeyPoint> destVariancePoints;
     destVariancePoints.resize(destKeyPoints.size());
     openCLInt[0] = openCLKpx.size();
     openCLInt[1] = DESCRIPTORSIZE;
@@ -604,9 +606,10 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<Ke
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
     openCLQueue.finish();
     for (int i = 0; i < destKeyPoints.size(); i++) {
-        destKeyPoints[i].x = destKeyPointsX[i];
-        destKeyPoints[i].y = destKeyPointsY[i];
-        destVariancePoints[i].x = destVariancePointsX[i];
-        destVariancePoints[i].y = destVariancePointsY[i];
+        destKeyPoints[i].x = (destKeyPointsX[i] + destVariancePointsX[i]) * 0.5f;
+        destKeyPoints[i].y = (destKeyPointsY[i] + destVariancePointsY[i]) * 0.5f;
+        const float errX = (destKeyPointsX[i] - destVariancePointsX[i]);
+        const float errY = (destKeyPointsY[i] - destVariancePointsY[i]);
+        destErrors[i] = sqrtf(errX*errX+errY*errY);
     }
 }

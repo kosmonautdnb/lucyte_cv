@@ -10,7 +10,7 @@ int texf(const unsigned char* s, const int x, const int y, const int width, cons
     const int xr = x >> 10;
     const int yr = y >> 10;
     if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1))
-        return -abs(xr) - abs(yr); // invalid but put some value in so that the compares always have the same result here
+        return 0; // invalid but put some value in so that the compares always have the same result here
     s += xr + yr * width;
     const unsigned short a = *((unsigned short*)(s));
     const unsigned short b = *((unsigned short*)(s + width));

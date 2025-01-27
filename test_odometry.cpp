@@ -42,20 +42,14 @@ float nonOutlierLength(std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& 
 }
 
 int validKeyPoints = 0;
-cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& variancePoints, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<KeyPoint>& lastFrameVariancePoints, cv::Mat &overlay) {
+cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<float>& errors, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<float>& lastFrameErrors, cv::Mat &overlay) {
     cv::Mat mat = image.clone();
     validKeyPoints = 0;
     const float maxLength = nonOutlierLength(keyPoints, lastFrameKeyPoints);
     for (int i = 0; i < keyPoints.size(); i++) {
-        float varianceX = variancePoints[i].x - keyPoints[i].x;
-        float varianceY = variancePoints[i].y - keyPoints[i].y;
-        float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-        float lastFrameVarianceX = lastFrameVariancePoints[i].x - lastFrameKeyPoints[i].x;
-        float lastFrameVarianceY = lastFrameVariancePoints[i].y - lastFrameKeyPoints[i].y;
-        float lastFrameVariance = sqrtf(lastFrameVarianceX * lastFrameVarianceX + lastFrameVarianceY * lastFrameVarianceY);
-        if (variance < MAXVARIANCEINPIXELS && lastFrameVariance < MAXVARIANCEINPIXELS) {
-            float distanceX = lastFrameVariancePoints[i].x - keyPoints[i].x;
-            float distanceY = lastFrameVariancePoints[i].y - keyPoints[i].y;
+        if (errors[i] < MAXVARIANCEINPIXELS && lastFrameErrors[i] < MAXVARIANCEINPIXELS) {
+            float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
+            float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
             float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
             if (distance < maxLength) {
                 validKeyPoints++;
@@ -151,9 +145,9 @@ int main(int argc, char** argv)
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
-    std::vector<KeyPoint> variancePoints;
+    std::vector<float> errors;
     keyPoints.resize(KEYPOINTCOUNT);
-    variancePoints.resize(KEYPOINTCOUNT);
+    errors.resize(KEYPOINTCOUNT);
     for (int i = 0; i < keyPoints.size(); ++i) {
         keyPoints[i].x = frrand2(mipmaps1[0].cols);
         keyPoints[i].y = frrand2(mipmaps1[0].rows);
@@ -188,7 +182,7 @@ int main(int argc, char** argv)
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
-        std::vector<KeyPoint> lastFrameVariancePoints = variancePoints;
+        std::vector<float> lastFrameErrors = errors;
         for (int v = 0; v < 2; v++) {
 #pragma omp parallel for num_threads(32)
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
@@ -208,7 +202,7 @@ int main(int argc, char** argv)
                 }
                 switch (v) {
                 case 0: keyPoints[j] = kp;
-                case 1: variancePoints[j] = kp; break;
+                case 1: errors[j] = sqrt((kp.x - keyPoints[j].x) * (kp.x - keyPoints[j].x) + (kp.y - keyPoints[j].y) * (kp.y - keyPoints[j].y)); keyPoints[j].x = (kp.x + keyPoints[j].x) * 0.5f; keyPoints[j].y = (kp.y + keyPoints[j].y) * 0.5f; break;
                 }
             }
         }
@@ -222,13 +216,7 @@ int main(int argc, char** argv)
             const double distanceX = keyPoints[i].x - lastFrameKeyPoints[i].x;
             const double distanceY = keyPoints[i].y - lastFrameKeyPoints[i].y;
             const double distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-            const double lastVarianceX = lastFrameVariancePoints[i].x - lastFrameKeyPoints[i].x;
-            const double lastVarianceY = lastFrameVariancePoints[i].y - lastFrameKeyPoints[i].y;
-            const double lastVariance = sqrtf(lastVarianceX * lastVarianceX + lastVarianceY * lastVarianceY);
-            const double varianceX = variancePoints[i].x - keyPoints[i].x;
-            const double varianceY = variancePoints[i].y - keyPoints[i].y;
-            const double variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-            if (variance < MAXVARIANCEINPIXELS && lastVariance < MAXVARIANCEINPIXELS && distance < maxLength) {
+            if (errors[i] < MAXVARIANCEINPIXELS && lastFrameErrors[i] < MAXVARIANCEINPIXELS && distance < maxLength) {
                 cvPoints1.push_back(cv::Point2f(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y));
                 cvPoints2.push_back(cv::Point2f(keyPoints[i].x, keyPoints[i].y));
             }
@@ -248,7 +236,7 @@ int main(int argc, char** argv)
             position.y = -currentPosition.y;
             positions.push_back(position);
             cv::Mat odometryOutput = overlay(positions);
-            output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints, odometryOutput);
+            output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors, odometryOutput);
         }
 
         const bool readd = true;
@@ -261,18 +249,10 @@ int main(int argc, char** argv)
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
-                if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM)) {
+                if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM) || (errors[j] >= MAXVARIANCEINPIXELS)) {
                     k.x = frrand2(width);
                     k.y = frrand2(height);
-                    variancePoints[j] = k;
-                }
-                float varianceX = variancePoints[j].x - keyPoints[j].x;
-                float varianceY = variancePoints[j].y - keyPoints[j].y;
-                float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                if (variance >= MAXVARIANCEINPIXELS) {
-                    k.x = frrand2(width);
-                    k.y = frrand2(height);
-                    variancePoints[j] = k;
+                    errors[j] = 0;
                 }
             }
         }
@@ -286,10 +266,7 @@ int main(int argc, char** argv)
                 const int height = mipmaps2[i].rows;
 #pragma omp parallel for num_threads(32)
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    float varianceX = variancePoints[j].x - keyPoints[j].x;
-                    float varianceY = variancePoints[j].y - keyPoints[j].y;
-                    float variance = sqrtf(varianceX * varianceX + varianceY * varianceY);
-                    if ((!RESAMPLEONVARIANCE) || (variance < RESAMPLEONVARIANCERADIUS))
+                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS))
                         sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 }
             }

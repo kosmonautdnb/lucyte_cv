@@ -88,7 +88,7 @@ void defaultDescriptorShape38(const float rad) {
 
 void defaultDescriptorShapeSpiral(const float rad, int descriptorSize) {
     for (int i = 0; i < descriptorSize; i += 2) {
-        const float ri = (float)i / descriptorSize;
+        const float ri = (float)randomLike(i*13 + 1234);
         const float a1 = ri * 2 * 3.14159f * 2.5 + 3.14159*0.5;
         const float a2 = ri * 2 * 3.14159f * 4.75;
         const float rad1 = ri * 0.5 * rad;
