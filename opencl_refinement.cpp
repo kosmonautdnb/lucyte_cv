@@ -12,12 +12,13 @@ extern bool ONLYVALID;
 extern int DESCRIPTORSIZE;
 
 #define CLBLOCKING CL_TRUE
+const int MAXMIPMAPS = 32;
 cl::Platform openCLPlatform;
 cl::Device openCLDevice;
 cl::Context openCLContext; 
 cl::Program openCLProgram;
 cl::CommandQueue openCLQueue;
-cl::Image2D openCLMipMaps[16];
+cl::Image2D openCLMipMaps[MAXMIPMAPS];
 cl::Buffer openCLMipMapWidths;
 cl::Buffer openCLMipMapHeights;
 std::vector<unsigned char *> openCLMipMapPointers;
@@ -29,12 +30,8 @@ cl::Buffer openCLNewKeyPointsX;
 cl::Buffer openCLNewKeyPointsY;
 cl::Buffer openCLNewVariancePointsX;
 cl::Buffer openCLNewVariancePointsY;
-int openCLInt[10];
-float openCLFloat[10];
 std::vector<float> openCLKpx;
 std::vector<float> openCLKpy;
-cl::Buffer openCLInts;
-cl::Buffer openCLFloats;
 std::vector<cl::Buffer> openCLBits;
 std::vector<cl::Buffer> openCLValid;
 cl::Buffer openCLBitsFull;
@@ -45,7 +42,11 @@ std::vector<unsigned int> openCLDescriptorBits;
 std::vector<unsigned int> openCLDescriptorValid;
 std::vector<unsigned int> openCLDescriptorBitsFull;
 std::vector<unsigned int> openCLDescriptorValidFull;
+cl::Buffer openCLInts;
+cl::Buffer openCLFloats;
 cl::Buffer openCLDebug;
+int openCLInt[10];
+float openCLFloat[10];
 float clDebug[10];
 
 void initOpenCL() {
@@ -189,6 +190,22 @@ void initOpenCL() {
         "                        const image2d_t s13,\n"
         "                        const image2d_t s14,\n"
         "                        const image2d_t s15,\n"
+        "                        const image2d_t sb0,\n"
+        "                        const image2d_t sb1,\n"
+        "                        const image2d_t sb2,\n"
+        "                        const image2d_t sb3,\n"
+        "                        const image2d_t sb4,\n"
+        "                        const image2d_t sb5,\n"
+        "                        const image2d_t sb6,\n"
+        "                        const image2d_t sb7,\n"
+        "                        const image2d_t sb8,\n"
+        "                        const image2d_t sb9,\n"
+        "                        const image2d_t sb10,\n"
+        "                        const image2d_t sb11,\n"
+        "                        const image2d_t sb12,\n"
+        "                        const image2d_t sb13,\n"
+        "                        const image2d_t sb14,\n"
+        "                        const image2d_t sb15,\n"
         "                        global const unsigned int* dBits0,\n"
         "                        global const unsigned int* dBits1,\n"
         "                        global const unsigned int* dBits2,\n"
@@ -205,6 +222,22 @@ void initOpenCL() {
         "                        global const unsigned int* dBits13,\n"
         "                        global const unsigned int* dBits14,\n"
         "                        global const unsigned int* dBits15,\n"
+        "                        global const unsigned int* dbBits0,\n"
+        "                        global const unsigned int* dbBits1,\n"
+        "                        global const unsigned int* dbBits2,\n"
+        "                        global const unsigned int* dbBits3,\n"
+        "                        global const unsigned int* dbBits4,\n"
+        "                        global const unsigned int* dbBits5,\n"
+        "                        global const unsigned int* dbBits6,\n"
+        "                        global const unsigned int* dbBits7,\n"
+        "                        global const unsigned int* dbBits8,\n"
+        "                        global const unsigned int* dbBits9,\n"
+        "                        global const unsigned int* dbBits10,\n"
+        "                        global const unsigned int* dbBits11,\n"
+        "                        global const unsigned int* dbBits12,\n"
+        "                        global const unsigned int* dbBits13,\n"
+        "                        global const unsigned int* dbBits14,\n"
+        "                        global const unsigned int* dbBits15,\n"
         "                        global const unsigned int* dValid0,\n"
         "                        global const unsigned int* dValid1,\n"
         "                        global const unsigned int* dValid2,\n"
@@ -221,14 +254,30 @@ void initOpenCL() {
         "                        global const unsigned int* dValid13,\n"
         "                        global const unsigned int* dValid14,\n"
         "                        global const unsigned int* dValid15,\n"
+        "                        global const unsigned int* dbValid0,\n"
+        "                        global const unsigned int* dbValid1,\n"
+        "                        global const unsigned int* dbValid2,\n"
+        "                        global const unsigned int* dbValid3,\n"
+        "                        global const unsigned int* dbValid4,\n"
+        "                        global const unsigned int* dbValid5,\n"
+        "                        global const unsigned int* dbValid6,\n"
+        "                        global const unsigned int* dbValid7,\n"
+        "                        global const unsigned int* dbValid8,\n"
+        "                        global const unsigned int* dbValid9,\n"
+        "                        global const unsigned int* dbValid10,\n"
+        "                        global const unsigned int* dbValid11,\n"
+        "                        global const unsigned int* dbValid12,\n"
+        "                        global const unsigned int* dbValid13,\n"
+        "                        global const unsigned int* dbValid14,\n"
+        "                        global const unsigned int* dbValid15,\n"
         "                        global const int *widths,\n"
         "                        global const int *heights,\n"
         "                        constant const float2* descriptors1, constant const float2* descriptors2,\n"
         "                        global float *dKeyPointsX, global float *dKeyPointsY,\n"
         "                        global float *dVariancePointsX, global float *dVariancePointsY,\n"
         "                        global float *debug) {\n"
-        "       global const unsigned int *dBits[16];\n"
-        "       global const unsigned int *dValid[16];\n"
+        "       global const unsigned int *dBits[32];\n"
+        "       global const unsigned int *dValid[32];\n"
         "       dBits[0] = dBits0;\n"
         "       dBits[1] = dBits1;\n"
         "       dBits[2] = dBits2;\n"
@@ -245,6 +294,22 @@ void initOpenCL() {
         "       dBits[13] = dBits13;\n"
         "       dBits[14] = dBits14;\n"
         "       dBits[15] = dBits15;\n"
+        "       dBits[16] = dbBits0;\n"
+        "       dBits[17] = dbBits1;\n"
+        "       dBits[18] = dbBits2;\n"
+        "       dBits[19] = dbBits3;\n"
+        "       dBits[20] = dbBits4;\n"
+        "       dBits[21] = dbBits5;\n"
+        "       dBits[22] = dbBits6;\n"
+        "       dBits[23] = dbBits7;\n"
+        "       dBits[24] = dbBits8;\n"
+        "       dBits[25] = dbBits9;\n"
+        "       dBits[26] = dbBits10;\n"
+        "       dBits[27] = dbBits11;\n"
+        "       dBits[28] = dbBits12;\n"
+        "       dBits[29] = dbBits13;\n"
+        "       dBits[30] = dbBits14;\n"
+        "       dBits[31] = dbBits15;\n"
         "       dValid[0] = dValid0;\n"
         "       dValid[1] = dValid1;\n"
         "       dValid[2] = dValid2;\n"
@@ -261,6 +326,22 @@ void initOpenCL() {
         "       dValid[13] = dValid13;\n"
         "       dValid[14] = dValid14;\n"
         "       dValid[15] = dValid15;\n"
+        "       dValid[16] = dbValid0;\n"
+        "       dValid[17] = dbValid1;\n"
+        "       dValid[18] = dbValid2;\n"
+        "       dValid[19] = dbValid3;\n"
+        "       dValid[20] = dbValid4;\n"
+        "       dValid[21] = dbValid5;\n"
+        "       dValid[22] = dbValid6;\n"
+        "       dValid[23] = dbValid7;\n"
+        "       dValid[24] = dbValid8;\n"
+        "       dValid[25] = dbValid9;\n"
+        "       dValid[26] = dbValid10;\n"
+        "       dValid[27] = dbValid11;\n"
+        "       dValid[28] = dbValid12;\n"
+        "       dValid[29] = dbValid13;\n"
+        "       dValid[30] = dbValid14;\n"
+        "       dValid[31] = dbValid15;\n"
         "       const int KEYPOINTCOUNT = ints[0];\n"
         "       const int DESCRIPTORSIZE = ints[1];\n"
         "       const int mipEnd = ints[2];\n"
@@ -300,6 +381,22 @@ void initOpenCL() {
         "                   case 13: kp = refineKeyPoint(s13,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
         "                   case 14: kp = refineKeyPoint(s14,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
         "                   case 15: kp = refineKeyPoint(s15,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 16: kp = refineKeyPoint( sb0,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 17: kp = refineKeyPoint( sb1,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 18: kp = refineKeyPoint( sb2,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 19: kp = refineKeyPoint( sb3,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 20: kp = refineKeyPoint( sb4,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 21: kp = refineKeyPoint( sb5,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 22: kp = refineKeyPoint( sb6,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 23: kp = refineKeyPoint( sb7,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 24: kp = refineKeyPoint( sb8,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 25: kp = refineKeyPoint( sb9,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 26: kp = refineKeyPoint(sb10,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 27: kp = refineKeyPoint(sb11,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 28: kp = refineKeyPoint(sb12,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 29: kp = refineKeyPoint(sb13,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 30: kp = refineKeyPoint(sb14,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 31: kp = refineKeyPoint(sb15,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
         "               };\n"
         "            }\n"
         "       }\n"
@@ -326,8 +423,8 @@ void initOpenCL() {
 }
 
 void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
-    if (mipMaps.size() >= 16) {
-        printf("Error: too many mipmaps\n");
+    if (mipMaps.size() >= MAXMIPMAPS) {
+        printf("Error: too many mipmaps %d of %d\n", mipMaps.size(), MAXMIPMAPS);
     }
     if (mipMaps.size() != openCLMipMapPointers.size()) {
         openCLMipMapPointers.resize(mipMaps.size());
@@ -477,13 +574,13 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<Ke
     refineKeyPoints_cl.setArg(a, openCLFloats); a++;
     refineKeyPoints_cl.setArg(a, openCLKeyPointsX); a++;
     refineKeyPoints_cl.setArg(a, openCLKeyPointsY); a++;
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 32; i++) {
         refineKeyPoints_cl.setArg(a, i < openCLMipMapPointers.size() ? openCLMipMaps[i] : openCLMipMaps[0]); a++;
     }
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 32; i++) {
         refineKeyPoints_cl.setArg(a, i < openCLBits.size() ? openCLBits[i] : openCLBits[0]); a++;
     }
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 32; i++) {
         refineKeyPoints_cl.setArg(a, i < openCLValid.size() ? openCLValid[i] : openCLValid[0]); a++;
     }
     refineKeyPoints_cl.setArg(a, openCLMipMapWidths); a++;

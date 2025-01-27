@@ -142,13 +142,15 @@ int main(int argc, char** argv)
         t00 = X_Query_perf_counter();
         refineKeyPoints_openCL(keyPoints, variancePoints, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = X_Query_perf_counter();
-        printf("Overall seconds: %f; Feature refinement seconds: %f; Feature add seconds:%f\n", double(t1 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
-        t0 = X_Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27) 
             break;
+
+        long long t4 = X_Query_perf_counter();
+        printf("Frame: %d, Keypoint: %d, Overall seconds: %f, Feature refinement seconds: %f, Feature add seconds:%f\n", steps, validKeyPoints, double(t4 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
+        t0 = X_Query_perf_counter();
 
         t2 = X_Query_perf_counter();
         const bool readd = true;

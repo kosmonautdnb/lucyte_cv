@@ -149,13 +149,16 @@ int main(int argc, char** argv)
             }
         }
         long long t1 = X_Query_perf_counter();
-        printf("Overall seconds: %f; Feature refinement seconds: %f\n", double(t1 - t0) / fr, double(t1 - t00) / fr);
-        t0 = X_Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, variancePoints, lastFrameKeyPoints, lastFrameVariancePoints));
         cv::setWindowTitle("keypoints", std::string("Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27) 
             break;
+
+        long long t2 = X_Query_perf_counter();
+        printf("Frame: %d, KeyPoints: %d, Overall seconds: %f, Feature refinement seconds: %f\n", steps, validKeyPoints, double(t2 - t0) / fr, double(t1 - t00) / fr);
+        t0 = X_Query_perf_counter();
+
         const bool readd = true;
         if (readd) {
             const int width = mipmaps2[0].cols;
