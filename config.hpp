@@ -13,6 +13,7 @@ const int KEYPOINTCOUNT = 1000;
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
 #define CONFIG_OK 2
+#define CONFIG_MIP 3
 #define CONFIG CONFIG_GOOD
 
 #define DESCRIPTORSHAPE_64 0
@@ -47,6 +48,17 @@ float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
 float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
 int STEPCOUNT = 50;
 float STEPSIZE = 0.004f;
+float DESCRIPTORSCALE = 5.f;
+bool BOOLSTEPPING = false;
+bool ONLYVALID = false;
+#endif
+
+#if CONFIG == 3
+float MIPSCALE = 0.72f;
+float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
+float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
+int STEPCOUNT = 25;
+float STEPSIZE = 0.003f;
 float DESCRIPTORSCALE = 5.f;
 bool BOOLSTEPPING = false;
 bool ONLYVALID = false;

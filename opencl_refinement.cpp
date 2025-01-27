@@ -158,7 +158,7 @@ void initOpenCL() {
         "               xya += gr * fast_length(d2 - d1);\n"
         "           }\n"
         "       }\n"
-        "       xya = normalize(xya) * (descriptorScale * step);\n"
+        "       xya = normalize(xya) * (step / mipScale);\n"
         "       float2 r = kpxy + (float2)(cosa * xya.x + sina * xya.y, sina * xya.x + cosa * xya.y);\n"
         "       const bool clipping = false; if (clipping) {\n"
         "           const int w = (int)floor((float)width / mipScale);\n"
@@ -326,6 +326,9 @@ void initOpenCL() {
 }
 
 void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
+    if (mipMaps.size() >= 16) {
+        printf("Error: too many mipmaps\n");
+    }
     if (mipMaps.size() != openCLMipMapPointers.size()) {
         openCLMipMapPointers.resize(mipMaps.size());
         for (int i = 0; i < mipMaps.size(); i++) {
