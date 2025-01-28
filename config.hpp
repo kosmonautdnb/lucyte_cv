@@ -29,7 +29,6 @@ int STEPCOUNT = 100;
 float STEPSIZE = 0.002f;
 float DESCRIPTORSCALE = 5.f;
 bool BOOLSTEPPING = false;
-bool ONLYVALID = false;
 #endif
 
 #if CONFIG == 1
@@ -40,7 +39,6 @@ int STEPCOUNT = 25;
 float STEPSIZE = 0.002f;
 float DESCRIPTORSCALE = 5.f;
 bool BOOLSTEPPING = false;
-bool ONLYVALID = false;
 #endif
 
 #if CONFIG == 2
@@ -51,7 +49,6 @@ int STEPCOUNT = 50;
 float STEPSIZE = 0.004f;
 float DESCRIPTORSCALE = 5.f;
 bool BOOLSTEPPING = false;
-bool ONLYVALID = false;
 #endif
 
 #if CONFIG == 3
@@ -62,7 +59,6 @@ int STEPCOUNT = 12;
 float STEPSIZE = 0.0035f;
 float DESCRIPTORSCALE = 5.f;
 bool BOOLSTEPPING = false;
-bool ONLYVALID = false;
 #endif
 
 #if DESCRIPTORSHAPE == 0

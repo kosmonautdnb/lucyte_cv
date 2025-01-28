@@ -6,6 +6,14 @@
 #include "refinement.hpp"
 #include "opencl_refinement.hpp"
 
+#ifdef _MSC_VER
+#define X_Query_perf_counter() _Query_perf_counter()
+#define X_Query_perf_frequency() _Query_perf_frequency()
+#else
+#define X_Query_perf_counter() 0
+#define X_Query_perf_frequency() 1
+#endif
+
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
@@ -155,6 +163,11 @@ int main(int argc, char** argv)
         uploadDescriptors_openCL(i, searchForDescriptors);
     }
 
+    long long t0 = X_Query_perf_counter();;
+    long long t2 = X_Query_perf_counter();;
+    long long t3 = X_Query_perf_counter();;
+    long long t00 = X_Query_perf_counter();;
+    long long fr = X_Query_perf_frequency();
     int readded = 0;
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
@@ -163,13 +176,21 @@ int main(int argc, char** argv)
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
 
+        t00 = X_Query_perf_counter();
         refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        long long t1 = X_Query_perf_counter();
 
         video.write(output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors));
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT) + ", readd " + std::to_string(readded));
         readded = 0;
         if (cv::waitKey(1) == 27) 
             break;
+
+        long long t4 = X_Query_perf_counter();
+        printf("Frame: %d, Keypoint: %d, Overall seconds: %f, Feature refinement seconds: %f, Feature add seconds:%f\n", steps, validKeyPoints, double(t4 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
+        t0 = X_Query_perf_counter();
+
+        t2 = X_Query_perf_counter();
         const bool readd = true;
         if (readd) {
             const int width = mipmaps2[0].cols;
@@ -197,6 +218,7 @@ int main(int argc, char** argv)
                     errors[j] = 0;
                 }
             }
+            t3 = X_Query_perf_counter();
         }
 
         uploadKeyPoints_openCL(keyPoints);

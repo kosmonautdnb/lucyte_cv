@@ -3,14 +3,13 @@
 #include <math.h>
 #include <omp.h>
 
-extern bool ONLYVALID;
 extern int DESCRIPTORSIZE;
 
 int texf(const unsigned char* s, const int x, const int y, const int width, const int height) {
     const int xr = x >> 10;
     const int yr = y >> 10;
     if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1))
-        return 0; // invalid but put some value in so that the compares always have the same result here
+        return 0;
     s += xr + yr * width;
     const unsigned short a = *((unsigned short*)(s));
     const unsigned short b = *((unsigned short*)(s + width));
@@ -41,7 +40,6 @@ float sampleDescriptor(const KeyPoint& kp, Descriptor& d, const unsigned char* s
         const int l2 = texf(s, kp2x + int(descriptorSize * descriptorsX2[b]), kp2y + int(descriptorSize * descriptorsY2[b]), width, height);
         h += abs(l2 - l1);
         d.bits[b / 32]  |= (l2 < l1 ? 1 : 0) << (b & 31);
-        d.valid[b / 32] |= ((l1 < 0 || l2 < 0) ? 0 : 1) << (b & 31);
     }
     return float(h) / float(DESCRIPTORSIZE * 1024);
 }
@@ -65,13 +63,6 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
         const int d2y = kp2y + int(-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);
         const int l1 = texf(s, d1x, d1y, width, height);
         const int l2 = texf(s, d2x, d2y, width, height);
-        if (ONLYVALID) {
-            int v1 = (toSearch.valid[b>>5] >> (b & 31)) & 1;
-            int v2 = ((l1 < 0 || l2 < 0) ? 0 : 1);
-            if ((v1 != 1 || v2 != 1)) {
-                continue;
-            }
-        }
         const int b1 = (toSearch.bits[b>>5] >> (b & 31)) & 1;
         const int b2 = (l2 < l1 ? 1 : 0);
         if (b2 != b1) {

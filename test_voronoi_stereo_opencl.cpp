@@ -218,8 +218,10 @@ int main(int argc, char** argv)
             keyPointsRight, errorsRight, lastFrameKeyPointsRight, lastFrameErrorsRight);
         video.write(m);
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - stereoFirstFrame) + " of " + std::to_string(stereoLastFrame - stereoFirstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
+
         if (cv::waitKey(1) == 27)
             break;
+
         const bool readd = true;
         if (readd) {
             const int width = mipmaps2[0].cols;

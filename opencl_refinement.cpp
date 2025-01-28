@@ -8,7 +8,6 @@
     #include <CL/cl2.hpp>
 #endif
 
-extern bool ONLYVALID;
 extern int DESCRIPTORSIZE;
 
 #define CLBLOCKING CL_TRUE
@@ -33,15 +32,11 @@ cl::Buffer openCLNewVariancePointsY;
 std::vector<float> openCLKpx;
 std::vector<float> openCLKpy;
 std::vector<cl::Buffer> openCLBits;
-std::vector<cl::Buffer> openCLValid;
 cl::Buffer openCLBitsFull;
-cl::Buffer openCLValidFull;
 cl::Kernel sampleDescriptor_cl;
 cl::Kernel refineKeyPoints_cl;
 std::vector<unsigned int> openCLDescriptorBits;
-std::vector<unsigned int> openCLDescriptorValid;
 std::vector<unsigned int> openCLDescriptorBitsFull;
-std::vector<unsigned int> openCLDescriptorValidFull;
 cl::Buffer openCLInts;
 cl::Buffer openCLFloats;
 cl::Buffer openCLDebug;
@@ -86,7 +81,7 @@ void initOpenCL() {
         "                                global const float *keyPointsX, global const float *keyPointsY,\n"
         "                                image2d_t s,\n"
         "                                constant const float2* descriptors1, constant const float2* descriptors2,\n"
-        "                                global unsigned int* dBits, global unsigned int* dValid, global float *debug) {\n"
+        "                                global unsigned int* dBits, global float *debug) {\n"
         "       const int DESCRIPTORSIZE = ints[1];\n"
         "       const int width = ints[2];\n"
         "       const int height = ints[3];\n"
@@ -97,19 +92,15 @@ void initOpenCL() {
         "       const int keyPointIndex = get_global_id(0);\n"
         "\n"
         "       const float2 kp = (float2)(keyPointsX[keyPointIndex] * mipScale,keyPointsY[keyPointIndex] * mipScale);\n"
-        "       unsigned int b = 0, v = 0;"
+        "       unsigned int b = 0;"
         "       for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
         "       {\n"
         "           const float l1 = tex(s, kp + descriptors1[i] * descriptorSize);\n"
         "           const float l2 = tex(s, kp + descriptors2[i] * descriptorSize);\n"
         "\n"
-        "           if ((i & 31)==0) {\n"
-        "               b=0;v=0;\n"
-        "           }\n"
+        "           if ((i & 31)==0) b=0;\n"
         "           b |= (l2 < l1 ? 1 : 0) << (i & 31);\n"
-        "           v |= ((l1 < 0 || l2 < 0) ? 0 : 1) << (i & 31);\n"
-        "           dBits[(i+keyPointIndex*DESCRIPTORSIZE)/32]=b;"
-        "           dValid[(i+keyPointIndex*DESCRIPTORSIZE)/32]=v;"
+        "           dBits[(i+keyPointIndex*DESCRIPTORSIZE)/32]=b;\n"
         "       }\n"
         "   }\n"
         "\n"
@@ -120,9 +111,9 @@ void initOpenCL() {
         "       return (float)(b & 0xffff) / (float)0x10000;\n"
         "   }\n"
         "\n"
-        "   float2 refineKeyPoint( const image2d_t s, global unsigned int* dBits, global unsigned int* dValid, const int keyPointIndex, const float2 kpxy, \n"
+        "   float2 refineKeyPoint( const image2d_t s, global unsigned int* dBits, const int keyPointIndex, const float2 kpxy, \n"
         "                           const float mipScale, const float descriptorScale, const float angle, const float step, const int DESCRIPTORSIZE, \n"
-        "                           const int ONLYVALID,const int width,const int height,const int stepping,\n"
+        "                           const int width,const int height,const int stepping,\n"
         "                           constant const float2* descriptors1, constant const float2* descriptors2,\n"
         "                           global float *debug) {\n"
         "       int dIndex = keyPointIndex * DESCRIPTORSIZE;\n"
@@ -143,13 +134,6 @@ void initOpenCL() {
         "           const float2 d2 = kp + (float2)(dot(cosid,dp2), dot(nsicd,dp2));\n"
         "           const float l1 = tex(s, d1);\n"
         "           const float l2 = tex(s, d2);\n"
-        "           if (ONLYVALID!=0) {\n"
-        "               unsigned char v1 = (dValid[db>>5]>>(db & 31)) & 1;\n"
-        "               unsigned char v2 = ((l1 < 0 || l2 < 0) ? 0 : 1);\n"
-        "               if ((v1 == 0 || v2 == 0)) {\n"
-        "                   continue;\n"
-        "               }\n"
-        "           }\n"
         "           const unsigned char b2 = (l2 < l1 ? 1 : 0);\n"
         "           if (b2 != ( (dBits[db>>5]>>(db & 31)) & 1 )) {\n"
         "               float2  gr  = (float2)( tex(s, d2 - gdx) - tex(s, d2 + gdx) , tex(s, d2 - gdy) - tex(s, d2 + gdy) )\n" 
@@ -238,38 +222,6 @@ void initOpenCL() {
         "                        global const unsigned int* dbBits13,\n"
         "                        global const unsigned int* dbBits14,\n"
         "                        global const unsigned int* dbBits15,\n"
-        "                        global const unsigned int* dValid0,\n"
-        "                        global const unsigned int* dValid1,\n"
-        "                        global const unsigned int* dValid2,\n"
-        "                        global const unsigned int* dValid3,\n"
-        "                        global const unsigned int* dValid4,\n"
-        "                        global const unsigned int* dValid5,\n"
-        "                        global const unsigned int* dValid6,\n"
-        "                        global const unsigned int* dValid7,\n"
-        "                        global const unsigned int* dValid8,\n"
-        "                        global const unsigned int* dValid9,\n"
-        "                        global const unsigned int* dValid10,\n"
-        "                        global const unsigned int* dValid11,\n"
-        "                        global const unsigned int* dValid12,\n"
-        "                        global const unsigned int* dValid13,\n"
-        "                        global const unsigned int* dValid14,\n"
-        "                        global const unsigned int* dValid15,\n"
-        "                        global const unsigned int* dbValid0,\n"
-        "                        global const unsigned int* dbValid1,\n"
-        "                        global const unsigned int* dbValid2,\n"
-        "                        global const unsigned int* dbValid3,\n"
-        "                        global const unsigned int* dbValid4,\n"
-        "                        global const unsigned int* dbValid5,\n"
-        "                        global const unsigned int* dbValid6,\n"
-        "                        global const unsigned int* dbValid7,\n"
-        "                        global const unsigned int* dbValid8,\n"
-        "                        global const unsigned int* dbValid9,\n"
-        "                        global const unsigned int* dbValid10,\n"
-        "                        global const unsigned int* dbValid11,\n"
-        "                        global const unsigned int* dbValid12,\n"
-        "                        global const unsigned int* dbValid13,\n"
-        "                        global const unsigned int* dbValid14,\n"
-        "                        global const unsigned int* dbValid15,\n"
         "                        global const int *widths,\n"
         "                        global const int *heights,\n"
         "                        constant const float2* descriptors1, constant const float2* descriptors2,\n"
@@ -277,7 +229,6 @@ void initOpenCL() {
         "                        global float *dVariancePointsX, global float *dVariancePointsY,\n"
         "                        global float *debug) {\n"
         "       global const unsigned int *dBits[32];\n"
-        "       global const unsigned int *dValid[32];\n"
         "       dBits[0] = dBits0;\n"
         "       dBits[1] = dBits1;\n"
         "       dBits[2] = dBits2;\n"
@@ -310,44 +261,11 @@ void initOpenCL() {
         "       dBits[29] = dbBits13;\n"
         "       dBits[30] = dbBits14;\n"
         "       dBits[31] = dbBits15;\n"
-        "       dValid[0] = dValid0;\n"
-        "       dValid[1] = dValid1;\n"
-        "       dValid[2] = dValid2;\n"
-        "       dValid[3] = dValid3;\n"
-        "       dValid[4] = dValid4;\n"
-        "       dValid[5] = dValid5;\n"
-        "       dValid[6] = dValid6;\n"
-        "       dValid[7] = dValid7;\n"
-        "       dValid[8] = dValid8;\n"
-        "       dValid[9] = dValid9;\n"
-        "       dValid[10] = dValid10;\n"
-        "       dValid[11] = dValid11;\n"
-        "       dValid[12] = dValid12;\n"
-        "       dValid[13] = dValid13;\n"
-        "       dValid[14] = dValid14;\n"
-        "       dValid[15] = dValid15;\n"
-        "       dValid[16] = dbValid0;\n"
-        "       dValid[17] = dbValid1;\n"
-        "       dValid[18] = dbValid2;\n"
-        "       dValid[19] = dbValid3;\n"
-        "       dValid[20] = dbValid4;\n"
-        "       dValid[21] = dbValid5;\n"
-        "       dValid[22] = dbValid6;\n"
-        "       dValid[23] = dbValid7;\n"
-        "       dValid[24] = dbValid8;\n"
-        "       dValid[25] = dbValid9;\n"
-        "       dValid[26] = dbValid10;\n"
-        "       dValid[27] = dbValid11;\n"
-        "       dValid[28] = dbValid12;\n"
-        "       dValid[29] = dbValid13;\n"
-        "       dValid[30] = dbValid14;\n"
-        "       dValid[31] = dbValid15;\n"
         "       const int KEYPOINTCOUNT = ints[0];\n"
         "       const int DESCRIPTORSIZE = ints[1];\n"
         "       const int mipEnd = ints[2];\n"
         "       const int STEPCOUNT = ints[3];\n"
-        "       const int ONLYVALID = ints[4];\n"
-        "       const int stepping = ints[5];\n"
+        "       const int stepping = ints[4];\n"
         "       const float MIPSCALE = floats[0];\n"
         "       const float STEPSIZE = floats[1];\n"
         "       const float SCALEINVARIANCE = floats[2];\n"
@@ -365,38 +283,38 @@ void initOpenCL() {
         "               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;\n"
         "               const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;\n"
         "               switch(i) {\n"
-        "                   case 0:  kp = refineKeyPoint( s0,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 1:  kp = refineKeyPoint( s1,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 2:  kp = refineKeyPoint( s2,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 3:  kp = refineKeyPoint( s3,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 4:  kp = refineKeyPoint( s4,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 5:  kp = refineKeyPoint( s5,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 6:  kp = refineKeyPoint( s6,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 7:  kp = refineKeyPoint( s7,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 8:  kp = refineKeyPoint( s8,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 9:  kp = refineKeyPoint( s9,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 10: kp = refineKeyPoint(s10,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 11: kp = refineKeyPoint(s11,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 12: kp = refineKeyPoint(s12,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 13: kp = refineKeyPoint(s13,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 14: kp = refineKeyPoint(s14,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 15: kp = refineKeyPoint(s15,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 16: kp = refineKeyPoint( sb0,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 17: kp = refineKeyPoint( sb1,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 18: kp = refineKeyPoint( sb2,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 19: kp = refineKeyPoint( sb3,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 20: kp = refineKeyPoint( sb4,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 21: kp = refineKeyPoint( sb5,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 22: kp = refineKeyPoint( sb6,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 23: kp = refineKeyPoint( sb7,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 24: kp = refineKeyPoint( sb8,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 25: kp = refineKeyPoint( sb9,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 26: kp = refineKeyPoint(sb10,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 27: kp = refineKeyPoint(sb11,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 28: kp = refineKeyPoint(sb12,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 29: kp = refineKeyPoint(sb13,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 30: kp = refineKeyPoint(sb14,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-        "                   case 31: kp = refineKeyPoint(sb15,dBits[i],dValid[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE,ONLYVALID, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 0:  kp = refineKeyPoint( s0,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 1:  kp = refineKeyPoint( s1,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 2:  kp = refineKeyPoint( s2,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 3:  kp = refineKeyPoint( s3,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 4:  kp = refineKeyPoint( s4,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 5:  kp = refineKeyPoint( s5,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 6:  kp = refineKeyPoint( s6,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 7:  kp = refineKeyPoint( s7,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 8:  kp = refineKeyPoint( s8,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 9:  kp = refineKeyPoint( s9,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 10: kp = refineKeyPoint(s10,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 11: kp = refineKeyPoint(s11,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 12: kp = refineKeyPoint(s12,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 13: kp = refineKeyPoint(s13,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 14: kp = refineKeyPoint(s14,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 15: kp = refineKeyPoint(s15,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 16: kp = refineKeyPoint( sb0,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 17: kp = refineKeyPoint( sb1,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 18: kp = refineKeyPoint( sb2,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 19: kp = refineKeyPoint( sb3,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 20: kp = refineKeyPoint( sb4,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 21: kp = refineKeyPoint( sb5,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 22: kp = refineKeyPoint( sb6,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 23: kp = refineKeyPoint( sb7,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 24: kp = refineKeyPoint( sb8,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 25: kp = refineKeyPoint( sb9,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 26: kp = refineKeyPoint(sb10,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 27: kp = refineKeyPoint(sb11,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 28: kp = refineKeyPoint(sb12,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 29: kp = refineKeyPoint(sb13,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 30: kp = refineKeyPoint(sb14,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+        "                   case 31: kp = refineKeyPoint(sb15,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
         "               };\n"
         "            }\n"
         "       }\n"
@@ -494,24 +412,19 @@ void uploadDescriptors_openCL(const int mipMap, const std::vector<std::vector<De
     if (mipMap >= openCLBits.size() || (descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits.size()) {
         if ((descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits.size()) {
             openCLDescriptorBits.resize(descriptors.size() * Descriptor::uint32count);
-            openCLDescriptorValid.resize(descriptors.size() * Descriptor::uint32count);
         }
         openCLBits.resize(mipMap + 1);
-        openCLValid.resize(mipMap + 1);
         for (int i = 0; i < mipMap + 1; i++) {
             openCLBits[i] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorBits.size());
-            openCLValid[i] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorValid.size());
         }
     }
 
     for (int i = descriptors.size() - 1; i >= 0; i--) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
             openCLDescriptorBits[j + i * Descriptor::uint32count] = descriptors[i].bits[j];
-            openCLDescriptorValid[j + i * Descriptor::uint32count] = descriptors[i].valid[j];
         }
     }
     openCLQueue.enqueueWriteBuffer(openCLBits[mipMap], CLBLOCKING, 0, sizeof(unsigned int) * openCLDescriptorBits.size(), &(openCLDescriptorBits[0]));
-    openCLQueue.enqueueWriteBuffer(openCLValid[mipMap], CLBLOCKING, 0, sizeof(unsigned int) * openCLDescriptorValid.size(), &(openCLDescriptorValid[0]));
 }
 
 void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descriptor>>& destMips, const unsigned char* s, const float descriptorScale, const int width, const int height, const float mipScale) {
@@ -519,9 +432,7 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
 
     if ((dest.size() * Descriptor::uint32count) != openCLDescriptorBitsFull.size()) {
         openCLDescriptorBitsFull.resize(dest.size() * Descriptor::uint32count);
-        openCLDescriptorValidFull.resize(dest.size() * Descriptor::uint32count);
         openCLBitsFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorBitsFull.size());
-        openCLValidFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorValidFull.size());
     }
 
     openCLInt[0] = dest.size();
@@ -540,17 +451,14 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     sampleDescriptor_cl.setArg(5, openCLDescriptors1);
     sampleDescriptor_cl.setArg(6, openCLDescriptors2);
     sampleDescriptor_cl.setArg(7, openCLBitsFull);
-    sampleDescriptor_cl.setArg(8, openCLValidFull);
-    sampleDescriptor_cl.setArg(9, openCLDebug);
+    sampleDescriptor_cl.setArg(8, openCLDebug);
     openCLQueue.enqueueNDRangeKernel(sampleDescriptor_cl, cl::NullRange, cl::NDRange(openCLKpx.size()), cl::NullRange);
     openCLQueue.enqueueReadBuffer(openCLBitsFull, CLBLOCKING, 0, openCLDescriptorBitsFull.size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[0]));
-    openCLQueue.enqueueReadBuffer(openCLValidFull, CLBLOCKING, 0, openCLDescriptorValidFull.size() * sizeof(unsigned int), &(openCLDescriptorValidFull[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
     openCLQueue.finish();
     for (int i = 0; i < dest.size(); ++i) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
              dest[i].bits[j] = openCLDescriptorBitsFull[i * Descriptor::uint32count + j];
-             dest[i].valid[j] = openCLDescriptorValidFull[i * Descriptor::uint32count + j];
         }
     }
 }
@@ -563,8 +471,7 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<fl
     openCLInt[1] = DESCRIPTORSIZE;
     openCLInt[2] = mipEnd;
     openCLInt[3] = STEPCOUNT;
-    openCLInt[4] = ONLYVALID ? 1 : 0;
-    openCLInt[5] = stepping ? 1 : 0;
+    openCLInt[4] = stepping ? 1 : 0;
     openCLFloat[0] = MIPSCALE;
     openCLFloat[1] = STEPSIZE;
     openCLFloat[2] = SCALEINVARIANCE;
@@ -581,9 +488,6 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<fl
     }
     for (int i = 0; i < 32; i++) {
         refineKeyPoints_cl.setArg(a, i < openCLBits.size() ? openCLBits[i] : openCLBits[0]); a++;
-    }
-    for (int i = 0; i < 32; i++) {
-        refineKeyPoints_cl.setArg(a, i < openCLValid.size() ? openCLValid[i] : openCLValid[0]); a++;
     }
     refineKeyPoints_cl.setArg(a, openCLMipMapWidths); a++;
     refineKeyPoints_cl.setArg(a, openCLMipMapHeights); a++;

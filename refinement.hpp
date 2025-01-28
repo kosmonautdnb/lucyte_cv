@@ -14,11 +14,9 @@ class Descriptor
 public:
     static const int uint32count = (MAXDESCRIPTORSIZE + 31) / 32;
     uint32_t bits[uint32count];
-    uint32_t valid[uint32count];
     void clear()
     {
         memset(bits, 0, sizeof(bits));
-        memset(valid, 0, sizeof(valid));
     }
 };
 
