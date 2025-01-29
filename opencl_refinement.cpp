@@ -346,7 +346,7 @@ void initOpenCL() {
 
 void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
     if (mipMaps.size() >= MAXMIPMAPS) {
-        printf("Error: too many mipmaps %d of %d\n", mipMaps.size(), MAXMIPMAPS);
+        printf("Error: too many mipmaps %d of %d\n", int(mipMaps.size()), MAXMIPMAPS);
     }
     if (mipMaps.size() != openCLMipMapPointers.size()) {
         openCLMipMapPointers.resize(mipMaps.size());
@@ -361,7 +361,7 @@ void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
     }
     for (int i = 0; i < mipMaps.size(); i++) {
         cl::array<cl::size_type, 2> origin = { 0,0 };
-        cl::array<cl::size_type, 2> region = { mipMaps[i].cols, mipMaps[i].rows };
+        cl::array<cl::size_type, 2> region = { cl::size_type(mipMaps[i].cols), cl::size_type(mipMaps[i].rows) };
         if (openCLQueue.enqueueWriteImage(openCLMipMaps[i], CLBLOCKING, origin, region, 0, 0, (uchar* const)mipMaps[i].data) != CL_SUCCESS) 
             exit(1);
     }

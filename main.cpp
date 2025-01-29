@@ -124,7 +124,7 @@ int main(int argc, char** argv)
         for (int v = 0; v < (CHECKVARIANCE ? 2 : 1); v++) {
 #pragma omp parallel for num_threads(64)
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                KeyPoint kp = { mipmaps2[0].cols * 0.5, mipmaps2[0].rows * 0.5 };
+                KeyPoint kp = { mipmaps2[0].cols * 0.5f, mipmaps2[0].rows * 0.5f };
                 for (int i = mipEnd; i >= 0; i--) {
                     const int width = mipmaps2[i].cols;
                     const int height = mipmaps2[i].rows;

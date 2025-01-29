@@ -14,11 +14,11 @@ const double RANDOMX = 50;
 const double RANDOMY = 50;
 int randomLikeIndex = 0;
 
-const double randomLike(const int index) {
+const float randomLike(const int index) {
     int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
     b = b ^ (b << 8) ^ (b * 23);
     b >>= 3;
-    return (double)(b & 0xffff) / 0x10000;
+    return (float)(b & 0xffff) / 0x10000;
 }
 
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
