@@ -86,7 +86,8 @@ int main(int argc, char** argv)
     uploadDescriptorShape_openCL();
 
     cv::Mat mat1 = loadImage(firstFrame);
-    cv::VideoWriter video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
+    cv::VideoWriter video;
+    if (outputVideo) video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(mipmaps1);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
@@ -142,7 +143,8 @@ int main(int argc, char** argv)
         std::vector<float> lastFrameErrors = errors;
         refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
-        video.write(output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors));
+        cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);
+        if (outputVideo) video.write(v);
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27) 
             break;
@@ -170,7 +172,7 @@ int main(int argc, char** argv)
         }
     }
 
-    video.release();
+    if (outputVideo) video.release();
 
     return 0;
 }
