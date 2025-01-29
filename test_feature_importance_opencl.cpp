@@ -20,7 +20,7 @@ const float MAXVARIANCEINPIXELS = 1.0;
 const float MIPEND = 1.0;
 const bool RESAMPLEONVARIANCE = true;
 const float RESAMPLEONVARIANCERADIUS = 1.f;
-const float DESCRIPTIVITYSTEPS = 10;
+const int DESCRIPTIVITYSTEPS = 10;
 const float OUTLIERPERCENTAGE = 20.f;
 const float OUTLIEREXPAND = 200.f;
 
@@ -136,6 +136,7 @@ int main(int argc, char** argv)
     std::vector<float> errors;
     keyPoints.resize(KEYPOINTCOUNT);
     errors.resize(KEYPOINTCOUNT);
+#pragma omp parallel for num_threads(64)
     for (int i = 0; i < keyPoints.size(); ++i) {
         float dBest = -1;
         KeyPoint kHere, kBest;
@@ -197,6 +198,7 @@ int main(int argc, char** argv)
         if (readd) {
             const int width = mipmaps2[0].cols;
             const int height = mipmaps2[0].rows;
+            static int rlk = 0;
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
                 KeyPoint &k = keyPoints[j];
                 const float LEFT = 10;
@@ -206,9 +208,11 @@ int main(int argc, char** argv)
                 if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM) || errors[j] >= MAXVARIANCEINPIXELS) {
                     float dBest = -1;
                     KeyPoint kHere, kBest;
+#pragma omp parallel for num_threads(64)
                     for (int t = 0; t < DESCRIPTIVITYSTEPS; t++) {
-                        kHere.x = frrand2(mipmaps1[0].cols);
-                        kHere.y = frrand2(mipmaps1[0].rows);
+                        kHere.x = randomLike(rlk)*mipmaps1[0].cols;
+                        kHere.y = randomLike(rlk*3+11231)*mipmaps1[0].rows;
+                        rlk += 123;
                         float d = descriptivity(mipmaps1, kHere, mipEnd);
                         if (d > dBest) {
                             dBest = d;

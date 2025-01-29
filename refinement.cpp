@@ -37,7 +37,7 @@ float sampleDescriptor(const KeyPoint& kp, Descriptor& d, const unsigned char* s
         const int l1 = texf(s, kp2x + int(descriptorSize * descriptorsX1[b]), kp2y + int(descriptorSize * descriptorsY1[b]), width, height);
         const int l2 = texf(s, kp2x + int(descriptorSize * descriptorsX2[b]), kp2y + int(descriptorSize * descriptorsY2[b]), width, height);
         h += abs(l2 - l1);
-        d.bits[b / 32]  |= (l2 < l1 ? 1 : 0) << (b & 31);
+        d.bits[b / 32] |= (l2 < l1 ? 1 : 0) << (b & 31);
     }
     return float(h) / float(DESCRIPTORSIZE * 1024);
 }
