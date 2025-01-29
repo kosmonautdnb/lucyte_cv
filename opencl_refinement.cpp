@@ -1,5 +1,5 @@
 // Lucyte Created on: 21.01.2025 by Stefan Mader
-#include "refinement.hpp"
+#include "opencl_refinement.hpp"
 #include <opencv2/opencv.hpp>
 // not optimized, yet
 #ifdef __APPLE__
@@ -346,6 +346,21 @@ void initOpenCL() {
     refineKeyPoints_cl = cl::Kernel(openCLProgram, "refineKeyPoints_kernel");
 }
 
+void uploadDescriptorShape_openCL() {
+    std::vector<float> descriptors1;
+    std::vector<float> descriptors2;
+    descriptors1.resize(DESCRIPTORSIZE * 2);
+    descriptors2.resize(DESCRIPTORSIZE * 2);
+    for (int i = 0; i < DESCRIPTORSIZE; i++) {
+        descriptors1[i * 2 + 0] = descriptorsX1[i];
+        descriptors1[i * 2 + 1] = descriptorsY1[i];
+        descriptors2[i * 2 + 0] = descriptorsX2[i];
+        descriptors2[i * 2 + 1] = descriptorsY2[i];
+    }
+    openCLQueue.enqueueWriteBuffer(openCLDescriptors1, CLBLOCKING, 0, sizeof(float) * 2 * DESCRIPTORSIZE, &(descriptors1[0]));
+    openCLQueue.enqueueWriteBuffer(openCLDescriptors2, CLBLOCKING, 0, sizeof(float) * 2 * DESCRIPTORSIZE, &(descriptors2[0]));
+}
+
 void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
     if (mipMaps.size() >= MAXMIPMAPS) {
         printf("Error: too many mipmaps %d of %d\n", int(mipMaps.size()), MAXMIPMAPS);
@@ -372,21 +387,6 @@ void uploadMipMaps_openCL(const std::vector<cv::Mat> &mipMaps) {
     for (int i = 0; i < mipMaps.size(); i++) mipMapHeights[i] = mipMaps[i].rows;
     openCLQueue.enqueueWriteBuffer(openCLMipMapWidths, CLBLOCKING, 0, sizeof(unsigned int) * mipMapWidths.size(), &(mipMapWidths[0]));
     openCLQueue.enqueueWriteBuffer(openCLMipMapHeights, CLBLOCKING, 0, sizeof(unsigned int) * mipMapHeights.size(), &(mipMapHeights[0]));
-}
-
-void uploadDescriptorShape_openCL() {
-    std::vector<float> descriptors1;
-    std::vector<float> descriptors2;
-    descriptors1.resize(DESCRIPTORSIZE * 2);
-    descriptors2.resize(DESCRIPTORSIZE * 2);
-    for (int i = 0; i < DESCRIPTORSIZE; i++) {
-        descriptors1[i * 2 + 0] = descriptorsX1[i];
-        descriptors1[i * 2 + 1] = descriptorsY1[i];
-        descriptors2[i * 2 + 0] = descriptorsX2[i];
-        descriptors2[i * 2 + 1] = descriptorsY2[i];
-    }
-    openCLQueue.enqueueWriteBuffer(openCLDescriptors1, CLBLOCKING, 0, sizeof(float)*2*DESCRIPTORSIZE, &(descriptors1[0]));
-    openCLQueue.enqueueWriteBuffer(openCLDescriptors2, CLBLOCKING, 0, sizeof(float)*2*DESCRIPTORSIZE, &(descriptors2[0]));
 }
 
 void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {

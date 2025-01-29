@@ -98,6 +98,7 @@ int main(int argc, char** argv)
     if (outputVideo) video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(0,mipmaps1);
+    uploadMipMaps_openCL_waitfor(0);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
@@ -109,6 +110,7 @@ int main(int argc, char** argv)
         keyPoints[i].y = frrand2(mipmaps1[0].rows);
     }
     uploadKeyPoints_openCL(0,keyPoints);
+    uploadKeyPoints_openCL_waitfor(0);
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
@@ -117,9 +119,10 @@ int main(int argc, char** argv)
         const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
-        searchForDescriptors[i].resize(keyPoints.size());
-        sampleDescriptors_openCL(0,i,searchForDescriptors,mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        sampleDescriptors_openCL(0,i,keyPoints.size(), mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        sampleDescriptors_openCL_waitfor(0, i, searchForDescriptors);
         uploadDescriptors_openCL(0,i, searchForDescriptors);
+        uploadDescriptors_openCL_waitfor(0);
     }
 
     long long t0 = X_Query_perf_counter();;
@@ -131,11 +134,13 @@ int main(int argc, char** argv)
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         uploadMipMaps_openCL(0,mipmaps2);
+        uploadMipMaps_openCL_waitfor(0);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        refineKeyPoints_openCL(0,keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL_waitfor(0, keyPoints, errors);
         long long t1 = X_Query_perf_counter();
 
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);
@@ -168,6 +173,7 @@ int main(int argc, char** argv)
         }
 
         uploadKeyPoints_openCL(0,keyPoints);
+        uploadKeyPoints_openCL_waitfor(0);
 
         const bool resample = true;
         if (resample) {
@@ -178,14 +184,16 @@ int main(int argc, char** argv)
                 const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
-                resampledDescriptors[i].resize(keyPoints.size());
-                sampleDescriptors_openCL(0,i,resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                sampleDescriptors_openCL(0,i,keyPoints.size(), mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                sampleDescriptors_openCL_waitfor(0, i, resampledDescriptors);
+
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
                     }
                 }
                 uploadDescriptors_openCL(0,i, searchForDescriptors);
+                uploadDescriptors_openCL_waitfor(0);
             }
         }
         t3 = X_Query_perf_counter();
