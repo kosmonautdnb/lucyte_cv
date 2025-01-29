@@ -263,7 +263,7 @@ int main(int argc, char** argv)
     cv::VideoWriter video;
     if (WRITEVIDEO) video = cv::VideoWriter(outputBenchmarkVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(512 * 3, 512 * 2), true);
 
-    cv::Mat benchImage = cv::imread("bench.png", cv::IMREAD_COLOR);
+    cv::Mat benchImage = cv::imread(benchmarkPictureFileName, cv::IMREAD_COLOR);
     while (cv::waitKey(100) != 27) {
         cv::Mat mat = testFrame(benchImage);
         if (WRITEVIDEO) for (int i = 0; i < 5; i++) video.write(mat);

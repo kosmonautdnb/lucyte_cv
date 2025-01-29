@@ -70,13 +70,6 @@ const float RESAMPLEONVARIANCERADIUS = 1.f;
         const float d2y = kp2.y + (-sinad * descriptorsX2[b] + cosad * descriptorsY2[b]);\
         const int l1 = tex(s, d1x, d1y, width, height);\
         const int l2 = tex(s, d2x, d2y, width, height);\
-        if (ONLYVALID) {\
-            int v1 = (toSearch.valid[b / 32] >> (b & 31)) & 1;\
-            int v2 = ((l1 < 0 || l2 < 0) ? 0 : 1);\
-            if ((v1 != 1 || v2 != 1)) {\
-                continue;\
-            }\
-        }\
         int b1 = (toSearch.bits[b / 32] >> (b & 31)) & 1;\
         int b2 = (l2 < l1 ? 1 : 0);\
         if (b2 != b1) {\

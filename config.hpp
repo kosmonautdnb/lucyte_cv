@@ -5,6 +5,7 @@
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
+const char* benchmarkPictureFileName = "c:/!mad/bench.png";
 const double outputVideoFrameRate = 25;
 const double stereoOutputVideoFrameRate = 8;
 
