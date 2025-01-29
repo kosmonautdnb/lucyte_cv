@@ -458,9 +458,9 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     sampleDescriptor_cl.setArg(7, openCLBitsFull);
     sampleDescriptor_cl.setArg(8, openCLDebug);
     openCLQueue.enqueueNDRangeKernel(sampleDescriptor_cl, cl::NullRange, cl::NDRange(openCLKpx.size()), cl::NullRange);
+    openCLQueue.flush();
     openCLQueue.enqueueReadBuffer(openCLBitsFull, CLBLOCKING, 0, openCLDescriptorBitsFull.size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
-    openCLQueue.finish();
     for (int i = 0; i < dest.size(); ++i) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
              dest[i].bits[j] = openCLDescriptorBitsFull[i * Descriptor::uint32count + j];
@@ -468,7 +468,7 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     }
 }
 
-void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<float>& destErrors, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<float>& destErrors, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE, const std::function<void()> &parallel) {
     destErrors.resize(destKeyPoints.size());
     std::vector<KeyPoint> destVariancePoints;
     destVariancePoints.resize(destKeyPoints.size());
@@ -505,6 +505,8 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<fl
     refineKeyPoints_cl.setArg(a, openCLNewVariancePointsY); a++;
     refineKeyPoints_cl.setArg(a, openCLDebug); a++;
     openCLQueue.enqueueNDRangeKernel(refineKeyPoints_cl, cl::NullRange, cl::NDRange(openCLKpx.size() * 2), cl::NullRange);
+    openCLQueue.flush();
+    if (parallel != nullptr) parallel();
     std::vector<float> destKeyPointsX; destKeyPointsX.resize(destKeyPoints.size());
     std::vector<float> destKeyPointsY; destKeyPointsY.resize(destKeyPoints.size());
     std::vector<float> destVariancePointsX; destVariancePointsX.resize(destKeyPoints.size());
@@ -514,7 +516,6 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<fl
     openCLQueue.enqueueReadBuffer(openCLNewVariancePointsX, CLBLOCKING, 0, destVariancePointsX.size() * sizeof(float), &(destVariancePointsX[0]));
     openCLQueue.enqueueReadBuffer(openCLNewVariancePointsY, CLBLOCKING, 0, destVariancePointsY.size() * sizeof(float), &(destVariancePointsY[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
-    openCLQueue.finish();
     for (int i = 0; i < destKeyPoints.size(); i++) {
         destKeyPoints[i].x = (destKeyPointsX[i] + destVariancePointsX[i]) * 0.5f;
         destKeyPoints[i].y = (destKeyPointsY[i] + destVariancePointsY[i]) * 0.5f;

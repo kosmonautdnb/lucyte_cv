@@ -26,6 +26,7 @@ const float OUTLIEREXPAND = 200.f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
+std::vector<cv::Mat> mipmaps3;
 
 const float randomLike(const int index) {
     int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
@@ -171,15 +172,14 @@ int main(int argc, char** argv)
     long long t00 = X_Query_perf_counter();;
     long long fr = X_Query_perf_frequency();
     int readded = 0;
+    cv::Mat mat3 = loadImage(firstFrame); mipmaps3 = mipMaps(mat3);
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
-        cv::Mat mat2 = loadImage(steps);
-        mipmaps2 = mipMaps(mat2);
-        uploadMipMaps_openCL(mipmaps2);
+        cv::Mat mat2 = mat3; mipmaps2 = mipmaps3;  uploadMipMaps_openCL(mipmaps2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, [&]() {if (steps < lastFrame) { mat3 = loadImage(steps + 1); mipmaps3 = mipMaps(mat3); }});
         long long t1 = X_Query_perf_counter();
 
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);

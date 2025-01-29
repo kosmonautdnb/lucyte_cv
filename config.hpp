@@ -3,7 +3,7 @@
 
 #include "constants.hpp"
 
-#define FILESET 4
+#define FILESET 3
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
