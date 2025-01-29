@@ -2,6 +2,7 @@
 by Stefan Mader
 
 A novel feature/point tracking approach that uses the descriptors to locate the features in an image. Ensuring luminance invariance.
+Lucyte can run fully parallel, e.g. with OpenCL, but this is not yet supported.
 
 Night drive: https://www.youtube.com/watch?v=A_0tm-1DTm4
 
@@ -18,5 +19,3 @@ Stereo Vision Disparity/Depth: https://www.youtube.com/watch?v=sh3JB8mnVaY
 Day drive: https://www.youtube.com/watch?v=3C6wPafwNTQ
 
 ![ScreenShot](https://raw.github.com/kosmonautdnb/lucyte_cv/main/desc.png)
-
-Lucyte is not yet very fast even with OpenCL. However, most feature tracking tasks can take larger time steps and may be executed in parallel on dedicated hardware.
