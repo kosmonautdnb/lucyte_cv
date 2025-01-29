@@ -3,7 +3,6 @@
 #include <math.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
-#include "refinement.hpp"
 #include "opencl_refinement.hpp"
 
 const int SEED = 0x13337;

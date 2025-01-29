@@ -311,7 +311,7 @@ void initOpenCL() {
         printf(" No OpenCL platforms found. Check OpenCL installation!\n");
         exit(1);
     }
-    for (int i = 0; i < platforms.size(); i++)
+    for (int i = 0; i < int(platforms.size()); i++)
         printf("Available openCL platform: %s\n", platforms[i].getInfo<CL_PLATFORM_NAME>().c_str());
     openCLPlatform = platforms[0];
     printf("- Using openCL platform: %s\n", openCLPlatform.getInfo<CL_PLATFORM_NAME>().c_str());
@@ -322,7 +322,7 @@ void initOpenCL() {
         printf(" No OpenCL devices found. Check OpenCL installation!\n");
         exit(1);
     }
-    for (int i = 0; i < devices.size(); i++)
+    for (int i = 0; i < int(devices.size()); i++)
         printf("Available openCL device: %s\n", devices[i].getInfo<CL_DEVICE_NAME>().c_str());
     openCLDevice = devices[0];
     printf("- Using openCL device: %s\n", openCLDevice.getInfo<CL_DEVICE_NAME>().c_str());
@@ -400,7 +400,7 @@ void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {
         openCLNewVariancePointsX = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
         openCLNewVariancePointsY = cl::Buffer(openCLContext, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * keyPoints.size());
     }
-    for (int i = keyPoints.size() - 1; i >= 0; i--) {
+    for (int i = int(keyPoints.size()) - 1; i >= 0; i--) {
         openCLKpx[i] = keyPoints[i].x;
         openCLKpy[i] = keyPoints[i].y;
     }
@@ -421,7 +421,7 @@ void uploadDescriptors_openCL(const int mipMap, const std::vector<std::vector<De
         }
     }
 
-    for (int i = descriptors.size() - 1; i >= 0; i--) {
+    for (int i = int(descriptors.size()) - 1; i >= 0; i--) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
             openCLDescriptorBits[j + i * Descriptor::uint32count] = descriptors[i].bits[j];
         }
@@ -437,7 +437,7 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
         openCLBitsFull = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorBitsFull.size());
     }
 
-    openCLInt[0] = dest.size();
+    openCLInt[0] = int(dest.size());
     openCLInt[1] = DESCRIPTORSIZE;
     openCLInt[2] = width;
     openCLInt[3] = height;
@@ -459,7 +459,7 @@ void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descript
     openCLQueue.flush();
     openCLQueue.enqueueReadBuffer(openCLBitsFull, CLBLOCKING, 0, openCLDescriptorBitsFull.size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
-    for (int i = 0; i < dest.size(); ++i) {
+    for (int i = 0; i < int(dest.size()); ++i) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
              dest[i].bits[j] = openCLDescriptorBitsFull[i * Descriptor::uint32count + j];
         }
@@ -470,7 +470,7 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<fl
     destErrors.resize(destKeyPoints.size());
     std::vector<KeyPoint> destVariancePoints;
     destVariancePoints.resize(destKeyPoints.size());
-    openCLInt[0] = openCLKpx.size();
+    openCLInt[0] = int(openCLKpx.size());
     openCLInt[1] = DESCRIPTORSIZE;
     openCLInt[2] = mipEnd;
     openCLInt[3] = STEPCOUNT;
@@ -514,7 +514,7 @@ void refineKeyPoints_openCL(std::vector<KeyPoint> &destKeyPoints, std::vector<fl
     openCLQueue.enqueueReadBuffer(openCLNewVariancePointsX, CLBLOCKING, 0, destVariancePointsX.size() * sizeof(float), &(destVariancePointsX[0]));
     openCLQueue.enqueueReadBuffer(openCLNewVariancePointsY, CLBLOCKING, 0, destVariancePointsY.size() * sizeof(float), &(destVariancePointsY[0]));
     openCLQueue.enqueueReadBuffer(openCLDebug, CLBLOCKING, 0, sizeof(clDebug), clDebug);
-    for (int i = 0; i < destKeyPoints.size(); i++) {
+    for (int i = 0; i < int(destKeyPoints.size()); i++) {
         destKeyPoints[i].x = (destKeyPointsX[i] + destVariancePointsX[i]) * 0.5f;
         destKeyPoints[i].y = (destKeyPointsY[i] + destVariancePointsY[i]) * 0.5f;
         const float errX = (destKeyPointsX[i] - destVariancePointsX[i]);

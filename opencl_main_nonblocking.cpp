@@ -3,7 +3,7 @@
 #include <math.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
-#include "opencl_refinement.hpp"
+#include "opencl_refinement_nonblocking.hpp"
 
 #ifdef _MSC_VER
 #define X_Query_perf_counter() _Query_perf_counter()
@@ -16,16 +16,12 @@
 const int SEED = 0x13337;
 const bool CHECKVARIANCE = true;
 const float MAXVARIANCEINPIXELS = 1.0;
-const float MIPEND = 1.0;
+const float MIPEND = 1;
 const bool RESAMPLEONVARIANCE = true;
 const float RESAMPLEONVARIANCERADIUS = 1.f;
-const int DESCRIPTIVITYSTEPS = 10;
-const float OUTLIERPERCENTAGE = 20.f;
-const float OUTLIEREXPAND = 200.f;
 
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
-std::vector<cv::Mat> mipmaps3;
 
 const float randomLike(const int index) {
     int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
@@ -42,41 +38,26 @@ float frrand2(float rad) {
     return ((float)(rand() % RAND_MAX) / RAND_MAX) * rad;
 }
 
-float nonOutlierLength(std::vector<KeyPoint>& keyPoints, std::vector<KeyPoint>& lastFrameKeyPoints, const float outlierPercent = OUTLIERPERCENTAGE, const float expand = OUTLIEREXPAND) {
-    float maxLength = 0.f;
-    if (!keyPoints.empty()) {
-        std::vector<float> lengths; lengths.resize(keyPoints.size());
-        for (int i = 0; i < keyPoints.size(); i++) {
-            float dx = keyPoints[i].x - lastFrameKeyPoints[i].x;
-            float dy = keyPoints[i].y - lastFrameKeyPoints[i].y;
-            lengths[i] = sqrt(dx * dx + dy * dy);
-        }
-        std::sort(lengths.begin(), lengths.end(), [](const float& a, const float& b)->bool {return a < b; });
-        const int cut = int(lengths.size() * (1.0 - outlierPercent * 0.01f));
-        maxLength = lengths[cut] + expand;
-    }
-    return maxLength;
-}
-
 int validKeyPoints = 0;
-cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<KeyPoint>& keyPoints, std::vector<float>& errors, std::vector<KeyPoint>& lastFrameKeyPoints, std::vector<float>& lastFrameErrors) {
+cv::Mat output(const std::string& windowName, const cv::Mat& image, const std::vector<KeyPoint>& keyPoints, const std::vector<float>& errors, const std::vector<KeyPoint>& lastFrameKeyPoints, const std::vector<float>& lastFrameErrors) {
     cv::Mat mat = image.clone();
     validKeyPoints = 0;
-    const float maxLength = nonOutlierLength(keyPoints, lastFrameKeyPoints);
     for (int i = 0; i < keyPoints.size(); i++) {
         if (errors[i] < MAXVARIANCEINPIXELS && lastFrameErrors[i] < MAXVARIANCEINPIXELS) {
+            validKeyPoints++;
             float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
             float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
             float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
-            if (distance < maxLength) {
-                validKeyPoints++;
-                const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
-                const float sx = 2.f;
-                const float sy = 4.f;
+            const float a = atan2(keyPoints[i].x - lastFrameKeyPoints[i].x, keyPoints[i].y - lastFrameKeyPoints[i].y);
+            const float sx = 2.f;
+            const float sy = 4.f;
+            if (distance >= MAXVARIANCEINPIXELS) {
                 cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
                 cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
                 cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
-                cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), 2.0, cv::Scalar(255, 255, 255));
+            }
+            else {
+                cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), MAXVARIANCEINPIXELS, cv::Scalar(255, 255, 255));
             }
         }
     }
@@ -98,20 +79,6 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     return mipmaps;
 }
 
-float descriptivity(std::vector<cv::Mat>& mipMaps, const KeyPoint& k, const int mipEnd) {
-    Descriptor d;
-    float h = 0;
-    for (int i = mipEnd; i >= 0; i--) {
-        const float mipScale = powf(MIPSCALE, float(i));
-        const float descriptorScale = 1.f / mipScale;
-        const int width = mipMaps[i].cols;
-        const int height = mipMaps[i].rows;
-        h += sampleDescriptor(k, d, mipMaps[i].data, descriptorScale, width, height, mipScale)*mipScale;
-    }
-    h /= float(mipEnd + 1);
-    return h;
-}
-
 cv::Mat loadImage(int frame) {
     char buffer[2000];
     snprintf(buffer, 2000, fileNames, frame);
@@ -122,36 +89,26 @@ int main(int argc, char** argv)
 {
     srand(SEED);
     defaultDescriptorShape(DESCRIPTORSCALE);
-    initOpenCL();
-    uploadDescriptorShape_openCL();
+    initOpenCL_nonblocking();
+    uploadDescriptorShape_openCL(0);
+    uploadDescriptorShape_openCL(1);
 
     cv::Mat mat1 = loadImage(firstFrame);
     cv::VideoWriter video;
     if (outputVideo) video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
-    uploadMipMaps_openCL(mipmaps1);
+    uploadMipMaps_openCL(0,mipmaps1);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
     std::vector<float> errors;
     keyPoints.resize(KEYPOINTCOUNT);
     errors.resize(KEYPOINTCOUNT);
-#pragma omp parallel for num_threads(64)
     for (int i = 0; i < keyPoints.size(); ++i) {
-        float dBest = -1;
-        KeyPoint kHere, kBest;
-        for (int t = 0; t < DESCRIPTIVITYSTEPS; t++) {
-            kHere.x = frrand2(mipmaps1[0].cols);
-            kHere.y = frrand2(mipmaps1[0].rows);
-            float d = descriptivity(mipmaps1, kHere, mipEnd);
-            if (d > dBest) {
-                dBest = d;
-                kBest = kHere;
-            }
-        }
-        keyPoints[i] = kBest;
+        keyPoints[i].x = frrand2(mipmaps1[0].cols);
+        keyPoints[i].y = frrand2(mipmaps1[0].rows);
     }
-    uploadKeyPoints_openCL(keyPoints);
+    uploadKeyPoints_openCL(0,keyPoints);
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
@@ -161,8 +118,8 @@ int main(int argc, char** argv)
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
-        sampleDescriptors_openCL(i,searchForDescriptors,mipmaps1[i].data, descriptorScale, width, height, mipScale);
-        uploadDescriptors_openCL(i, searchForDescriptors);
+        sampleDescriptors_openCL(0,i,searchForDescriptors,mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        uploadDescriptors_openCL(0,i, searchForDescriptors);
     }
 
     long long t0 = X_Query_perf_counter();;
@@ -170,26 +127,25 @@ int main(int argc, char** argv)
     long long t3 = X_Query_perf_counter();;
     long long t00 = X_Query_perf_counter();;
     long long fr = X_Query_perf_frequency();
-    int readded = 0;
-    cv::Mat mat3 = loadImage(firstFrame); mipmaps3 = mipMaps(mat3);
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
-        cv::Mat mat2 = mat3; mipmaps2 = mipmaps3;  uploadMipMaps_openCL(mipmaps2);
+        cv::Mat mat2 = loadImage(steps);
+        mipmaps2 = mipMaps(mat2);
+        uploadMipMaps_openCL(0,mipmaps2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, [&]() {if (steps < lastFrame) { mat3 = loadImage(steps + 1); mipmaps3 = mipMaps(mat3); }});
+        refineKeyPoints_openCL(0,keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = X_Query_perf_counter();
 
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);
         if (outputVideo) video.write(v);
-        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT) + ", readd " + std::to_string(readded));
-        readded = 0;
+        cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
         if (cv::waitKey(1) == 27) 
             break;
 
         long long t4 = X_Query_perf_counter();
-        printf("Frame: %d, Keypoint: %d, Overall seconds: %f, Feature refinement seconds: %f, Feature add seconds:%f\n", steps, validKeyPoints, double(t4 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
+        printf("Frame: %d, Keypoints: %d, Overall seconds: %f, Feature refinement seconds: %f, Feature add seconds:%f\n", steps, validKeyPoints, double(t4 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
         t0 = X_Query_perf_counter();
 
         t2 = X_Query_perf_counter();
@@ -197,36 +153,21 @@ int main(int argc, char** argv)
         if (readd) {
             const int width = mipmaps2[0].cols;
             const int height = mipmaps2[0].rows;
-            static int rlk = 0;
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
                 KeyPoint &k = keyPoints[j];
                 const float LEFT = 10;
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
-                if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM) || errors[j] >= MAXVARIANCEINPIXELS) {
-                    float dBest = -1;
-                    KeyPoint kHere, kBest;
-#pragma omp parallel for num_threads(64)
-                    for (int t = 0; t < DESCRIPTIVITYSTEPS; t++) {
-                        kHere.x = randomLike(rlk)*mipmaps1[0].cols;
-                        kHere.y = randomLike(rlk*3+11231)*mipmaps1[0].rows;
-                        rlk += 123;
-                        float d = descriptivity(mipmaps1, kHere, mipEnd);
-                        if (d > dBest) {
-                            dBest = d;
-                            kBest = kHere;
-                        }
-                    }
-                    k = kBest;
-                    readded++;
+                if ((k.x < LEFT) || (k.x >= width-RIGHT) || (k.y < TOP) || (k.y >= height-BOTTOM) || errors[j] >= MAXVARIANCEINPIXELS) {
+                    k.x = frrand2(width);
+                    k.y = frrand2(height);
                     errors[j] = 0;
                 }
             }
-            t3 = X_Query_perf_counter();
         }
 
-        uploadKeyPoints_openCL(keyPoints);
+        uploadKeyPoints_openCL(0,keyPoints);
 
         const bool resample = true;
         if (resample) {
@@ -238,15 +179,16 @@ int main(int argc, char** argv)
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
                 resampledDescriptors[i].resize(keyPoints.size());
-                sampleDescriptors_openCL(i,resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                sampleDescriptors_openCL(0,i,resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
                     }
                 }
-                uploadDescriptors_openCL(i, searchForDescriptors);
+                uploadDescriptors_openCL(0,i, searchForDescriptors);
             }
         }
+        t3 = X_Query_perf_counter();
     }
 
     if (outputVideo) video.release();
