@@ -3,8 +3,6 @@
 #include <math.h>
 #include <omp.h>
 
-extern int DESCRIPTORSIZE;
-
 int texf(const unsigned char* s, const int x, const int y, const int width, const int height) {
     const int xr = x >> 10;
     const int yr = y >> 10;

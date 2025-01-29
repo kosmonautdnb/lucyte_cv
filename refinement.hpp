@@ -12,7 +12,7 @@ public:
 class Descriptor
 {
 public:
-    static const int uint32count = (MAXDESCRIPTORSIZE + 31) / 32;
+    static const int uint32count = (DESCRIPTORSIZE + 31) >> 5;
     uint32_t bits[uint32count];
     void clear()
     {

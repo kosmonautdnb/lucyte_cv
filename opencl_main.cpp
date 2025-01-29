@@ -145,7 +145,7 @@ int main(int argc, char** argv)
             break;
 
         long long t4 = X_Query_perf_counter();
-        printf("Frame: %d, Keypoint: %d, Overall seconds: %f, Feature refinement seconds: %f, Feature add seconds:%f\n", steps, validKeyPoints, double(t4 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
+        printf("Frame: %d, Keypoints: %d, Overall seconds: %f, Feature refinement seconds: %f, Feature add seconds:%f\n", steps, validKeyPoints, double(t4 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
         t0 = X_Query_perf_counter();
 
         t2 = X_Query_perf_counter();

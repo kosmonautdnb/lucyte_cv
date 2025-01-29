@@ -14,7 +14,7 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-set(lucyte_common config.hpp refinement.cpp refinement.hpp descriptors.cpp descriptors.hpp)
+set(lucyte_common constants.hpp config.hpp refinement.cpp refinement.hpp descriptors.cpp descriptors.hpp)
 set(lucyte_opencl opencl_refinement.cpp opencl_refinement.hpp)
 
 add_executable(lucyte_basic main.cpp ${lucyte_common})

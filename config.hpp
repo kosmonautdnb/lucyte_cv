@@ -1,6 +1,8 @@
 // Lucyte Created on: 17.01.2025 by Stefan Mader
 #pragma once
 
+#include "constants.hpp"
+
 #define FILESET 3
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
@@ -10,18 +12,11 @@ const double outputVideoFrameRate = 25;
 const double stereoOutputVideoFrameRate = 8;
 const bool outputVideo = false;
 
-const int KEYPOINTCOUNT = 1000;
-
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1
 #define CONFIG_OK 2
 #define CONFIG_FAST_MANYMIPS 3
 #define CONFIG CONFIG_GOOD
-
-#define DESCRIPTORSHAPE_64 0
-#define DESCRIPTORSHAPE_38 1
-#define DESCRIPTORSHAPE_SPIRAL 2
-#define DESCRIPTORSHAPE DESCRIPTORSHAPE_SPIRAL
 
 #if CONFIG == 0
 float MIPSCALE = 0.5f;
@@ -63,20 +58,6 @@ float DESCRIPTORSCALE = 5.f;
 bool BOOLSTEPPING = false;
 #endif
 
-#if DESCRIPTORSHAPE == 0
-int DESCRIPTORSIZE = 64;
-#define defaultDescriptorShape defaultDescriptorShape64
-#endif
-
-#if DESCRIPTORSHAPE == 1
-int DESCRIPTORSIZE = 38;
-#define defaultDescriptorShape defaultDescriptorShape38
-#endif
-
-#if DESCRIPTORSHAPE == 2
-int DESCRIPTORSIZE = 128;
-#define defaultDescriptorShape(__RAD__) defaultDescriptorShapeSpiral(__RAD__, DESCRIPTORSIZE);
-#endif
 
 #if STEREO_FILESET == 1
 const char* stereoFileNamesLeft = "c:/!mad/Daten/Odometry/www.drivingstereo-dataset.github.io/left/2018-07-11-14-48-52/left%04d.jpg";

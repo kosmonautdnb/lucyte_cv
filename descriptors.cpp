@@ -2,10 +2,10 @@
 #include "descriptors.hpp"
 #include <math.h>
 
-float descriptorsX1[MAXDESCRIPTORSIZE];
-float descriptorsY1[MAXDESCRIPTORSIZE];
-float descriptorsX2[MAXDESCRIPTORSIZE];
-float descriptorsY2[MAXDESCRIPTORSIZE];
+float descriptorsX1[DESCRIPTORSIZE];
+float descriptorsY1[DESCRIPTORSIZE];
+float descriptorsX2[DESCRIPTORSIZE];
+float descriptorsY2[DESCRIPTORSIZE];
 
 static const float randomLike(const int index) {
     int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);
@@ -101,5 +101,15 @@ void defaultDescriptorShapeSpiral(const float rad, int descriptorSize) {
         descriptorsY1[i+1] = -sin(a1) * rad1;
         descriptorsX2[i+1] = cos(a2) * rad2;
         descriptorsY2[i+1] = -sin(a2) * rad2;
+    }
+}
+
+void defaultDescriptorShapeCrosses(const float rad, int descriptorSize) {
+    for (int i = 0; i < descriptorSize/2; i++) {
+        float xp = (randomLike(i * 113 + 1212)*2.f-1.f)*rad;
+        float yp = (randomLike(i * 237 + 212)*2.f-1.f)*rad;
+        float r1 = rad - fabs(xp);
+        float r2 = rad - fabs(yp);
+        cross(i, xp, yp, r1 < r2 ? r1 : r2);
     }
 }
