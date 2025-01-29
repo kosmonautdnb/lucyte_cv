@@ -71,7 +71,7 @@ void initOpenCL() {
     openCLQueue = cl::CommandQueue(openCLContext, openCLDevice);
 
     std::string sampleDescriptor_kernel =
-        "   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;"
+        "   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;\n"
         "\n"
         "   inline float tex(const image2d_t s, const float2 coord) {\n"
         "         return read_imagef(s,sampler,coord).x;\n"
@@ -327,7 +327,7 @@ void initOpenCL() {
     cl::Program::Sources sources;
     sources.push_back({ sampleDescriptor_kernel.c_str(), sampleDescriptor_kernel.length() });
     openCLProgram = cl::Program(openCLContext, sources);
-    if (openCLProgram.build({ openCLDevice }) != CL_SUCCESS) {
+    if (openCLProgram.build({ openCLDevice }, "-cl-mad-enable -cl-no-signed-zeros -cl-unsafe-math-optimizations -cl-finite-math-only -cl-fast-relaxed-math") != CL_SUCCESS) {
         printf("Error building: %s\n", openCLProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(openCLDevice).c_str());
         exit(1);
     }
