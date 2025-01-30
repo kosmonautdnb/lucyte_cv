@@ -175,6 +175,7 @@ int main(int argc, char** argv)
         sampleDescriptors_openCL(i, searchForDescriptors, descriptorScale, width, height, mipScale);
         uploadDescriptors_openCL(i, searchForDescriptors);
     }
+    refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     cv::Point2f currentPosition = cv::Point2f(0, 0);
     std::vector<cv::Point2f> positions;
@@ -188,7 +189,7 @@ int main(int argc, char** argv)
     R.at<double>(0, 0) = 1;
     R.at<double>(1, 1) = 1;
     R.at<double>(2, 2) = 1;
-    for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
+    for (int steps = firstFrame+1; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         uploadMipMaps_openCL(mipmaps2);

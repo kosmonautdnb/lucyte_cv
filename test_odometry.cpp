@@ -178,7 +178,7 @@ int main(int argc, char** argv)
     R.at<double>(0, 0) = 1;
     R.at<double>(1, 1) = 1;
     R.at<double>(2, 2) = 1;
-    for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
+    for (int steps = firstFrame+1; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;

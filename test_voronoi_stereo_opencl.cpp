@@ -196,8 +196,12 @@ int main(int argc, char** argv)
         sampleDescriptors_openCL(i, searchForDescriptorsLeft, descriptorScale, width, height, mipScale);
         uploadDescriptors_openCL(i, searchForDescriptorsLeft);
     }
+    uploadMipMaps_openCL(mipmaps3);
+    refineKeyPoints_openCL(keyPointsRight, errorsRight, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    uploadMipMaps_openCL(mipmaps2);
+    refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
-    for (int steps = stereoFirstFrame; steps <= stereoLastFrame; steps += stereoFrameStep) {
+    for (int steps = stereoFirstFrame+1; steps <= stereoLastFrame; steps += stereoFrameStep) {
         std::vector<KeyPoint> lastFrameKeyPointsLeft = keyPointsLeft;
         std::vector<float> lastFrameErrorsLeft = errorsLeft;
         std::vector<KeyPoint> lastFrameKeyPointsRight = keyPointsRight;

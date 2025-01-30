@@ -123,8 +123,9 @@ int main(int argc, char** argv)
         sampleDescriptors_openCL(i, searchForDescriptors, descriptorScale, width, height, mipScale);
         uploadDescriptors_openCL(i, searchForDescriptors);
     }
+    refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
-    for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
+    for (int steps = firstFrame+1; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         uploadMipMaps_openCL(mipmaps2);

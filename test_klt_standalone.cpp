@@ -68,7 +68,7 @@ int main(int argc, char** argv)
     }
 
     cv::Mat m1, m2;
-    for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
+    for (int steps = firstFrame+1; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         cv::cvtColor(mat2, matg2, cv::COLOR_RGB2GRAY);
 

@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     long long t0 = X_Query_perf_counter();;
     long long t00 = X_Query_perf_counter();;
     long long fr = X_Query_perf_frequency();
-    for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
+    for (int steps = firstFrame+1; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;

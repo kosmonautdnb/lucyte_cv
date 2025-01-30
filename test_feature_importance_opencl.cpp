@@ -163,6 +163,7 @@ int main(int argc, char** argv)
         sampleDescriptors_openCL(i,searchForDescriptors, descriptorScale, width, height, mipScale);
         uploadDescriptors_openCL(i, searchForDescriptors);
     }
+    refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     long long t0 = X_Query_perf_counter();;
     long long t2 = X_Query_perf_counter();;
@@ -170,7 +171,7 @@ int main(int argc, char** argv)
     long long t00 = X_Query_perf_counter();;
     long long fr = X_Query_perf_frequency();
     int readded = 0;
-    for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
+    for (int steps = firstFrame + 1; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps); mipmaps2 = mipMaps(mat2);  uploadMipMaps_openCL(mipmaps2);
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
