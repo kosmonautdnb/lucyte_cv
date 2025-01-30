@@ -15,9 +15,9 @@ const int BUFFERCOUNT = 2;
 #define CLBLOCKING CL_TRUE
 #define CLNONBLOCKING CL_FALSE
 static const int MAXMIPMAPS = 32;
-static cl::Platform openCLPlatform;
-static cl::Device openCLDevice;
-static cl::Context openCLContext;
+cl::Platform openCLPlatform;
+cl::Device openCLDevice;
+cl::Context openCLContext;
 static cl::Program openCLProgram;
 static cl::CommandQueue openCLQueue[BUFFERCOUNT];
 static cl::Image2D openCLMipMaps[BUFFERCOUNT][MAXMIPMAPS];
@@ -341,8 +341,6 @@ void initOpenCL() {
     printf("- Using openCL device: %s\n", openCLDevice.getInfo<CL_DEVICE_NAME>().c_str());
 
     openCLContext = cl::Context({ openCLDevice });
-    openCLQueue[0] = cl::CommandQueue(openCLContext, openCLDevice);
-    openCLQueue[1] = cl::CommandQueue(openCLContext, openCLDevice);
 
     cl::Program::Sources sources;
     sources.push_back({ openCV_program.c_str(), openCV_program.length() });
@@ -352,6 +350,7 @@ void initOpenCL() {
         exit(1);
     }
     for (int i = 0; i < BUFFERCOUNT; i++) {
+        openCLQueue[i] = cl::CommandQueue(openCLContext, openCLDevice);
         openCLInts1[i] = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLInt1[i]));
         openCLInts2[i] = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLInt2[i]));
         openCLFloats1[i] = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(openCLFloat1[i]));
