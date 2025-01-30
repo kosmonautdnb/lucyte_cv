@@ -16,7 +16,6 @@ endif()
 
 set(lucyte_common constants.hpp config.hpp refinement.cpp refinement.hpp descriptors.cpp descriptors.hpp)
 set(lucyte_opencl opencl_refinement.cpp opencl_refinement.hpp)
-set(lucyte_opencl_nonblocking opencl_refinement_nonblocking.cpp opencl_refinement_nonblocking.hpp)
 
 add_executable(lucyte_basic main.cpp ${lucyte_common})
 target_link_libraries(lucyte_basic ${OpenCV_LIBS})
@@ -51,5 +50,5 @@ target_link_libraries(lucyte_test_voronoi_stereo_opencl ${OpenCV_LIBS} ${OpenCL_
 add_executable(lucyte_test_feature_importance_opencl test_feature_importance_opencl.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_test_feature_importance_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_opencl_nonblocking opencl_main_nonblocking.cpp ${lucyte_common} ${lucyte_opencl} ${lucyte_opencl_nonblocking})
+add_executable(lucyte_opencl_nonblocking opencl_main_nonblocking.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_opencl_nonblocking ${OpenCV_LIBS} ${OpenCL_LIBRARIES})

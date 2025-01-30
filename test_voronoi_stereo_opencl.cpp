@@ -193,7 +193,7 @@ int main(int argc, char** argv)
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
         searchForDescriptorsLeft[i].resize(keyPointsLeft.size());
-        sampleDescriptors_openCL(i, searchForDescriptorsLeft, mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        sampleDescriptors_openCL(i, searchForDescriptorsLeft, descriptorScale, width, height, mipScale);
         uploadDescriptors_openCL(i, searchForDescriptorsLeft);
     }
 
@@ -255,7 +255,7 @@ int main(int argc, char** argv)
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
                 resampledDescriptors[i].resize(keyPointsLeft.size());
-                sampleDescriptors_openCL(i, resampledDescriptors, mipmaps2[i].data, descriptorScale, width, height, mipScale);
+                sampleDescriptors_openCL(i, resampledDescriptors, descriptorScale, width, height, mipScale);
                 for (int j = keyPointsLeft.size() - 1; j >= 0; j--) {
                     if ((!RESAMPLEONVARIANCE) || (errorsLeft[j] < RESAMPLEONVARIANCERADIUS)) {
                         searchForDescriptorsLeft[i][j] = resampledDescriptors[i][j];

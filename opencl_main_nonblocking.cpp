@@ -3,7 +3,7 @@
 #include <math.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
-#include "opencl_refinement_nonblocking.hpp"
+#include "opencl_refinement.hpp"
 
 #ifdef _MSC_VER
 #define X_Query_perf_counter() _Query_perf_counter()
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
     srand(SEED);
     defaultDescriptorShape(DESCRIPTORSCALE);
-    initOpenCL_nonblocking();
+    initOpenCL();
     uploadDescriptorShape_openCL(thisBuffer);
     uploadDescriptorShape_openCL(lastBuffer);
 
