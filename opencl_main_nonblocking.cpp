@@ -44,7 +44,7 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, const std::v
     cv::Mat mat = image.clone();
     validKeyPoints = 0;
     for (int i = 0; i < keyPoints.size(); i++) {
-        if (errors[i] < MAXVARIANCEINPIXELS && lastFrameErrors[i] < MAXVARIANCEINPIXELS) {
+        if (errors[i] != 0 && lastFrameErrors[i] != 0 && errors[i] < MAXVARIANCEINPIXELS && lastFrameErrors[i] < MAXVARIANCEINPIXELS) {
             validKeyPoints++;
             float distanceX = lastFrameKeyPoints[i].x - keyPoints[i].x;
             float distanceY = lastFrameKeyPoints[i].y - keyPoints[i].y;
@@ -102,8 +102,6 @@ int main(int argc, char** argv)
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(thisBuffer,mipmaps1);
     uploadMipMaps_openCL(lastBuffer, mipmaps1);
-    uploadMipMaps_openCL_waitfor(thisBuffer);
-    uploadMipMaps_openCL_waitfor(lastBuffer);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
@@ -116,8 +114,6 @@ int main(int argc, char** argv)
     }
     uploadKeyPoints_openCL(thisBuffer,keyPoints);
     uploadKeyPoints_openCL(lastBuffer, keyPoints);
-    uploadKeyPoints_openCL_waitfor(thisBuffer);
-    uploadKeyPoints_openCL_waitfor(lastBuffer);
 
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
@@ -125,14 +121,12 @@ int main(int argc, char** argv)
         const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
-        sampleDescriptors_openCL(thisBuffer,i,keyPoints.size(), mipmaps1[i].data, descriptorScale, width, height, mipScale);
-        sampleDescriptors_openCL(lastBuffer, i, keyPoints.size(), mipmaps1[i].data, descriptorScale, width, height, mipScale);
+        sampleDescriptors_openCL(thisBuffer,i,keyPoints.size(), descriptorScale, width, height, mipScale);
+        sampleDescriptors_openCL(lastBuffer, i, keyPoints.size(), descriptorScale, width, height, mipScale);
         sampleDescriptors_openCL_waitfor(thisBuffer, i, searchForDescriptors);
         sampleDescriptors_openCL_waitfor(lastBuffer, i, searchForDescriptors);
         uploadDescriptors_openCL(thisBuffer,i, searchForDescriptors);
         uploadDescriptors_openCL(lastBuffer, i, searchForDescriptors);
-        uploadDescriptors_openCL_waitfor(thisBuffer);
-        uploadDescriptors_openCL_waitfor(lastBuffer);
     }
 
     long long t0 = X_Query_perf_counter();;
@@ -141,19 +135,36 @@ int main(int argc, char** argv)
     long long t00 = X_Query_perf_counter();;
     long long fr = X_Query_perf_frequency();
     cv::Mat mat2[2];
+    bool first = true;
+    refineKeyPoints_openCL(thisBuffer, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    std::vector<KeyPoint> lastlastFrameKeyPoints;
+    std::vector<float> lastlastFrameErrors;
+    std::vector<std::vector<Descriptor>> resampledDescriptors;
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         thisBuffer ^= 1;
-        lastBuffer = thisBuffer;
+        lastBuffer = thisBuffer ^ 1;
+        lastlastFrameKeyPoints = keyPoints;
+        lastlastFrameErrors = errors;
         mat2[thisBuffer] = loadImage(steps);
         mipmaps2[thisBuffer] = mipMaps(mat2[thisBuffer]);
-        uploadMipMaps_openCL(thisBuffer,mipmaps2[thisBuffer]);
-        std::vector<KeyPoint> lastlastFrameKeyPoints = keyPoints;
-        std::vector<float> lastlastFrameErrors = errors;
-
+        uploadMipMaps_openCL(thisBuffer, mipmaps2[thisBuffer]);
         t00 = X_Query_perf_counter();
+        if (!resampledDescriptors.empty()) {
+            for (int i = mipEnd; i >= 0; i--) {
+                sampleDescriptors_openCL_waitfor(thisBuffer, i, resampledDescriptors);
+                for (int j = keyPoints.size() - 1; j >= 0; j--) {
+                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
+                        searchForDescriptors[i][j] = resampledDescriptors[i][j];
+                    }
+                }
+                uploadDescriptors_openCL(thisBuffer, i, searchForDescriptors);
+            }
+        }
         refineKeyPoints_openCL(thisBuffer, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         refineKeyPoints_openCL_waitfor(lastBuffer, keyPoints, errors);
         long long t1 = X_Query_perf_counter();
+
+        first = false;
 
         if (!mat2[lastBuffer].empty()) {
             cv::Mat v = output("keypoints", mat2[lastBuffer], keyPoints, errors, lastlastFrameKeyPoints, lastlastFrameErrors);
@@ -167,7 +178,6 @@ int main(int argc, char** argv)
         printf("Frame: %d, Keypoints: %d, Overall seconds: %f, Feature refinement seconds: %f, Feature add seconds:%f\n", steps, validKeyPoints, double(t4 - t0) / fr, double(t1 - t00) / fr, double(t3 - t2) / fr);
         t0 = X_Query_perf_counter();
 
-        t2 = X_Query_perf_counter();
         const bool readd = true;
         if (readd && !(mipmaps2[lastBuffer].empty())) {
             const int width = mipmaps2[lastBuffer][0].cols;
@@ -178,6 +188,10 @@ int main(int argc, char** argv)
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
+                if (lastlastFrameErrors[j] == 0) {
+                    k.x = lastlastFrameKeyPoints[j].x;
+                    k.y = lastlastFrameKeyPoints[j].y;
+                } else
                 if ((k.x < LEFT) || (k.x >= width-RIGHT) || (k.y < TOP) || (k.y >= height-BOTTOM) || errors[j] >= MAXVARIANCEINPIXELS) {
                     k.x = frrand2(width);
                     k.y = frrand2(height);
@@ -185,27 +199,19 @@ int main(int argc, char** argv)
                 }
             }
         }
-
+        
         uploadKeyPoints_openCL(lastBuffer, keyPoints);
 
+        t2 = X_Query_perf_counter();
         const bool resample = true;
         if (resample && (!mipmaps2[thisBuffer].empty())) {
-            std::vector<std::vector<Descriptor>> resampledDescriptors;
             resampledDescriptors.resize(mipmaps2[thisBuffer].size());
             for (int i = mipEnd; i >= 0; i--) {
                 const float mipScale = powf(MIPSCALE, float(i));
                 const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[thisBuffer][i].cols;
                 const int height = mipmaps2[thisBuffer][i].rows;
-                sampleDescriptors_openCL(lastBuffer, i, keyPoints.size(), mipmaps2[thisBuffer][i].data, descriptorScale, width, height, mipScale);
-                sampleDescriptors_openCL_waitfor(lastBuffer, i, resampledDescriptors);
-                for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
-                        searchForDescriptors[i][j] = resampledDescriptors[i][j];
-                    }
-                }
-                uploadDescriptors_openCL(0, i, searchForDescriptors);
-                uploadDescriptors_openCL(1, i, searchForDescriptors);
+                sampleDescriptors_openCL(lastBuffer, i, keyPoints.size(), descriptorScale, width, height, mipScale);
             }
         }
         t3 = X_Query_perf_counter();
