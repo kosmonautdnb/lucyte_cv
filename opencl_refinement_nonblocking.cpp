@@ -115,11 +115,11 @@ void uploadDescriptorShape_openCL(const int bufferId) {
 }
 
 void uploadMipMaps_openCL(const int bufferId, const std::vector<cv::Mat> &mipMaps) {
+    uploadMipMaps_openCL_waitfor(bufferId);
     if (mipMaps.empty()) return;
     if (mipMaps.size() >= MAXMIPMAPS) {
         printf("Error: too many mipmaps %d of %d\n", int(mipMaps.size()), MAXMIPMAPS);
     }
-    uploadMipMaps_openCL_waitfor(bufferId);
     if (mipMaps.size() != mipMapWidths[bufferId].size() || mipMaps[0].cols != mipMapWidths[bufferId][0] || mipMaps[0].rows != mipMapHeights[bufferId][0]) { // can be blocking
         for (int i = 0; i < mipMaps.size(); i++) {
             int success = 0;
@@ -175,8 +175,8 @@ void uploadKeyPoints_openCL_waitfor(const int bufferId) {
 }
 
 void uploadDescriptors_openCL(const int bufferId, const int mipMap, const std::vector<std::vector<Descriptor>>& sourceMips) {
-    const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
     uploadDescriptors_openCL_waitfor(bufferId);
+    const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
     if (mipMap >= openCLBits[bufferId].size() || (descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits[bufferId].size()) {
         if ((descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits[bufferId].size()) {
             openCLDescriptorBits[bufferId].resize(descriptors.size() * Descriptor::uint32count);
@@ -192,7 +192,7 @@ void uploadDescriptors_openCL(const int bufferId, const int mipMap, const std::v
             openCLDescriptorBits[bufferId][j + i * Descriptor::uint32count] = descriptors[i].bits[j];
         }
     }
-    openCLQueue[bufferId].enqueueWriteBuffer(openCLBits[bufferId][mipMap], CLBLOCKING, 0, sizeof(unsigned int) * openCLDescriptorBits[bufferId].size(), &(openCLDescriptorBits[bufferId][0]), nullptr,&(descriptorEvent[bufferId]));
+    openCLQueue[bufferId].enqueueWriteBuffer(openCLBits[bufferId][mipMap], CL_FALSE, 0, sizeof(unsigned int) * openCLDescriptorBits[bufferId].size(), &(openCLDescriptorBits[bufferId][0]), nullptr,&(descriptorEvent[bufferId]));
 }
 
 void uploadDescriptors_openCL_waitfor(const int bufferId) {
@@ -230,9 +230,9 @@ void sampleDescriptors_openCL_waitfor(const int bufferId, const int mipMap, std:
     const int keyPointCount = openCLDescriptorBitsFull[bufferId].size() / Descriptor::uint32count;
     std::vector<Descriptor>& dest = destMips[mipMap];
     dest.resize(keyPointCount);
+    openCLQueue[bufferId].enqueueReadBuffer(openCLBitsFull[bufferId], CL_TRUE, 0, openCLDescriptorBitsFull[bufferId].size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[bufferId][0]));
+    openCLQueue[bufferId].enqueueReadBuffer(openCLDebug[bufferId], CL_TRUE, 0, sizeof(clDebug[bufferId]), clDebug[bufferId]);
     openCLQueue[bufferId].finish();
-    openCLQueue[bufferId].enqueueReadBuffer(openCLBitsFull[bufferId], CLBLOCKING, 0, openCLDescriptorBitsFull[bufferId].size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[bufferId][0]));
-    openCLQueue[bufferId].enqueueReadBuffer(openCLDebug[bufferId], CLBLOCKING, 0, sizeof(clDebug[bufferId]), clDebug[bufferId]);
     for (int i = 0; i < dest.size(); ++i) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
             dest[i].bits[j] = openCLDescriptorBitsFull[bufferId][i * Descriptor::uint32count + j];
@@ -241,6 +241,7 @@ void sampleDescriptors_openCL_waitfor(const int bufferId, const int mipMap, std:
 }
 
 void refineKeyPoints_openCL(const int bufferId, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+    if (openCLBits[bufferId].empty()) return;
     openCLInt[bufferId][0] = int(openCLKpx[bufferId].size());
     openCLInt[bufferId][1] = DESCRIPTORSIZE;
     openCLInt[bufferId][2] = mipEnd;
@@ -283,12 +284,12 @@ void refineKeyPoints_openCL_waitfor(const int bufferId, std::vector<KeyPoint>& d
     std::vector<float> destKeyPointsY; destKeyPointsY.resize(destKeyPoints.size());
     std::vector<float> destVariancePointsX; destVariancePointsX.resize(destKeyPoints.size());
     std::vector<float> destVariancePointsY; destVariancePointsY.resize(destKeyPoints.size());
+    openCLQueue[bufferId].enqueueReadBuffer(openCLNewKeyPointsX[bufferId], CL_TRUE, 0, destKeyPointsX.size() * sizeof(float), &(destKeyPointsX[0]));
+    openCLQueue[bufferId].enqueueReadBuffer(openCLNewKeyPointsY[bufferId], CL_TRUE, 0, destKeyPointsY.size() * sizeof(float), &(destKeyPointsY[0]));
+    openCLQueue[bufferId].enqueueReadBuffer(openCLNewVariancePointsX[bufferId], CL_TRUE, 0, destVariancePointsX.size() * sizeof(float), &(destVariancePointsX[0]));
+    openCLQueue[bufferId].enqueueReadBuffer(openCLNewVariancePointsY[bufferId], CL_TRUE, 0, destVariancePointsY.size() * sizeof(float), &(destVariancePointsY[0]));
+    openCLQueue[bufferId].enqueueReadBuffer(openCLDebug[bufferId], CL_TRUE, 0, sizeof(clDebug[bufferId]), clDebug[bufferId]);
     openCLQueue[bufferId].finish();
-    openCLQueue[bufferId].enqueueReadBuffer(openCLNewKeyPointsX[bufferId], CLBLOCKING, 0, destKeyPointsX.size() * sizeof(float), &(destKeyPointsX[0]));
-    openCLQueue[bufferId].enqueueReadBuffer(openCLNewKeyPointsY[bufferId], CLBLOCKING, 0, destKeyPointsY.size() * sizeof(float), &(destKeyPointsY[0]));
-    openCLQueue[bufferId].enqueueReadBuffer(openCLNewVariancePointsX[bufferId], CLBLOCKING, 0, destVariancePointsX.size() * sizeof(float), &(destVariancePointsX[0]));
-    openCLQueue[bufferId].enqueueReadBuffer(openCLNewVariancePointsY[bufferId], CLBLOCKING, 0, destVariancePointsY.size() * sizeof(float), &(destVariancePointsY[0]));
-    openCLQueue[bufferId].enqueueReadBuffer(openCLDebug[bufferId], CLBLOCKING, 0, sizeof(clDebug[bufferId]), clDebug[bufferId]);
     for (int i = 0; i < destKeyPoints.size(); i++) {
         destKeyPoints[i].x = (destKeyPointsX[i] + destVariancePointsX[i]) * 0.5f;
         destKeyPoints[i].y = (destKeyPointsY[i] + destVariancePointsY[i]) * 0.5f;
