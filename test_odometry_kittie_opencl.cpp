@@ -160,13 +160,18 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
     int a = points2.size();
     for (int i = 0; i < a; i++)
     {
-        int differing = 0;
-        for (int j = 0; j <= mipEnd; j++) {
+        float error = 0;
+        const float errorAttenuation = 1.5f;
+        for (int j = mipEnd; j >= 0; j--) {
+            int differing = 0;
             for (int k = 0; k < DESCRIPTORSIZE; ++k) {
                 differing += ((d1[j][i].bits[k >> 5] ^ d2[j][i].bits[k >> 5]) >> (k & 31)) & 1;
             }
+            error *= errorAttenuation;
+            error += float(differing)/float(DESCRIPTORSIZE);
+
         }
-        double diffRatio = double(differing) / double(mipEnd * DESCRIPTORSIZE);
+        float diffRatio = error / pow(errorAttenuation, mipEnd);
         Point2f pt = points2.at(i - indexCorrection);
         double dx = pt.x - points1.at(i - indexCorrection).x;
         double dy = pt.y - points1.at(i - indexCorrection).y;
