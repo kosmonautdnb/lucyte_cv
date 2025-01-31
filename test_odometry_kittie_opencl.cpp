@@ -50,7 +50,7 @@ THE SOFTWARE.
 
 #define MAX_FRAME 1000
 #define MIN_NUM_FEAT 2000
-#define KEYPOINTCOUNT (MIN_NUM_FEAT*4)
+#define KEYPOINTCOUNT (MIN_NUM_FEAT*2)
 //#define KLT
 
 using namespace cv;
@@ -61,19 +61,6 @@ float frrand2(float rad) {
 }
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
-float descriptivity(std::vector<cv::Mat>& mipMaps, const ::KeyPoint& k, const int mipEnd) {
-    Descriptor d;
-    float h = 0;
-    for (int i = mipEnd; i >= 0; i--) {
-        const float mipScale = powf(MIPSCALE, float(i));
-        const float descriptorScale = 1.f / mipScale;
-        const int width = mipMaps[i].cols;
-        const int height = mipMaps[i].rows;
-        h += sampleDescriptor(k, d, mipMaps[i].data, descriptorScale, width, height, mipScale) * mipScale;
-    }
-    h /= float(mipEnd + 1);
-    return h;
-}
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     cv::Mat k;
     k = mat.clone();
@@ -121,7 +108,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
 #else // KLT
     std::vector<::KeyPoint> p;
     std::vector<float> e;
-    int size = points1.size();
+    int size = KEYPOINTCOUNT;
     if (size > 4) {
         p.resize(size);
         e.resize(size);
@@ -163,22 +150,24 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
         for (int i = 0; i < a; i++)
         {
             float error = 0;
-            const float errorAttenuation = 1.5f;
+            float weight = 0;
+            const float mipErrorAttenuation = 2.f;
             for (int j = mipEnd; j >= 0; j--) {
                 int differing = 0;
                 for (int k = 0; k < DESCRIPTORSIZE; ++k) {
                     differing += ((d1[j][i].bits[k >> 5] ^ d2[j][i].bits[k >> 5]) >> (k & 31)) & 1;
                 }
-                error *= errorAttenuation;
-                error += float(differing) / float(DESCRIPTORSIZE);
-
+                error *= mipErrorAttenuation;
+                weight *= mipErrorAttenuation;
+                error += float(differing) / float(DESCRIPTORSIZE-1);
+                weight += 1.f;
             }
-            float diffRatio = error / pow(errorAttenuation, mipEnd);
+            float diffRatio = error / weight;
             Point2f pt = points2.at(i - indexCorrection);
             double dx = pt.x - points1.at(i - indexCorrection).x;
             double dy = pt.y - points1.at(i - indexCorrection).y;
-            double d = sqrt(dx * dx + dy * dy); // erstmal
-            if (e[i] > 0.5f || diffRatio > 0.2) {
+            double d = sqrt(dx * dx + dy * dy);
+            if (e[i] > 0.5f || diffRatio > 0.15 || d < 2 || d > mips2[0].cols * 0.1) {
                 points1.erase(points1.begin() + (i - indexCorrection));
                 points2.erase(points2.begin() + (i - indexCorrection));
                 indexCorrection++;
@@ -195,8 +184,14 @@ void featureDetection(Mat img_1, vector<Point2f>& points1, std::vector<cv::Mat> 
     int fast_threshold = 20;
     bool nonmaxSuppression = true;
     FAST(img_1, keypoints_1, fast_threshold, nonmaxSuppression);
-    cv::KeyPoint::convert(keypoints_1, points1, vector<int>());
-    if (points1.size() > KEYPOINTCOUNT) points1.resize(KEYPOINTCOUNT);
+    vector<Point2f> points1b;
+    cv::KeyPoint::convert(keypoints_1, points1b, vector<int>());
+    points1.clear();
+    for (int i = 0; i < KEYPOINTCOUNT && (!points1b.empty()); ++i) {
+        int b = rand() % points1b.size();
+        points1.push_back(points1b[b]);
+        points1b.erase(points1b.begin() + b);
+    }
 }
 
 using namespace cv;
@@ -260,6 +255,9 @@ int main(int argc, char** argv) {
     initOpenCL();
     uploadDescriptorShape_openCL();
 
+    cv::VideoWriter video;
+    video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(1280, 720), true);
+
     Mat img_1, img_2;
     Mat R_f, t_f; //the final rotation and tranlation vectors containing the 
 
@@ -273,8 +271,8 @@ int main(int argc, char** argv) {
     snprintf(filename2, 200, filenames2.c_str(), 1);
 
     char text[100];
-    int fontFace = FONT_HERSHEY_PLAIN;
-    double fontScale = 1;
+    int fontFace = FONT_HERSHEY_TRIPLEX;
+    double fontScale = 0.5;
     int thickness = 1;
     cv::Point textOrg(10, 50);
 
@@ -398,17 +396,38 @@ int main(int argc, char** argv) {
         circle(traj, Point(absx + 300, absz + 100), 1, CV_RGB(255, 255, 0), 2);
         circle(traj, Point(x, y), 1, CV_RGB(255, 0, 0), 2);
 
-        rectangle(traj, Point(10, 30), Point(550, 50), CV_RGB(0, 0, 0), cv::FILLED);
+        rectangle(traj, Point(10, 0), Point(traj.cols, 80), CV_RGB(0, 0, 0), cv::FILLED);
+        cv::Point textOrg1(10, 20);
+        snprintf(text, 100, "Frame:%d of %d (KITTIE Benchmark)", numFrame, MAX_FRAME);
+        putText(traj, text, textOrg1, fontFace, fontScale, Scalar::all(255), thickness, 8);
         snprintf(text, 100, "Coordinates: x = %02fm y = %02fm z = %02fm", t_f.at<double>(0), t_f.at<double>(1), t_f.at<double>(2));
         putText(traj, text, textOrg, fontFace, fontScale, Scalar::all(255), thickness, 8);
+        cv::Point textOrg2(10, 65);
+        snprintf(text, 100, "GroundTruth: x = %02fm y = %02fm z = %02fm", absx, absy, absz);
+        putText(traj, text, textOrg2, fontFace, fontScale, Scalar::all(255), thickness, 8);
 
+        for (int y = 0; y < traj.rows; y++) {
+            for (int x = 0; x < traj.cols; x++) {
+                if (x < currImage_c.rows && y < currImage_c.cols) {
+                    currImage_c.at<cv::Vec3b>(x, y) *= 0.75;
+                    if (traj.at<cv::Vec3b>(x, y)[2]>0 || traj.at<cv::Vec3b>(x, y)[1] > 0 || traj.at<cv::Vec3b>(x, y)[0] > 0)
+                    currImage_c.at<cv::Vec3b>(x, y) = traj.at<cv::Vec3b>(x, y);
+                }
+            }
+        }
+        cv::resize(currImage_c, currImage_c, cv::Size(1280, 1280 * currImage_c.rows / currImage_c.cols));
+        const int border = (currImage_c.cols * 9 / 16 - currImage_c.rows)/2;
+        cv::copyMakeBorder(currImage_c,currImage_c,border,border,0,0,cv::BORDER_CONSTANT,cv::Scalar(0,0,0));
         imshow("Road facing camera", currImage_c);
-        imshow("Trajectory", traj);
+        cv::resize(currImage_c, currImage_c, cv::Size(1280, 720));
+        video.write(currImage_c);
 
         if (waitKey(100) == 27)
             break;
 
     }
+
+    video.release();
 
     clock_t end = clock();
     double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
