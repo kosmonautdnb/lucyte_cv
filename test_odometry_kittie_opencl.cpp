@@ -50,7 +50,7 @@ THE SOFTWARE.
 
 #define MAX_FRAME 1000
 #define MIN_NUM_FEAT 2000
-#define KEYPOINTCOUNT (MIN_NUM_FEAT*3)
+#define KEYPOINTCOUNT (MIN_NUM_FEAT*4)
 //#define KLT
 
 using namespace cv;
@@ -171,7 +171,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
         double dx = pt.x - points1.at(i - indexCorrection).x;
         double dy = pt.y - points1.at(i - indexCorrection).y;
         double d = sqrt(dx * dx + dy * dy); // erstmal
-        if (e[i] > 1.5f || diffRatio > 0.1) {
+        if (e[i]>0.5f || diffRatio > 0.175) {
             points1.erase(points1.begin() + (i - indexCorrection));
             points2.erase(points2.begin() + (i - indexCorrection));
             indexCorrection++;
@@ -233,7 +233,7 @@ double getAbsoluteScale(int frame_id, int sequence_id, double z_cal) {
         absx = x_prev - startx;
         absy = y_prev - starty;
         absz = z_prev - startz;
-        myfile.close();
+        //myfile.close();
     }
 
     else {
@@ -255,8 +255,8 @@ int main(int argc, char** argv) {
     Mat img_1, img_2;
     Mat R_f, t_f; //the final rotation and tranlation vectors containing the 
 
-    ofstream myfile;
-    myfile.open("results1_1.txt");
+    //ofstream myfile;
+    //myfile.open("results1_1.txt");
 
     double scale = 1.00;
     char filename1[200];
@@ -397,7 +397,7 @@ int main(int argc, char** argv) {
         imshow("Road facing camera", currImage_c);
         imshow("Trajectory", traj);
 
-        if (waitKey(1) == 27)
+        if (waitKey(100) == 27)
             break;
 
     }
