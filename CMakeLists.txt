@@ -52,3 +52,6 @@ target_link_libraries(lucyte_test_feature_importance_opencl ${OpenCV_LIBS} ${Ope
 
 add_executable(lucyte_opencl_nonblocking opencl_main_nonblocking.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_opencl_nonblocking ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+
+add_executable(lucyte_KITTIE test_odometry_kittie_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_KITTIE ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
