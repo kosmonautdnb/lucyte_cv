@@ -151,7 +151,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
         {
             float error = 0;
             float weight = 0;
-            const float mipErrorAttenuation = 2.f;
+            const float mipErrorAttenuation = 1.5f;
             for (int j = mipEnd; j >= 0; j--) {
                 int differing = 0;
                 for (int k = 0; k < DESCRIPTORSIZE; ++k) {
@@ -167,7 +167,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
             double dx = pt.x - points1.at(i - indexCorrection).x;
             double dy = pt.y - points1.at(i - indexCorrection).y;
             double d = sqrt(dx * dx + dy * dy);
-            if (e[i] > 0.5f || diffRatio > 0.15 || d < 2 || d > mips2[0].cols * 0.1) {
+            if (e[i] > 0.5f || diffRatio > 0.1) {
                 points1.erase(points1.begin() + (i - indexCorrection));
                 points2.erase(points2.begin() + (i - indexCorrection));
                 indexCorrection++;

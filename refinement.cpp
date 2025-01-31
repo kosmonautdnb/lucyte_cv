@@ -4,10 +4,14 @@
 #include <omp.h>
 
 int texf(const unsigned char* s, const int x, const int y, const int width, const int height) {
-    const int xr = x >> 10;
-    const int yr = y >> 10;
-    if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1))
-        return 0;
+    int xr = x >> 10;
+    int yr = y >> 10;
+    if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1)) {
+        if (xr < 0) xr = 0;
+        if (yr < 0) yr = 0;
+        if (xr >= (width - 1)) xr = width - 2;
+        if (yr >= (height - 1)) yr = height - 2;
+    }
     s += xr + yr * width;
     const unsigned short a = *((unsigned short*)(s));
     const unsigned short b = *((unsigned short*)(s + width));

@@ -59,7 +59,7 @@ static cl::Event keyPointsYEvent[BUFFERCOUNT];
 static cl::Event descriptorEvent[BUFFERCOUNT][MAXMIPMAPS];
 
 static std::string openCV_program =
-"   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;\n"
+"   constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;\n"
 "\n"
 "   inline float tex(const image2d_t s, const float2 coord) {\n"
 "         return read_imagef(s,sampler,coord).x;\n"
