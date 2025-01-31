@@ -121,67 +121,70 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
 #else // KLT
     std::vector<::KeyPoint> p;
     std::vector<float> e;
-    p.resize(KEYPOINTCOUNT);
-    e.resize(KEYPOINTCOUNT);
-    for (int i = 0; i < points1.size(); ++i) {
-        p[i].x = points1[i].x;
-        p[i].y = points1[i].y;
-    }
-    uploadKeyPoints_openCL(p);
-    uploadMipMaps_openCL(mips1);
-    d1.resize(mips1.size());
-    for (int i = 0; i <= mipEnd; i++) {
-        d1[i].resize(KEYPOINTCOUNT);
-        const float mipScale = powf(MIPSCALE, float(i));
-        const float descriptorScale = 1.f / mipScale;
-        const int width = mips1[i].cols;
-        const int height = mips1[i].rows;
-        sampleDescriptors_openCL(i, d1, descriptorScale, width, height, mipScale);
-        uploadDescriptors_openCL(i, d1);
-    }
-    uploadMipMaps_openCL(mips2);
-    refineKeyPoints_openCL(p, e, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-    points2.resize(points1.size());
-    for (int i = 0; i < points1.size(); i++) {
-        points2[i].x = p[i].x;
-        points2[i].y = p[i].y;
-    }
-    uploadKeyPoints_openCL(p);
-    d2.resize(mips1.size());
-    for (int i = 0; i <= mipEnd; i++) {
-        d2[i].resize(KEYPOINTCOUNT);
-        const float mipScale = powf(MIPSCALE, float(i));
-        const float descriptorScale = 1.f / mipScale;
-        const int width = mips2[i].cols;
-        const int height = mips2[i].rows;
-        sampleDescriptors_openCL(i, d2, descriptorScale, width, height, mipScale);
-    }
-    int indexCorrection = 0;
-    int a = points2.size();
-    for (int i = 0; i < a; i++)
-    {
-        float error = 0;
-        const float errorAttenuation = 1.5f;
-        for (int j = mipEnd; j >= 0; j--) {
-            int differing = 0;
-            for (int k = 0; k < DESCRIPTORSIZE; ++k) {
-                differing += ((d1[j][i].bits[k >> 5] ^ d2[j][i].bits[k >> 5]) >> (k & 31)) & 1;
+    int size = points1.size();
+    if (size > 4) {
+        p.resize(size);
+        e.resize(size);
+        for (int i = 0; i < points1.size(); ++i) {
+            p[i].x = points1[i].x;
+            p[i].y = points1[i].y;
+        }
+        uploadKeyPoints_openCL(p);
+        uploadMipMaps_openCL(mips1);
+        d1.resize(mips1.size());
+        for (int i = 0; i <= mipEnd; i++) {
+            d1[i].resize(size);
+            const float mipScale = powf(MIPSCALE, float(i));
+            const float descriptorScale = 1.f / mipScale;
+            const int width = mips1[i].cols;
+            const int height = mips1[i].rows;
+            sampleDescriptors_openCL(i, d1, descriptorScale, width, height, mipScale);
+            uploadDescriptors_openCL(i, d1);
+        }
+        uploadMipMaps_openCL(mips2);
+        refineKeyPoints_openCL(p, e, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        points2.resize(points1.size());
+        for (int i = 0; i < points1.size(); i++) {
+            points2[i].x = p[i].x;
+            points2[i].y = p[i].y;
+        }
+        uploadKeyPoints_openCL(p);
+        d2.resize(mips1.size());
+        for (int i = 0; i <= mipEnd; i++) {
+            d2[i].resize(size);
+            const float mipScale = powf(MIPSCALE, float(i));
+            const float descriptorScale = 1.f / mipScale;
+            const int width = mips2[i].cols;
+            const int height = mips2[i].rows;
+            sampleDescriptors_openCL(i, d2, descriptorScale, width, height, mipScale);
+        }
+        int indexCorrection = 0;
+        int a = points2.size();
+        for (int i = 0; i < a; i++)
+        {
+            float error = 0;
+            const float errorAttenuation = 1.5f;
+            for (int j = mipEnd; j >= 0; j--) {
+                int differing = 0;
+                for (int k = 0; k < DESCRIPTORSIZE; ++k) {
+                    differing += ((d1[j][i].bits[k >> 5] ^ d2[j][i].bits[k >> 5]) >> (k & 31)) & 1;
+                }
+                error *= errorAttenuation;
+                error += float(differing) / float(DESCRIPTORSIZE);
+
             }
-            error *= errorAttenuation;
-            error += float(differing)/float(DESCRIPTORSIZE);
+            float diffRatio = error / pow(errorAttenuation, mipEnd);
+            Point2f pt = points2.at(i - indexCorrection);
+            double dx = pt.x - points1.at(i - indexCorrection).x;
+            double dy = pt.y - points1.at(i - indexCorrection).y;
+            double d = sqrt(dx * dx + dy * dy); // erstmal
+            if (e[i] > 0.5f || diffRatio > 0.2) {
+                points1.erase(points1.begin() + (i - indexCorrection));
+                points2.erase(points2.begin() + (i - indexCorrection));
+                indexCorrection++;
+            }
 
         }
-        float diffRatio = error / pow(errorAttenuation, mipEnd);
-        Point2f pt = points2.at(i - indexCorrection);
-        double dx = pt.x - points1.at(i - indexCorrection).x;
-        double dy = pt.y - points1.at(i - indexCorrection).y;
-        double d = sqrt(dx * dx + dy * dy); // erstmal
-        if (e[i]>0.5f || diffRatio > 0.2) {
-            points1.erase(points1.begin() + (i - indexCorrection));
-            points2.erase(points2.begin() + (i - indexCorrection));
-            indexCorrection++;
-        }
-
     }
 #endif // KLT
 }
