@@ -77,7 +77,6 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
 }
 
 std::vector<std::vector<Descriptor>> d1;
-std::vector<std::vector<Descriptor>> d2;
 
 void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Point2f>& points2, vector<uchar>& status, std::vector<cv::Mat>& mips1, std::vector<cv::Mat>& mips2, int mipEnd) {
 
@@ -135,36 +134,12 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
             points2[i].x = p[i].x;
             points2[i].y = p[i].y;
         }
-        uploadKeyPoints_openCL(p);
-        d2.resize(mips1.size());
-        for (int i = 0; i <= mipEnd; i++) {
-            d2[i].resize(size);
-            const float mipScale = powf(MIPSCALE, float(i));
-            const float descriptorScale = 1.f / mipScale;
-            const int width = mips2[i].cols;
-            const int height = mips2[i].rows;
-            sampleDescriptors_openCL(i, d2, descriptorScale, width, height, mipScale);
-        }
         int indexCorrection = 0;
         int a = points2.size();
         for (int i = 0; i < a; i++)
         {
-            float error = 0;
-            float weight = 0;
-            const float mipErrorAttenuation = 1.5f;
-            for (int j = mipEnd; j >= 0; j--) {
-                int differing = 0;
-                for (int k = 0; k < DESCRIPTORSIZE; ++k) {
-                    differing += ((d1[j][i].bits[k >> 5] ^ d2[j][i].bits[k >> 5]) >> (k & 31)) & 1;
-                }
-                error *= mipErrorAttenuation;
-                weight *= mipErrorAttenuation;
-                error += float(differing) / float(DESCRIPTORSIZE-1);
-                weight += 1.f;
-            }
-            float diffRatio = error / weight;
             Point2f pt = points2.at(i - indexCorrection);
-            if (e[i] > 0.1f) {
+            if (e[i] > 0.05f) {
                 points1.erase(points1.begin() + (i - indexCorrection));
                 points2.erase(points2.begin() + (i - indexCorrection));
                 indexCorrection++;
