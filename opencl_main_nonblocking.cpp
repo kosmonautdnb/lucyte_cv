@@ -100,8 +100,8 @@ int main(int argc, char** argv)
     cv::VideoWriter video;
     if (outputVideo) video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
-    uploadMipMaps_openCL(thisBuffer,mipmaps1);
-    uploadMipMaps_openCL(lastBuffer, mipmaps1);
+    uploadMipMaps_openCL(thisBuffer, 0, mipmaps1);
+    uploadMipMaps_openCL(lastBuffer, 0, mipmaps1);
     int mipEnd = MIPEND * (mipmaps1.size() - 1);
 
     std::vector<KeyPoint> keyPoints;
@@ -112,8 +112,8 @@ int main(int argc, char** argv)
         keyPoints[i].x = frrand2(mipmaps1[0].cols);
         keyPoints[i].y = frrand2(mipmaps1[0].rows);
     }
-    uploadKeyPoints_openCL(thisBuffer,keyPoints);
-    uploadKeyPoints_openCL(lastBuffer, keyPoints);
+    uploadKeyPoints_openCL(thisBuffer, 0, keyPoints);
+    uploadKeyPoints_openCL(lastBuffer, 0, keyPoints);
 
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
@@ -121,12 +121,12 @@ int main(int argc, char** argv)
         const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
         const int height = mipmaps1[i].rows;
-        sampleDescriptors_openCL(thisBuffer,i,keyPoints.size(), descriptorScale, width, height, mipScale);
-        sampleDescriptors_openCL(lastBuffer, i, keyPoints.size(), descriptorScale, width, height, mipScale);
-        sampleDescriptors_openCL_waitfor(thisBuffer, i, searchForDescriptors);
-        sampleDescriptors_openCL_waitfor(lastBuffer, i, searchForDescriptors);
-        uploadDescriptors_openCL(thisBuffer,i, searchForDescriptors);
-        uploadDescriptors_openCL(lastBuffer, i, searchForDescriptors);
+        sampleDescriptors_openCL(thisBuffer, 0,0,0, i,keyPoints.size(), descriptorScale, width, height, mipScale);
+        sampleDescriptors_openCL(lastBuffer, 0,0,0, i, keyPoints.size(), descriptorScale, width, height, mipScale);
+        sampleDescriptors_openCL_waitfor(thisBuffer, 0, i, searchForDescriptors);
+        sampleDescriptors_openCL_waitfor(lastBuffer, 0, i, searchForDescriptors);
+        uploadDescriptors_openCL(thisBuffer, 0, i, searchForDescriptors);
+        uploadDescriptors_openCL(lastBuffer, 0, i, searchForDescriptors);
     }
 
     long long t0 = X_Query_perf_counter();;
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
     long long fr = X_Query_perf_frequency();
     cv::Mat mat2[2];
     bool first = true;
-    refineKeyPoints_openCL(thisBuffer, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(thisBuffer, 0,0,0, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     std::vector<KeyPoint> lastlastFrameKeyPoints;
     std::vector<float> lastlastFrameErrors;
     std::vector<std::vector<Descriptor>> resampledDescriptors;
@@ -147,21 +147,21 @@ int main(int argc, char** argv)
         lastlastFrameErrors = errors;
         mat2[thisBuffer] = loadImage(steps);
         mipmaps2[thisBuffer] = mipMaps(mat2[thisBuffer]);
-        uploadMipMaps_openCL(thisBuffer, mipmaps2[thisBuffer]);
+        uploadMipMaps_openCL(thisBuffer, 0, mipmaps2[thisBuffer]);
         t00 = X_Query_perf_counter();
         if (!resampledDescriptors.empty()) {
             for (int i = mipEnd; i >= 0; i--) {
-                sampleDescriptors_openCL_waitfor(thisBuffer, i, resampledDescriptors);
+                sampleDescriptors_openCL_waitfor(thisBuffer, 0, i, resampledDescriptors);
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
                     }
                 }
-                uploadDescriptors_openCL(thisBuffer, i, searchForDescriptors);
+                uploadDescriptors_openCL(thisBuffer, 0, i, searchForDescriptors);
             }
         }
-        refineKeyPoints_openCL(thisBuffer, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-        refineKeyPoints_openCL_waitfor(lastBuffer, keyPoints, errors);
+        refineKeyPoints_openCL(thisBuffer, 0,0,0, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL_waitfor(lastBuffer, 0, keyPoints, errors);
         long long t1 = X_Query_perf_counter();
 
         first = false;
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
             }
         }
         
-        uploadKeyPoints_openCL(lastBuffer, keyPoints);
+        uploadKeyPoints_openCL(lastBuffer, 0, keyPoints);
 
         t2 = X_Query_perf_counter();
         const bool resample = true;
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
                 const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[thisBuffer][i].cols;
                 const int height = mipmaps2[thisBuffer][i].rows;
-                sampleDescriptors_openCL(lastBuffer, i, keyPoints.size(), descriptorScale, width, height, mipScale);
+                sampleDescriptors_openCL(lastBuffer, 0,0,0, i, keyPoints.size(), descriptorScale, width, height, mipScale);
             }
         }
         t3 = X_Query_perf_counter();
