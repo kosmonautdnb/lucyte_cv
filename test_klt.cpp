@@ -78,7 +78,8 @@ std::pair<KeyPoint,float> trackPoint(const std::vector<cv::Mat> & mipmapsSource,
     KeyPoint keyPoint;
     float error;
     for (int v = 0; v < 2; v++) {
-        KeyPoint kp = { float(mipmapsDest[0].cols) * 0.5f, float(mipmapsDest[0].rows) * 0.5f };
+//        KeyPoint kp = { float(mipmapsDest[0].cols) * 0.5f, float(mipmapsDest[0].rows) * 0.5f };
+        KeyPoint kp = keyPointSource;
         for (int i = mipmapsDest.size() - 1; i >= 0; i--) {
             const int width = mipmapsDest[i].cols;
             const int height = mipmapsDest[i].rows;

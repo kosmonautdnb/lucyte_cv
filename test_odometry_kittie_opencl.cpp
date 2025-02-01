@@ -164,7 +164,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
             }
             float diffRatio = error / weight;
             Point2f pt = points2.at(i - indexCorrection);
-            if (e[i] > 0.1f || diffRatio > 0.2) {
+            if (e[i] > 0.1f) {
                 points1.erase(points1.begin() + (i - indexCorrection));
                 points2.erase(points2.begin() + (i - indexCorrection));
                 indexCorrection++;
