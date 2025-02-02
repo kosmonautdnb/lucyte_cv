@@ -8,7 +8,7 @@ Actually this repository should just hint at this basic algorithm, that can be f
 
 ## Demo videos
 
-Day drive: https://www.youtube.com/watch?v=3C6wPafwNTQ
+Day drive: https://www.youtube.com/watch?v=6K82WeEhKBI
 
 Night drive: https://www.youtube.com/watch?v=A_0tm-1DTm4
 
