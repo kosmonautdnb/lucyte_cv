@@ -149,8 +149,8 @@ int main(int argc, char** argv) {
         lastFrameLeftImageErrors = leftImageErrors;
         lastFrameRightImageKeyPoints = rightImageKeyPoints;
         lastFrameRightImageErrors = rightImageErrors;
-        refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-        refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
         refineKeyPoints_openCL_waitfor(0, 1, rightImageKeyPoints, rightImageErrors);
         for (int i = leftImageKeyPoints.size() - 1; i >= 0; i--) {
