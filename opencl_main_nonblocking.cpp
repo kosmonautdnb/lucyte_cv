@@ -136,7 +136,7 @@ int main(int argc, char** argv)
     long long fr = X_Query_perf_frequency();
     cv::Mat mat2[2];
     bool first = true;
-    refineKeyPoints_openCL(thisBuffer, 0,0,0, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(thisBuffer, 0,0,0, keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     std::vector<KeyPoint> lastlastFrameKeyPoints;
     std::vector<float> lastlastFrameErrors;
     std::vector<std::vector<Descriptor>> resampledDescriptors;
@@ -160,7 +160,7 @@ int main(int argc, char** argv)
                 uploadDescriptors_openCL(thisBuffer, 0, i, searchForDescriptors);
             }
         }
-        refineKeyPoints_openCL(thisBuffer, 0,0,0, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(thisBuffer, 0,0,0, keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         refineKeyPoints_openCL_waitfor(lastBuffer, 0, keyPoints, errors);
         long long t1 = X_Query_perf_counter();
 
