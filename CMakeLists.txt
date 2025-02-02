@@ -55,3 +55,6 @@ target_link_libraries(lucyte_opencl_nonblocking ${OpenCV_LIBS} ${OpenCL_LIBRARIE
 
 add_executable(lucyte_KITTIE test_odometry_kittie_opencl.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_KITTIE ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+
+add_executable(lucyte_KITTIE_stereo test_odometry_kittie_stereo_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_KITTIE_stereo ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
