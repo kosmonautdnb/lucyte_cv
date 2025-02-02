@@ -13,8 +13,8 @@ std::string filenamesLeft = "g:/KITTIE/data_odometry_color/dataset/sequences/00/
 std::string filenamesRight = "g:/KITTIE/data_odometry_color/dataset/sequences/00/image_3/%06d.png";
 double absx, absy, absz;
 double startx, starty, startz;
-#define MINKEYPOINTS 2000
-#define KEYPOINTCOUNT 4000
+#define MINKEYPOINTS 1000
+#define KEYPOINTCOUNT 3000
 
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     cv::Mat k;
@@ -81,8 +81,12 @@ int main(int argc, char** argv) {
     t_f = t.clone();
     std::vector<::KeyPoint> lastFrameLeftImageKeyPoints;
     std::vector<::KeyPoint> leftImageKeyPoints;
+    std::vector<::KeyPoint> lastFrameRightImageKeyPoints;
+    std::vector<::KeyPoint> rightImageKeyPoints;
     std::vector<float> lastFrameLeftImageErrors;
     std::vector<float> leftImageErrors;
+    std::vector<float> lastFrameRightImageErrors;
+    std::vector<float> rightImageErrors;
     std::vector<cv::Mat> leftMipMaps;
     std::vector<cv::Mat> rightMipMaps;
 
@@ -117,13 +121,16 @@ int main(int argc, char** argv) {
             for (int i = 0; i < missing; i++) {
                 int b = rand() % corners.size();
                 leftImageKeyPoints.push_back({ corners[b].pt.x, corners[b].pt.y });
+                rightImageKeyPoints.push_back({ corners[b].pt.x, corners[b].pt.y });
                 leftImageErrors.push_back(10);
+                rightImageErrors.push_back(10);
                 corners.erase(corners.begin() + b); if (corners.empty()) break;
             }
         }
         lastLeftImage_grey = leftImage_grey;
 
         uploadKeyPoints_openCL(0, 0, leftImageKeyPoints);
+        uploadKeyPoints_openCL(0, 1, leftImageKeyPoints);
         std::vector<std::vector<Descriptor>> lastFrameLeftDescriptors;
         lastFrameLeftDescriptors.resize(leftMipMaps.size());
         for (int i = 0; i <= mipEnd; i++) {
@@ -140,31 +147,44 @@ int main(int argc, char** argv) {
         }
         lastFrameLeftImageKeyPoints = leftImageKeyPoints;
         lastFrameLeftImageErrors = leftImageErrors;
+        lastFrameRightImageKeyPoints = rightImageKeyPoints;
+        lastFrameRightImageErrors = rightImageErrors;
         refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
+        refineKeyPoints_openCL_waitfor(0, 1, rightImageKeyPoints, rightImageErrors);
         for (int i = leftImageKeyPoints.size() - 1; i >= 0; i--) {
-            if (leftImageErrors[i] > 0.05) {
+            const double deltaXToRight = leftImageKeyPoints[i].x - rightImageKeyPoints[i].x;
+            const double deltaYToRight = leftImageKeyPoints[i].y - rightImageKeyPoints[i].y;
+            if (leftImageErrors[i] > 0.05 || abs(deltaYToRight)>2.0) {
                 leftImageKeyPoints.erase(leftImageKeyPoints.begin() + i);
                 leftImageErrors.erase(leftImageErrors.begin() + i);
+                rightImageKeyPoints.erase(rightImageKeyPoints.begin() + i);
+                rightImageErrors.erase(rightImageErrors.begin() + i);
                 lastFrameLeftImageKeyPoints.erase(lastFrameLeftImageKeyPoints.begin() + i);
                 lastFrameLeftImageErrors.erase(lastFrameLeftImageErrors.begin() + i);
+                lastFrameRightImageKeyPoints.erase(lastFrameRightImageKeyPoints.begin() + i);
+                lastFrameRightImageErrors.erase(lastFrameRightImageErrors.begin() + i);
             }
         }
-        if (leftImageKeyPoints.size() > 3) {
-            std::vector<cv::Point2f> thisFeaturesLeft; thisFeaturesLeft.resize(leftImageKeyPoints.size());
-            std::vector<cv::Point2f> lastFeaturesLeft; lastFeaturesLeft.resize(lastFrameLeftImageKeyPoints.size());
+        if (leftImageKeyPoints.size() > 10) {
+            std::vector<cv::Point2f> thisFeaturesLeft;  thisFeaturesLeft.resize(leftImageKeyPoints.size());
+            std::vector<cv::Point2f> lastFeaturesLeft;  lastFeaturesLeft.resize(lastFrameLeftImageKeyPoints.size());
+            std::vector<cv::Point2f> thisFeaturesRight; thisFeaturesRight.resize(rightImageKeyPoints.size());
+            std::vector<cv::Point2f> lastFeaturesRight; lastFeaturesRight.resize(lastFrameRightImageKeyPoints.size());
             for (int i = 0; i < leftImageKeyPoints.size(); i++) { thisFeaturesLeft[i].x = leftImageKeyPoints[i].x; thisFeaturesLeft[i].y = leftImageKeyPoints[i].y; }
             for (int i = 0; i < lastFrameLeftImageKeyPoints.size(); i++) { lastFeaturesLeft[i].x = lastFrameLeftImageKeyPoints[i].x; lastFeaturesLeft[i].y = lastFrameLeftImageKeyPoints[i].y; }
+            for (int i = 0; i < rightImageKeyPoints.size(); i++) { thisFeaturesRight[i].x = rightImageKeyPoints[i].x; thisFeaturesRight[i].y = rightImageKeyPoints[i].y; }
+            for (int i = 0; i < lastFrameRightImageKeyPoints.size(); i++) { lastFeaturesRight[i].x = lastFrameRightImageKeyPoints[i].x; lastFeaturesRight[i].y = lastFrameRightImageKeyPoints[i].y; }
             E = findEssentialMat(thisFeaturesLeft, lastFeaturesLeft, focal, pp, cv::RANSAC, 0.999, 1.0, mask);
             recoverPose(E, thisFeaturesLeft, lastFeaturesLeft, R, t, focal, pp, mask);
-
-            double moveDistance = getAbsoluteScale(steps, 0, t.at<double>(2));
+            const double moveDistance = getAbsoluteScale(steps, 0, t.at<double>(2));
             if ((moveDistance > 0.1) && (t.at<double>(2) > t.at<double>(0)) && (t.at<double>(2) > t.at<double>(1))) {
                 t_f = t_f + moveDistance * (R_f * t);
                 R_f = R * R_f;
             }
-
             for (int i = 0; i < thisFeaturesLeft.size(); i++) cv::line(leftImage, thisFeaturesLeft[i], lastFeaturesLeft[i], cv::Scalar(255, 0, 255));
+            for (int i = 0; i < thisFeaturesRight.size(); i++) cv::line(rightImage, thisFeaturesRight[i], lastFeaturesRight[i], cv::Scalar(255, 0, 255));
         }
 
         int x = int(t_f.at<double>(0));

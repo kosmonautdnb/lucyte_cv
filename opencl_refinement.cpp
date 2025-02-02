@@ -497,7 +497,7 @@ void sampleDescriptors_openCL_waitfor(const int queueId, const int descriptorsId
     dest.resize(keyPointCount);
     openCLQueue[queueId].enqueueReadBuffer(openCLBitsFull[queueId][descriptorsId][mipMap], CL_TRUE, 0, openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[queueId][descriptorsId][mipMap][0]));
     openCLQueue[queueId].enqueueReadBuffer(openCLDebug2[queueId], CL_TRUE, 0, sizeof(clDebug2[queueId]), clDebug2[queueId]);
-    openCLQueue[queueId].finish();
+    openCLQueue[queueId].flush();
     for (int i = 0; i < keyPointCount; ++i) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
             dest[i].bits[j] = openCLDescriptorBitsFull[queueId][descriptorsId][mipMap][i * Descriptor::uint32count + j];
@@ -553,7 +553,7 @@ void refineKeyPoints_openCL_waitfor(const int queueId, const int keyPointsId, st
     openCLQueue[queueId].enqueueReadBuffer(openCLNewVariancePointsX[queueId][keyPointsId], CL_TRUE, 0, destVariancePointsX.size() * sizeof(float), &(destVariancePointsX[0]));
     openCLQueue[queueId].enqueueReadBuffer(openCLNewVariancePointsY[queueId][keyPointsId], CL_TRUE, 0, destVariancePointsY.size() * sizeof(float), &(destVariancePointsY[0]));
     openCLQueue[queueId].enqueueReadBuffer(openCLDebug1[queueId], CL_TRUE, 0, sizeof(clDebug1[queueId]), clDebug1[queueId]);
-    openCLQueue[queueId].finish();
+    openCLQueue[queueId].flush();
     for (int i = 0; i < destKeyPoints.size(); i++) {
         destKeyPoints[i].x = (destKeyPointsX[i] + destVariancePointsX[i]) * 0.5f;
         destKeyPoints[i].y = (destKeyPointsY[i] + destVariancePointsY[i]) * 0.5f;
