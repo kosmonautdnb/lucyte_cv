@@ -447,9 +447,7 @@ void uploadDescriptors_openCL(const int queueId, const int descriptorsId, const 
     uploadDescriptors_openCL_waitfor(queueId, descriptorsId, mipMap);
     const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
     if ((descriptors.size() * Descriptor::uint32count) > openCLDescriptorBits[queueId][descriptorsId][mipMap].size()) {
-        if ((descriptors.size() * Descriptor::uint32count) != openCLDescriptorBits[queueId][descriptorsId][mipMap].size()) {
-            openCLDescriptorBits[queueId][descriptorsId][mipMap].resize(descriptors.size() * Descriptor::uint32count);
-        }
+        openCLDescriptorBits[queueId][descriptorsId][mipMap].resize(descriptors.size() * Descriptor::uint32count);
         openCLBits[queueId][descriptorsId][mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * Descriptor::uint32count * descriptors.size());
     }
     for (int i = int(descriptors.size()) - 1; i >= 0; i--) {
@@ -465,7 +463,7 @@ void uploadDescriptors_openCL_waitfor(const int queueId, const int descriptorsId
 }
 
 void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipMap, const int keyPointCount, const float descriptorScale, const int width, const int height, const float mipScale) {
-    if ((keyPointCount * Descriptor::uint32count) != openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size()) {
+    if ((keyPointCount * Descriptor::uint32count) > openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size()) {
         openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].resize(keyPointCount * Descriptor::uint32count);
         openCLBitsFull[queueId][descriptorsId][mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size());
     }
