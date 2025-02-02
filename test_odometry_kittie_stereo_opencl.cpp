@@ -13,7 +13,6 @@ std::string filenamesLeft = "g:/KITTIE/data_odometry_color/dataset/sequences/00/
 std::string filenamesRight = "g:/KITTIE/data_odometry_color/dataset/sequences/00/image_3/%06d.png";
 double absx, absy, absz;
 double startx, starty, startz;
-#define MINKEYPOINTS 1000
 #define KEYPOINTCOUNT 3000
 
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
@@ -114,18 +113,16 @@ int main(int argc, char** argv) {
         uploadMipMaps_openCL(0, doubleBuffer * 2 + 0, leftMipMaps);
         uploadMipMaps_openCL(0, doubleBuffer * 2 + 1, rightMipMaps);
 
-        if (leftImageKeyPoints.size() < MINKEYPOINTS) {
-            const int missing = KEYPOINTCOUNT - leftImageKeyPoints.size();
-            std::vector<cv::KeyPoint> corners;
-            cv::FAST(lastLeftImage_grey, corners, 20, true);
-            for (int i = 0; i < missing; i++) {
-                int b = rand() % corners.size();
-                leftImageKeyPoints.push_back({ corners[b].pt.x, corners[b].pt.y });
-                rightImageKeyPoints.push_back({ corners[b].pt.x, corners[b].pt.y });
-                leftImageErrors.push_back(10);
-                rightImageErrors.push_back(10);
-                corners.erase(corners.begin() + b); if (corners.empty()) break;
-            }
+        const int missing = KEYPOINTCOUNT - leftImageKeyPoints.size();
+        std::vector<cv::KeyPoint> corners;
+        cv::FAST(lastLeftImage_grey, corners, 20, true);
+        for (int i = 0; i < missing; i++) {
+            int b = rand() % corners.size();
+            leftImageKeyPoints.push_back({ corners[b].pt.x, corners[b].pt.y });
+            rightImageKeyPoints.push_back({ corners[b].pt.x, corners[b].pt.y });
+            leftImageErrors.push_back(10);
+            rightImageErrors.push_back(10);
+            corners.erase(corners.begin() + b); if (corners.empty()) break;
         }
         lastLeftImage_grey = leftImage_grey;
 
@@ -196,7 +193,7 @@ int main(int argc, char** argv) {
         imshow("right", rightImage);
         imshow("trajectory", traj);
 
-        if (cv::waitKey(100) == 27)
+        if (cv::waitKey(1000) == 27)
             break;
     }
 
