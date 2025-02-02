@@ -11,7 +11,7 @@
 #include "constants.hpp"
 
 const int QUEUECOUNT = 2;
-const int MIPMAPIDCOUNT = 2;
+const int MIPMAPIDCOUNT = 8;
 const int KEYPOINTIDCOUNT = 2;
 const int DESCRIPTORIDCOUNT = 2;
 #define CLBLOCKING CL_TRUE

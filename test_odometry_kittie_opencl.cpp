@@ -169,9 +169,9 @@ void featureDetection(Mat img_1, vector<Point2f>& points1, std::vector<cv::Mat> 
 using namespace cv;
 using namespace std;
 
-std::string absoluteScaleFileName = "e:/KITTIE/data_odometry_poses/dataset/poses/00.txt";
-std::string filenames1 = "e:/KITTIE/data_odometry_color/dataset/sequences/00/image_2/%06d.png";
-std::string filenames2 = "e:/KITTIE/data_odometry_color/dataset/sequences/00/image_2/%06d.png";
+std::string absoluteScaleFileName = "g:/KITTIE/data_odometry_poses/dataset/poses/00.txt";
+std::string filenames1 = "g:/KITTIE/data_odometry_color/dataset/sequences/00/image_2/%06d.png";
+std::string filenames2 = "g:/KITTIE/data_odometry_color/dataset/sequences/00/image_2/%06d.png";
 
 // IMP: Change the file directories (4 places) according to where your dataset is saved before running!
 double absx, absy, absz;
