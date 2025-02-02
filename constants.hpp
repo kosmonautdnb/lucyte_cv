@@ -1,6 +1,6 @@
 // Lucyte Created on: 29.01.2025 by Stefan Mader
 #pragma once
-#define KEYPOINTCOUNT 1000
+#define KEYPOINTCOUNT 10000
 
 #define DESCRIPTORSHAPE_64 0
 #define DESCRIPTORSHAPE_38 1

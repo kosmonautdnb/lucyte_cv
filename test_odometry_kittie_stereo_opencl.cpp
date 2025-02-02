@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
         imshow("right", rightImage);
         imshow("trajectory", traj);
 
-        if (cv::waitKey(1000) == 27)
+        if (cv::waitKey(100) == 27)
             break;
     }
 

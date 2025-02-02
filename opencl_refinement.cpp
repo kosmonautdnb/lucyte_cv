@@ -490,10 +490,9 @@ void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const in
 }
 
 void sampleDescriptors_openCL_waitfor(const int queueId, const int descriptorsId, const int mipMap, std::vector<std::vector<Descriptor>>& destMips) {
-    const int keyPointCount = openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size() / Descriptor::uint32count;
     std::vector<Descriptor>& dest = destMips[mipMap];
-    dest.resize(keyPointCount);
-    openCLQueue[queueId].enqueueReadBuffer(openCLBitsFull[queueId][descriptorsId][mipMap], CL_TRUE, 0, openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size() * sizeof(unsigned int), &(openCLDescriptorBitsFull[queueId][descriptorsId][mipMap][0]));
+    const int keyPointCount = dest.size();
+    openCLQueue[queueId].enqueueReadBuffer(openCLBitsFull[queueId][descriptorsId][mipMap], CL_TRUE, 0, sizeof(unsigned int) * Descriptor::uint32count * keyPointCount, &(openCLDescriptorBitsFull[queueId][descriptorsId][mipMap][0]));
     openCLQueue[queueId].enqueueReadBuffer(openCLDebug2[queueId], CL_TRUE, 0, sizeof(clDebug2[queueId]), clDebug2[queueId]);
     openCLQueue[queueId].flush();
     for (int i = 0; i < keyPointCount; ++i) {
