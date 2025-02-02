@@ -22,6 +22,6 @@ Object tracking base: https://www.youtube.com/watch?v=Vfx42kb2aPM
 
 Stereo Vision Disparity/Depth: https://www.youtube.com/watch?v=sh3JB8mnVaY
 
-Lucyte with KITTIE visual odometry benchmark: https://www.youtube.com/watch?v=C-9sCdJsaTE 
+Lucyte with KITTIE benchmark (speed is read from file): https://www.youtube.com/watch?v=C-9sCdJsaTE 
 
 ![ScreenShot](https://raw.github.com/kosmonautdnb/lucyte_cv/main/desc.png)
