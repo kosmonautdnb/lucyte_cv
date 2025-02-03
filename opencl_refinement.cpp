@@ -10,7 +10,6 @@
 
 #include "constants.hpp"
 
-#define CLBLOCKING CL_TRUE
 #define CLNONBLOCKING CL_FALSE
 static const int MAXMIPMAPS = 32;
 static const int QUEUECOUNT = 2;
@@ -402,8 +401,8 @@ void uploadMipMaps_openCL(const int queueId, const int mipmapsId,const std::vect
         mipMapHeights[queueId][mipmapsId].resize(mipMaps.size());
         for (int i = 0; i < mipMapWidths[queueId][mipmapsId].size(); i++) mipMapWidths[queueId][mipmapsId][i] = mipMaps[i].cols;
         for (int i = 0; i < mipMapHeights[queueId][mipmapsId].size(); i++) mipMapHeights[queueId][mipmapsId][i] = mipMaps[i].rows;
-        openCLQueue[queueId].enqueueWriteBuffer(openCLMipMapWidths[queueId][mipmapsId], CLBLOCKING, 0, sizeof(unsigned int) * mipMapWidths[queueId][mipmapsId].size(), &(mipMapWidths[queueId][mipmapsId][0]));
-        openCLQueue[queueId].enqueueWriteBuffer(openCLMipMapHeights[queueId][mipmapsId], CLBLOCKING, 0, sizeof(unsigned int) * mipMapHeights[queueId][mipmapsId].size(), &(mipMapHeights[queueId][mipmapsId][0]));
+        openCLQueue[queueId].enqueueWriteBuffer(openCLMipMapWidths[queueId][mipmapsId], CL_TRUE, 0, sizeof(unsigned int) * mipMapWidths[queueId][mipmapsId].size(), &(mipMapWidths[queueId][mipmapsId][0]));
+        openCLQueue[queueId].enqueueWriteBuffer(openCLMipMapHeights[queueId][mipmapsId], CL_TRUE, 0, sizeof(unsigned int) * mipMapHeights[queueId][mipmapsId].size(), &(mipMapHeights[queueId][mipmapsId][0]));
     }
     for (int i = 0; i < mipMaps.size(); i++) {
         cl::array<cl::size_type, 2> origin = { 0,0 };

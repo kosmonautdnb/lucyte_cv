@@ -6,7 +6,7 @@
 
 void initOpenCL();
 
-// double buffered / non blocking
+// buffered / non blocking
 void uploadDescriptorShape_openCL(const int queueId);
 void uploadMipMaps_openCL(const int queueId, const int mipmapsId, const std::vector<cv::Mat>& mipMaps);
 void uploadMipMaps_openCL_waitfor(const int queueId, const int mipmapsId);

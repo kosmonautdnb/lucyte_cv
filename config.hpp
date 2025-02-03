@@ -3,14 +3,14 @@
 
 #include "constants.hpp"
 
-#define FILESET 1
+#define FILESET 3
 #define STEREO_FILESET 3
 const char* outputVideoFileName = "c:/!mad/video.avi";
 const char* outputBenchmarkVideoFileName = "c:/!mad/bench_video.avi";
 const char* benchmarkPictureFileName = "c:/!mad/bench.png";
 const double outputVideoFrameRate = 25;
 const double stereoOutputVideoFrameRate = 8;
-const bool outputVideo = false;
+const bool outputVideo = true;
 
 #define CONFIG_GOOD 0
 #define CONFIG_FAST 1

@@ -24,9 +24,13 @@ endif()
 
 include_directories(${OpenCL_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS})
 
+
 set(lucyte_common constants.hpp config.hpp refinement.cpp refinement.hpp descriptors.cpp descriptors.hpp)
+
 set(lucyte_opencl opencl_refinement.cpp opencl_refinement.hpp)
+
 set(lucyte_opengl opengl_refinement.cpp opengl_refinement.hpp)
+
 
 add_executable(lucyte_basic main.cpp ${lucyte_common})
 target_link_libraries(lucyte_basic ${OpenCV_LIBS})

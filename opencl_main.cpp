@@ -154,12 +154,16 @@ int main(int argc, char** argv)
             const int width = mipmaps2[0].cols;
             const int height = mipmaps2[0].rows;
             for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                KeyPoint &k = keyPoints[j];
+                KeyPoint& k = keyPoints[j];
+                KeyPoint& kl = lastFrameKeyPoints[j];
+                KeyPoint k2;
+                k2.x = k.x + (k.x - kl.x);
+                k2.y = k.y + (k.y - kl.y);
                 const float LEFT = 10;
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
-                if ((k.x < LEFT) || (k.x >= width-RIGHT) || (k.y < TOP) || (k.y >= height-BOTTOM) || errors[j] >= MAXVARIANCEINPIXELS) {
+                if ((k2.x < LEFT) || (k2.x >= width-RIGHT) || (k2.y < TOP) || (k2.y >= height-BOTTOM) || errors[j] >= MAXVARIANCEINPIXELS) {
                     k.x = frrand2(width);
                     k.y = frrand2(height);
                     errors[j] = 0;
