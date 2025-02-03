@@ -110,8 +110,9 @@ int main(int argc, char** argv) {
         leftMipMaps = mipMaps(leftImage_grey);
         rightMipMaps = mipMaps(rightImage_grey);
         const int mipEnd = leftMipMaps.size() - 1;
-        uploadMipMaps_openCL(0, doubleBuffer * 2 + 0, leftMipMaps);
-        uploadMipMaps_openCL(0, doubleBuffer * 2 + 1, rightMipMaps);
+        const bool wait = true;
+        uploadMipMaps_openCL(0, doubleBuffer * 2 + 0, leftMipMaps);  if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 0);
+        uploadMipMaps_openCL(0, doubleBuffer * 2 + 1, rightMipMaps); if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 1);
 
         const int missing = KEYPOINTCOUNT - leftImageKeyPoints.size();
         std::vector<cv::KeyPoint> corners;
@@ -126,8 +127,8 @@ int main(int argc, char** argv) {
         }
         lastLeftImage_grey = leftImage_grey;
 
-        uploadKeyPoints_openCL(0, 0, leftImageKeyPoints);
-        uploadKeyPoints_openCL(0, 1, leftImageKeyPoints);
+        uploadKeyPoints_openCL(0, 0, leftImageKeyPoints); if (wait) uploadKeyPoints_openCL_waitfor(0, 0);
+        uploadKeyPoints_openCL(0, 1, leftImageKeyPoints); if (wait) uploadKeyPoints_openCL_waitfor(0, 1);
         std::vector<std::vector<Descriptor>> lastFrameLeftDescriptors;
         lastFrameLeftDescriptors.resize(leftMipMaps.size());
         for (int i = 0; i <= mipEnd; i++) {
@@ -141,14 +142,16 @@ int main(int argc, char** argv) {
         for (int i = 0; i <= mipEnd; i++) {
             sampleDescriptors_openCL_waitfor(0, 0, i, lastFrameLeftDescriptors);
             uploadDescriptors_openCL(0, 0, i, lastFrameLeftDescriptors);
+            if (wait) uploadDescriptors_openCL_waitfor(0, 0, i);
         }
         lastFrameLeftImageKeyPoints = leftImageKeyPoints;
         lastFrameLeftImageErrors = leftImageErrors;
         lastFrameRightImageKeyPoints = rightImageKeyPoints;
         lastFrameRightImageErrors = rightImageErrors;
         refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        if (wait) refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
         refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
-        refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
+        if (!wait) refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
         refineKeyPoints_openCL_waitfor(0, 1, rightImageKeyPoints, rightImageErrors);
         for (int i = leftImageKeyPoints.size() - 1; i >= 0; i--) {
             const double deltaXToRight = leftImageKeyPoints[i].x - rightImageKeyPoints[i].x;
