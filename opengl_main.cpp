@@ -4,6 +4,7 @@
 int main(int argc, char** argv)
 {
     initOpenGL();
+    cv::namedWindow("Lucyte");
     while(!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -12,6 +13,8 @@ int main(int argc, char** argv)
         glClearColor(float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         glfwSwapBuffers(window);
+        if (cv::waitKey(100) == 27)
+            break;
     }
 
     return 0;

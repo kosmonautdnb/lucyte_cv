@@ -1,4 +1,5 @@
 // Lucyte Created on: 03.02.2025 by Stefan Mader
+#include <GL/glew.h>
 #include "opengl_refinement.hpp"
 
 GLFWwindow* window = NULL;
@@ -17,6 +18,48 @@ GLuint openGLKeyPointsX[KEYPOINTIDCOUNT] = { 0 };
 GLuint openGLKeyPointsY[KEYPOINTIDCOUNT] = { 0 };
 GLuint openGLDescriptors[DESCRIPTORIDCOUNT][MAXMIPMAPS] = { {0} };
 
+GLuint openGLFragmentShader_sampleDescriptors;
+GLuint openGLFragmentShader_refineKeyPoints;
+GLuint openGLVertexShader_basic;
+const std::string sampleDescriptorProgram = "#version 300 es\n"
+"\n";
+const std::string refineKeyPointsProgram = "#version 300 es\n"
+"\n";
+const std::string basicProgram = "#version 300 es\n"
+"\n";
+
+void checkShader(GLuint shader) {
+    GLint isCompiled = 0;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+    if (isCompiled == GL_FALSE) {
+        GLint maxLength = 0;
+        std::vector<char> errorLog(maxLength);
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+        glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
+        printf("%s", &(errorLog[0]));
+        glDeleteShader(shader);
+        exit(0);
+    }
+}
+
+GLuint pixelShader(const char *shaderProgram, const unsigned int size) {
+    int length[] = { size };
+    GLuint shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(shader, 1, &shaderProgram, length);
+    glCompileShader(shader);
+    checkShader(shader);
+    return shader;
+}
+
+GLuint vertexShader(const char* shaderProgram, const unsigned int size) {
+    int length[] = { size };
+    GLuint shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(shader, 1, &shaderProgram, length);
+    glCompileShader(shader);
+    checkShader(shader);
+    return shader;
+}
+
 void glfwErrorCallback(int error_code, const char* description) {
 
 }
@@ -33,7 +76,12 @@ void initOpenGL() {
     if (window == NULL)
         exit(0);
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // Enable vsync
+    glfwSwapInterval(1);
+
+    glewInit();
+    openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptorProgram.c_str(), sampleDescriptorProgram.length());
+    openGLFragmentShader_refineKeyPoints = pixelShader(refineKeyPointsProgram.c_str(), refineKeyPointsProgram.length());
+    openGLVertexShader_basic = vertexShader(basicProgram.c_str(), basicProgram.length());
 }
 
 void upload2DFloatTexture(const GLuint& tex, const float* data, const unsigned int width, const int height, const bool nearest) {
