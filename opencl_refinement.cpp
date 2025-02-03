@@ -10,13 +10,13 @@
 
 #include "constants.hpp"
 
-const int QUEUECOUNT = 2;
-const int MIPMAPIDCOUNT = 8;
-const int KEYPOINTIDCOUNT = 2;
-const int DESCRIPTORIDCOUNT = 2;
 #define CLBLOCKING CL_TRUE
 #define CLNONBLOCKING CL_FALSE
 static const int MAXMIPMAPS = 32;
+static const int QUEUECOUNT = 2;
+static const int MIPMAPIDCOUNT = 8;
+static const int KEYPOINTIDCOUNT = 2;
+static const int DESCRIPTORIDCOUNT = 2;
 cl::Platform openCLPlatform;
 cl::Device openCLDevice;
 cl::Context openCLContext;

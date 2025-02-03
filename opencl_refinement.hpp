@@ -1,9 +1,8 @@
 // Lucyte Created on: 21.01.2025 by Stefan Mader
 #pragma once
-
+#include "refinement.hpp"
 #include <vector>
 #include <opencv2/opencv.hpp>
-#include "refinement.hpp"
 
 void initOpenCL();
 
