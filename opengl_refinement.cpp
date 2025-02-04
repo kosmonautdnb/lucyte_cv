@@ -90,12 +90,15 @@ const std::string refineKeyPointsProgram = "#version 300 es\nprecision highp flo
 "in vec2 p;\n"
 "out vec4 frag_color;\n"
 "uniform sampler2DArray mipMaps;\n"
+"uniform sampler2DArray descriptors;\n"
 "uniform int mipMapWidth[32];\n"
 "uniform int mipMapHeight[32];\n"
 "uniform int DESCRIPTORSIZE;\n"
 "uniform int stepping;\n"
 "uniform int texWidthDescriptorShape;\n"
 "uniform int texHeightDescriptorShape;\n"
+"uniform int texWidthDescriptors;\n"
+"uniform int texHeightDescriptors;\n"
 "uniform int mipEnd;\n"
 "uniform int STEPCOUNT;\n"
 "uniform float MIPSCALE;\n"
@@ -122,7 +125,7 @@ SHARED_SHADER_FUNCTIONS
 "    b >>= 3;\n"
 "    return float(b & 0xffff) / float(0x10000);\n"
 "}\n"
-"vec2 refineKeyPoint(vec2 kpxy, int mipMap) {\n"
+"vec2 refineKeyPoint(vec2 kpxy, int mipMap, uvec4 descriptor) {\n"
 "   vec2 kp = kpxy * mipScale;\n"
 "   float descriptorSize = mipScale * descriptorScale;\n"
 "   float sina = sin(angle);\n"
@@ -133,6 +136,10 @@ SHARED_SHADER_FUNCTIONS
 "   vec2 gdy = vec2(-sina,cosa);\n"
 "   vec2 xya = vec2(0,0);\n"
 "   vec2 sc = vec2(1.0/float(mipMapWidth[mipMap]),1.0/float(mipMapHeight[mipMap]));\n"
+"   dBits[0] = descriptor.x;"
+"   dBits[1] = descriptor.y;"
+"   dBits[2] = descriptor.z;"
+"   dBits[3] = descriptor.w;"
 "   for (int b = 0; b < DESCRIPTORSIZE; ++b) {\n"
 "       vec2 dp1 = descriptors1(b);\n"
 "       vec2 dp2 = descriptors2(b);\n"
@@ -165,16 +172,21 @@ SHARED_SHADER_FUNCTIONS
 "{\n"
 "   int txx = int(floor(p.x+0.25));\n"
 "   int txy = int(floor(p.y+0.25));\n"
+"   int descriptorNr = txx + txy * texWidthKeyPoints;\n"
+"   int descriptorNrX = descriptorNr % texWidthDescriptors;\n"
+"   int descriptorNrY = descriptorNr / texWidthDescriptors;\n"
+"   vec2 descriptorNrXY = vec2(float(descriptorNrX) + 0.25,float(descriptorNrY) + 0.25) / vec2(float(texWidthDescriptors),float(texHeightDescriptors));\n"
 "   for(int v = 0; v < 2; v++) {\n"
 "       vec2 kp = vec2(t2d_nearest(keyPointsx,txx,txy,texWidthKeyPoints,texHeightKeyPoints),t2d_nearest(keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints));\n"
 "       for(int i = mipEnd; i >= 0; i--) {\n"
+"           uvec4 descriptorNeeded = uvec4(textureLod(descriptors, vec3(descriptorNrXY, float(i)), 0.0));\n"
 "           for(int k = 0; k < STEPCOUNT; k++) {\n"
 "               mipScale = pow(MIPSCALE, float(i));\n"
 "               descriptorScale = 1.0 / mipScale;\n"
 "               step = STEPSIZE * descriptorScale;\n"
 "               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.0 - SCALEINVARIANCE;\n"
 "               angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.0 - ROTATIONINVARIANCE) / 360.0 * 2.0 * 3.1415927f;\n"
-"               kp = refineKeyPoint(kp, i);\n"
+"               kp = refineKeyPoint(kp, i, descriptorNeeded);\n"
 "           }\n"
 "       }\n"
 "       switch(v) {\n"
@@ -492,4 +504,8 @@ void sampleDescriptors_openGL(const int keyPointsId, const int descriptorsId, co
     glUseProgram(0); checkGLError();
     glActiveTexture(GL_TEXTURE0); checkGLError();
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
+}
+
+void refineKeyPoints_openCL(const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE, std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors) {
+
 }

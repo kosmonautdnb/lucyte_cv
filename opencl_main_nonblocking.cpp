@@ -117,6 +117,7 @@ int main(int argc, char** argv)
 
     searchForDescriptors.resize(mipmaps1.size());
     for (int i = mipEnd; i >= 0; i--) {
+        searchForDescriptors[i].resize(keyPoints.size());
         const float mipScale = powf(MIPSCALE, float(i));
         const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
@@ -151,6 +152,7 @@ int main(int argc, char** argv)
         t00 = X_Query_perf_counter();
         if (!resampledDescriptors.empty()) {
             for (int i = mipEnd; i >= 0; i--) {
+                resampledDescriptors[i].resize(keyPoints.size());
                 sampleDescriptors_openCL_waitfor(thisBuffer, 0, i, resampledDescriptors);
                 for (int j = keyPoints.size() - 1; j >= 0; j--) {
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {

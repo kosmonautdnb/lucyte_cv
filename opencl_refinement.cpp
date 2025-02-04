@@ -32,8 +32,8 @@ static cl::Buffer openCLNewKeyPointsX[QUEUECOUNT][KEYPOINTIDCOUNT];
 static cl::Buffer openCLNewKeyPointsY[QUEUECOUNT][KEYPOINTIDCOUNT];
 static cl::Buffer openCLNewVariancePointsX[QUEUECOUNT][KEYPOINTIDCOUNT];
 static cl::Buffer openCLNewVariancePointsY[QUEUECOUNT][KEYPOINTIDCOUNT];
-static cl::Buffer openCLBits[QUEUECOUNT][MAXMIPMAPS][DESCRIPTORIDCOUNT];
-static cl::Buffer openCLBitsFull[QUEUECOUNT][MAXMIPMAPS][DESCRIPTORIDCOUNT];
+static cl::Buffer openCLBits[QUEUECOUNT][DESCRIPTORIDCOUNT][MAXMIPMAPS];
+static cl::Buffer openCLBitsFull[QUEUECOUNT][DESCRIPTORIDCOUNT][MAXMIPMAPS];
 static cl::Buffer openCLInts1[QUEUECOUNT];
 static cl::Buffer openCLInts2[QUEUECOUNT];
 static cl::Buffer openCLFloats1[QUEUECOUNT];
@@ -501,7 +501,7 @@ void sampleDescriptors_openCL_waitfor(const int queueId, const int descriptorsId
     }
 }
 
-void refineKeyPoints_openCL(const int queueId, const int descriptorsId, const int keyPointsId, const int mipmapsId, const int keyPointCount, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+void refineKeyPoints_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
     openCLInt1[queueId][0] = keyPointCount;
     openCLInt1[queueId][1] = DESCRIPTORSIZE;
     openCLInt1[queueId][2] = mipEnd;
