@@ -215,14 +215,14 @@ SHARED_SHADER_FUNCTIONS
 "       int b2 = (l2 < l1 ? 1 : 0);\n"
 "       if (b2 != ( int(dBits[b>>5]>>(b & 31)) & 1 )) {\n"
 "           vec2 gr = vec2( textureLod(s, (d2 - gdx) * sc, 0.0).x - textureLod(s, (d2 + gdx) * sc, 0.0).x , textureLod(s, (d2 - gdy) * sc, 0.0).x - textureLod(s, (d2 + gdy) * sc, 0.0).x )\n"
-"                    -vec2( textureLod(s, (d1 - gdx) * sc, 0.0).x - textureLod(s, (d1 + gdx) * sc, 0.0).x , textureLod(s, (d1 - gdy) * sc, 0.0).x - textureLod(s, (d1 + gdy) * sc, 0.0).x ); \n"
+"                    -vec2( textureLod(s, (d1 - gdx) * sc, 0.0).x - textureLod(s, (d1 + gdx) * sc, 0.0).x , textureLod(s, (d1 - gdy) * sc, 0.0).x - textureLod(s, (d1 + gdy) * sc, 0.0).x );\n"
 "           if (b2 != 0) gr = -gr;\n"
 "           if (stepping != 0) gr = vec2((gr.x == 0.0) ? 0.0 : (gr.x > 0.0) ? 1.0 : -1.0, (gr.y == 0.0) ? 0.0 : (gr.y > 0.0) ? 1.0 : -1.0);\n"
 "           xya += gr * length(d2 - d1);\n"
 "       }\n"
 "   }\n"
 "   float l = length(xya);\n"
-"   if (l > 0.0001) xya *= step / mipScale / l;\n"
+"   if (l != 0.0) xya *= step / mipScale / l;\n"
 "   vec2 r = kpxy + vec2(cosa * xya.x + sina * xya.y, -sina * xya.x + cosa * xya.y);\n"
 "   const bool clipping = false; if (clipping) {\n"
 "       float w = float(mipMapWidth[0]);\n"
@@ -414,8 +414,8 @@ void createUint32RenderTarget(std::pair<GLuint, GLuint> &dest, int width, int he
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, width, height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, 0); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0); checkGLError();
     GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(1, drawBuffers); checkGLError();
@@ -436,8 +436,8 @@ void createFloatRenderTarget(std::pair<GLuint, GLuint>& dest, int width, int hei
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, 0); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0); checkGLError();
     GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(1, drawBuffers); checkGLError();
@@ -476,8 +476,8 @@ void upload2DFloatTexture(const GLuint& tex, const float* data, const unsigned i
     glBindTexture(GL_TEXTURE_2D, tex); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, data); checkGLError();
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
@@ -486,8 +486,8 @@ void upload2DUnsignedCharTexture(const GLuint& tex, const float* data, const uns
     glBindTexture(GL_TEXTURE_2D, tex); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data); checkGLError();
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
@@ -511,8 +511,8 @@ void upload2Duint32Texture(const GLuint& tex, const unsigned int* data, const un
     glBindTexture(GL_TEXTURE_2D, tex); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_INT, data); checkGLError();
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
