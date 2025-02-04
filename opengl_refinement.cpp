@@ -507,29 +507,29 @@ void upload1DFloatTexture(const GLuint& tex, const float* data, const unsigned i
     upload2DFloatTexture(tex, data, width, height, nearest);
 }
 
-void upload2Duint32Texture(const GLuint& tex, const unsigned int* data, const unsigned int width, const int height, const bool nearest) {
+void upload2Duint324Texture(const GLuint& tex, const unsigned int* data, const unsigned int width, const int height, const bool nearest) {
     glBindTexture(GL_TEXTURE_2D, tex); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_INT, data); checkGLError();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, width, height, 0, GL_RGBA, GL_UNSIGNED_INT, data); checkGLError();
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
 
-void upload1Duint32Texture(const GLuint& tex, const unsigned int* data, const unsigned int count, int &width, int &height, const bool nearest) {
+void upload1Duint324Texture(const GLuint& tex, const unsigned int* data, const unsigned int count, int &width, int &height, const bool nearest) {
     width = count;
     height = 1;
     if (width > maxTextureSize) {
         width = maxTextureSize;
         height = (count + maxTextureSize - 1) / maxTextureSize;
-        unsigned int* data2 = new unsigned int[width * height];
-        memcpy(data2, data, count * sizeof(unsigned int));
-        upload2Duint32Texture(tex, data2, width, height, nearest);
+        unsigned int* data2 = new unsigned int[width * height * 4];
+        memcpy(data2, data, count * sizeof(unsigned int) * 4);
+        upload2Duint324Texture(tex, data2, width, height, nearest);
         delete[] data2;
         return;
     }
-    upload2Duint32Texture(tex, data, width, height, nearest);
+    upload2Duint324Texture(tex, data, width, height, nearest);
 }
 
 void uploadDescriptorShape_openGL() {
@@ -569,15 +569,15 @@ void uploadKeyPoints_openGL(const int keyPointsId, const std::vector<KeyPoint>& 
 
 void uploadDescriptors_openGL(const int descriptorsId, const int mipMap, const std::vector<std::vector<Descriptor>>& sourceMips) {
     const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
-    std::vector<unsigned int> bits; bits.resize(Descriptor::uint32count * descriptors.size());
+    std::vector<unsigned int> bits; bits.resize(4 * descriptors.size());
     for (int i = int(descriptors.size()) - 1; i >= 0; i--) {
         for (int j = 0; j < Descriptor::uint32count; j++) {
-            bits[j + i * Descriptor::uint32count] = descriptors[i].bits[j];
+            bits[j + i * 4] = descriptors[i].bits[j];
         }
     }
     glDeleteTextures(1, &(openGLDescriptors[descriptorsId][mipMap]));
     glGenTextures(1, &(openGLDescriptors[descriptorsId][mipMap]));
-    upload1Duint32Texture(openGLDescriptors[descriptorsId][mipMap], &(bits[0]), bits.size(), openGLDescriptorsTextureWidth[descriptorsId][mipMap], openGLDescriptorsTextureHeight[descriptorsId][mipMap],true);
+    upload1Duint324Texture(openGLDescriptors[descriptorsId][mipMap], &(bits[0]), bits.size() / 4, openGLDescriptorsTextureWidth[descriptorsId][mipMap], openGLDescriptorsTextureHeight[descriptorsId][mipMap],true);
 }
 
 void sampleDescriptors_openGL(const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipMap, std::vector<std::vector<Descriptor>>& destMips, const float descriptorScale, const int width, const int height, const float mipScale) {
