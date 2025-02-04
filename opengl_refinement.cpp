@@ -205,7 +205,7 @@ SHARED_SHADER_FUNCTIONS
 "   dBits[1] = descriptor.y;"
 "   dBits[2] = descriptor.z;"
 "   dBits[3] = descriptor.w;"
-"   for (int b = 0; b < DESCRIPTORSIZE; ++b) {\n"
+"   for (int b = 0; b < DESCRIPTORSIZE; b++) {\n"
 "       vec2 dp1 = descriptors1(b);\n"
 "       vec2 dp2 = descriptors2(b);\n"
 "       vec2 d1 = kp + vec2(dot(cosid,dp1), dot(nsicd,dp1));\n"
@@ -513,7 +513,7 @@ void upload2Duint324Texture(const GLuint& tex, const unsigned int* data, const u
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, width, height, 0, GL_RGBA, GL_UNSIGNED_INT, data); checkGLError();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, width, height, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, data); checkGLError();
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
 
