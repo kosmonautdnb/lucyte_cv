@@ -33,9 +33,11 @@ static int openGLDescriptorsTextureWidth[DESCRIPTORIDCOUNT][MAXMIPMAPS] = { {0} 
 static int openGLDescriptorsTextureHeight[DESCRIPTORIDCOUNT][MAXMIPMAPS] = { {0} };
 static GLuint openGLFragmentShader_sampleDescriptors = 0;
 static GLuint openGLFragmentShader_refineKeyPoints = 0;
+static GLuint openGLFragmentShader_displayMipMap = 0;
 static GLuint openGLVertexShader_basic = 0;
 static GLuint openGLProgram_sampleDescriptors = 0;
 static GLuint openGLProgram_refineKeyPoints = 0;
+static GLuint openGLProgram_displayMipMap = 0;
 #define SHARED_SHADER_FUNCTIONS ""\
 "float t2d_nearest(sampler2D t, int x, int y, int width, int height)\n"\
 "{\n"\
@@ -78,6 +80,7 @@ SHARED_SHADER_FUNCTIONS
 "       int txy = int(floor(p.y+0.25));\n"
 "       float descriptorSize = descriptorScale * mipScale;\n"
 "       vec2 kp = vec2(t2d_nearest(keyPointsx,txx,txy,texWidthKeyPoints,texHeightKeyPoints),t2d_nearest(keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints));\n"
+"       kp *= mipScale;\n"
 "       vec2 sc = vec2(1.0/float(texWidthMipMap),1.0/float(texHeightMipMap));\n"
 "       unsigned int b[4]; b[0]=unsigned int(0); b[1]=unsigned int(0); b[2]=unsigned int(0); b[3]=unsigned int(0);\n"
 "       for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
@@ -189,17 +192,15 @@ SHARED_SHADER_FUNCTIONS
 "    b >>= 3;\n"
 "    return float(b & 0xffff) / float(0x10000);\n"
 "}\n"
-"vec2 refineKeyPoint(sampler2D s, vec2 kpxy, int mipMap, uvec4 descriptor) {\n"
-"   vec2 kp = kpxy * mipScale;\n"
-"   float descriptorSize = mipScale * descriptorScale;\n"
+"vec2 refineKeyPoint(sampler2D s, vec2 kp, int mipMap, uvec4 descriptor) {\n"
+"   vec2 sc = vec2(1.0/float(mipMapWidth[0]),1.0/float(mipMapHeight[0]));\n"
 "   float sina = sin(angle);\n"
 "   float cosa = cos(angle);\n"
-"   vec2 cosid = vec2(cosa, sina) * descriptorSize;\n"
-"   vec2 nsicd = vec2(-sina, cosa) * descriptorSize;\n"
-"   vec2 gdx = vec2(cosa,sina);\n"
-"   vec2 gdy = vec2(-sina,cosa);\n"
+"   vec2 cosid = vec2(cosa, sina) * descriptorScale;\n"
+"   vec2 nsicd = vec2(-sina, cosa) * descriptorScale;\n"
+"   vec2 gdx = vec2(cosa,sina) / mipScale;\n"
+"   vec2 gdy = vec2(-sina,cosa) / mipScale;\n"
 "   vec2 xya = vec2(0.0,0.0);\n"
-"   vec2 sc = vec2(1.0/float(mipMapWidth[mipMap]),1.0/float(mipMapHeight[mipMap]));\n"
 "   unsigned int dBits[4];\n"
 "   dBits[0] = descriptor.x;"
 "   dBits[1] = descriptor.y;"
@@ -223,7 +224,7 @@ SHARED_SHADER_FUNCTIONS
 "   }\n"
 "   float l = length(xya);\n"
 "   if (l != 0.0) xya *= step / mipScale / l;\n"
-"   vec2 r = kpxy + vec2(cosa * xya.x + sina * xya.y, -sina * xya.x + cosa * xya.y);\n"
+"   vec2 r = kp + vec2(cosa * xya.x + sina * xya.y, -sina * xya.x + cosa * xya.y);\n"
 "   const bool clipping = false; if (clipping) {\n"
 "       float w = float(mipMapWidth[0]);\n"
 "       float h = float(mipMapHeight[0]);\n"
@@ -247,38 +248,38 @@ SHARED_SHADER_FUNCTIONS
 "       for(int i = mipEnd; i >= 0; i--) {\n"
 "               uvec4 descriptorNeeded;\n"
 "               switch(i) {\n"
-"                   case  0:descriptorNeeded = textureLod( descriptors_0, descriptorNrXY, 0.0); break;"
-"                   case  1:descriptorNeeded = textureLod( descriptors_1, descriptorNrXY, 0.0); break;"
-"                   case  2:descriptorNeeded = textureLod( descriptors_2, descriptorNrXY, 0.0); break;"
-"                   case  3:descriptorNeeded = textureLod( descriptors_3, descriptorNrXY, 0.0); break;"
-"                   case  4:descriptorNeeded = textureLod( descriptors_4, descriptorNrXY, 0.0); break;"
-"                   case  5:descriptorNeeded = textureLod( descriptors_5, descriptorNrXY, 0.0); break;"
-"                   case  6:descriptorNeeded = textureLod( descriptors_6, descriptorNrXY, 0.0); break;"
-"                   case  7:descriptorNeeded = textureLod( descriptors_7, descriptorNrXY, 0.0); break;"
-"                   case  8:descriptorNeeded = textureLod( descriptors_8, descriptorNrXY, 0.0); break;"
-"                   case  9:descriptorNeeded = textureLod( descriptors_9, descriptorNrXY, 0.0); break;"
-"                   case 10:descriptorNeeded = textureLod(descriptors_10, descriptorNrXY, 0.0); break;"
-"                   case 11:descriptorNeeded = textureLod(descriptors_11, descriptorNrXY, 0.0); break;"
-"                   case 12:descriptorNeeded = textureLod(descriptors_12, descriptorNrXY, 0.0); break;"
-"                   case 13:descriptorNeeded = textureLod(descriptors_13, descriptorNrXY, 0.0); break;"
-"                   case 14:descriptorNeeded = textureLod(descriptors_14, descriptorNrXY, 0.0); break;"
-"                   case 15:descriptorNeeded = textureLod(descriptors_15, descriptorNrXY, 0.0); break;"
-"                   case 16:descriptorNeeded = textureLod(descriptors_16, descriptorNrXY, 0.0); break;"
-"                   case 17:descriptorNeeded = textureLod(descriptors_17, descriptorNrXY, 0.0); break;"
-"                   case 18:descriptorNeeded = textureLod(descriptors_18, descriptorNrXY, 0.0); break;"
-"                   case 19:descriptorNeeded = textureLod(descriptors_19, descriptorNrXY, 0.0); break;"
-"                   case 20:descriptorNeeded = textureLod(descriptors_20, descriptorNrXY, 0.0); break;"
-"                   case 21:descriptorNeeded = textureLod(descriptors_21, descriptorNrXY, 0.0); break;"
-"                   case 22:descriptorNeeded = textureLod(descriptors_22, descriptorNrXY, 0.0); break;"
-"                   case 23:descriptorNeeded = textureLod(descriptors_23, descriptorNrXY, 0.0); break;"
-"                   case 24:descriptorNeeded = textureLod(descriptors_24, descriptorNrXY, 0.0); break;"
-"                   case 25:descriptorNeeded = textureLod(descriptors_25, descriptorNrXY, 0.0); break;"
-"                   case 26:descriptorNeeded = textureLod(descriptors_26, descriptorNrXY, 0.0); break;"
-"                   case 27:descriptorNeeded = textureLod(descriptors_27, descriptorNrXY, 0.0); break;"
-"                   case 28:descriptorNeeded = textureLod(descriptors_28, descriptorNrXY, 0.0); break;"
-"                   case 29:descriptorNeeded = textureLod(descriptors_29, descriptorNrXY, 0.0); break;"
-"                   case 30:descriptorNeeded = textureLod(descriptors_30, descriptorNrXY, 0.0); break;"
-"                   case 31:descriptorNeeded = textureLod(descriptors_31, descriptorNrXY, 0.0); break;"
+"                   case  0:descriptorNeeded = textureLod( descriptors_0, descriptorNrXY, 0.0); break;\n"
+"                   case  1:descriptorNeeded = textureLod( descriptors_1, descriptorNrXY, 0.0); break;\n"
+"                   case  2:descriptorNeeded = textureLod( descriptors_2, descriptorNrXY, 0.0); break;\n"
+"                   case  3:descriptorNeeded = textureLod( descriptors_3, descriptorNrXY, 0.0); break;\n"
+"                   case  4:descriptorNeeded = textureLod( descriptors_4, descriptorNrXY, 0.0); break;\n"
+"                   case  5:descriptorNeeded = textureLod( descriptors_5, descriptorNrXY, 0.0); break;\n"
+"                   case  6:descriptorNeeded = textureLod( descriptors_6, descriptorNrXY, 0.0); break;\n"
+"                   case  7:descriptorNeeded = textureLod( descriptors_7, descriptorNrXY, 0.0); break;\n"
+"                   case  8:descriptorNeeded = textureLod( descriptors_8, descriptorNrXY, 0.0); break;\n"
+"                   case  9:descriptorNeeded = textureLod( descriptors_9, descriptorNrXY, 0.0); break;\n"
+"                   case 10:descriptorNeeded = textureLod(descriptors_10, descriptorNrXY, 0.0); break;\n"
+"                   case 11:descriptorNeeded = textureLod(descriptors_11, descriptorNrXY, 0.0); break;\n"
+"                   case 12:descriptorNeeded = textureLod(descriptors_12, descriptorNrXY, 0.0); break;\n"
+"                   case 13:descriptorNeeded = textureLod(descriptors_13, descriptorNrXY, 0.0); break;\n"
+"                   case 14:descriptorNeeded = textureLod(descriptors_14, descriptorNrXY, 0.0); break;\n"
+"                   case 15:descriptorNeeded = textureLod(descriptors_15, descriptorNrXY, 0.0); break;\n"
+"                   case 16:descriptorNeeded = textureLod(descriptors_16, descriptorNrXY, 0.0); break;\n"
+"                   case 17:descriptorNeeded = textureLod(descriptors_17, descriptorNrXY, 0.0); break;\n"
+"                   case 18:descriptorNeeded = textureLod(descriptors_18, descriptorNrXY, 0.0); break;\n"
+"                   case 19:descriptorNeeded = textureLod(descriptors_19, descriptorNrXY, 0.0); break;\n"
+"                   case 20:descriptorNeeded = textureLod(descriptors_20, descriptorNrXY, 0.0); break;\n"
+"                   case 21:descriptorNeeded = textureLod(descriptors_21, descriptorNrXY, 0.0); break;\n"
+"                   case 22:descriptorNeeded = textureLod(descriptors_22, descriptorNrXY, 0.0); break;\n"
+"                   case 23:descriptorNeeded = textureLod(descriptors_23, descriptorNrXY, 0.0); break;\n"
+"                   case 24:descriptorNeeded = textureLod(descriptors_24, descriptorNrXY, 0.0); break;\n"
+"                   case 25:descriptorNeeded = textureLod(descriptors_25, descriptorNrXY, 0.0); break;\n"
+"                   case 26:descriptorNeeded = textureLod(descriptors_26, descriptorNrXY, 0.0); break;\n"
+"                   case 27:descriptorNeeded = textureLod(descriptors_27, descriptorNrXY, 0.0); break;\n"
+"                   case 28:descriptorNeeded = textureLod(descriptors_28, descriptorNrXY, 0.0); break;\n"
+"                   case 29:descriptorNeeded = textureLod(descriptors_29, descriptorNrXY, 0.0); break;\n"
+"                   case 30:descriptorNeeded = textureLod(descriptors_30, descriptorNrXY, 0.0); break;\n"
+"                   case 31:descriptorNeeded = textureLod(descriptors_31, descriptorNrXY, 0.0); break;\n"
 "               }\n"
 "           for(int k = 0; k < STEPCOUNT; k++) {\n"
 "               mipScale = pow(MIPSCALE, float(i));\n"
@@ -326,7 +327,91 @@ SHARED_SHADER_FUNCTIONS
 "           case 0: frag_color.xy = kp; break;\n"
 "           case 1: frag_color.zw = kp; break;\n"
 "       }\n"
+"   vec2 sc = vec2(1.0/float(mipMapWidth[0]),1.0/float(mipMapHeight[0]));\n"
 "   }\n"
+"}\n"
+"\n";
+const std::string displayMipMapProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
+"in vec2 p;\n"
+"out vec4 frag_color;\n"
+"uniform sampler2D mipMaps_0;\n"
+"uniform sampler2D mipMaps_1;\n"
+"uniform sampler2D mipMaps_2;\n"
+"uniform sampler2D mipMaps_3;\n"
+"uniform sampler2D mipMaps_4;\n"
+"uniform sampler2D mipMaps_5;\n"
+"uniform sampler2D mipMaps_6;\n"
+"uniform sampler2D mipMaps_7;\n"
+"uniform sampler2D mipMaps_8;\n"
+"uniform sampler2D mipMaps_9;\n"
+"uniform sampler2D mipMaps_10;\n"
+"uniform sampler2D mipMaps_11;\n"
+"uniform sampler2D mipMaps_12;\n"
+"uniform sampler2D mipMaps_13;\n"
+"uniform sampler2D mipMaps_14;\n"
+"uniform sampler2D mipMaps_15;\n"
+"uniform sampler2D mipMaps_16;\n"
+"uniform sampler2D mipMaps_17;\n"
+"uniform sampler2D mipMaps_18;\n"
+"uniform sampler2D mipMaps_19;\n"
+"uniform sampler2D mipMaps_20;\n"
+"uniform sampler2D mipMaps_21;\n"
+"uniform sampler2D mipMaps_22;\n"
+"uniform sampler2D mipMaps_23;\n"
+"uniform sampler2D mipMaps_24;\n"
+"uniform sampler2D mipMaps_25;\n"
+"uniform sampler2D mipMaps_26;\n"
+"uniform sampler2D mipMaps_27;\n"
+"uniform sampler2D mipMaps_28;\n"
+"uniform sampler2D mipMaps_29;\n"
+"uniform sampler2D mipMaps_30;\n"
+"uniform sampler2D mipMaps_31;\n"
+"uniform int mipMapWidth[32];\n"
+"uniform int mipMapHeight[32];\n"
+"void main()\n"
+"{\n"
+"   int i = 0;\n"
+"   vec2 sc = vec2(1.0/float(mipMapWidth[i]),1.0/float(mipMapHeight[i]));\n"
+"   vec2 xy = p * sc;\n"
+"   float mip;\n"
+"   switch(i) {\n"
+"       case  0:mip = textureLod( mipMaps_0, xy, 0.0).x; break;\n"
+"       case  1:mip = textureLod( mipMaps_1, xy, 0.0).x; break;\n"
+"       case  2:mip = textureLod( mipMaps_2, xy, 0.0).x; break;\n"
+"       case  3:mip = textureLod( mipMaps_3, xy, 0.0).x; break;\n"
+"       case  4:mip = textureLod( mipMaps_4, xy, 0.0).x; break;\n"
+"       case  5:mip = textureLod( mipMaps_5, xy, 0.0).x; break;\n"
+"       case  6:mip = textureLod( mipMaps_6, xy, 0.0).x; break;\n"
+"       case  7:mip = textureLod( mipMaps_7, xy, 0.0).x; break;\n"
+"       case  8:mip = textureLod( mipMaps_8, xy, 0.0).x; break;\n"
+"       case  9:mip = textureLod( mipMaps_9, xy, 0.0).x; break;\n"
+"       case 10:mip = textureLod(mipMaps_10, xy, 0.0).x; break;\n"
+"       case 11:mip = textureLod(mipMaps_11, xy, 0.0).x; break;\n"
+"       case 12:mip = textureLod(mipMaps_12, xy, 0.0).x; break;\n"
+"       case 13:mip = textureLod(mipMaps_13, xy, 0.0).x; break;\n"
+"       case 14:mip = textureLod(mipMaps_14, xy, 0.0).x; break;\n"
+"       case 15:mip = textureLod(mipMaps_15, xy, 0.0).x; break;\n"
+"       case 16:mip = textureLod(mipMaps_16, xy, 0.0).x; break;\n"
+"       case 17:mip = textureLod(mipMaps_17, xy, 0.0).x; break;\n"
+"       case 18:mip = textureLod(mipMaps_18, xy, 0.0).x; break;\n"
+"       case 19:mip = textureLod(mipMaps_19, xy, 0.0).x; break;\n"
+"       case 20:mip = textureLod(mipMaps_20, xy, 0.0).x; break;\n"
+"       case 21:mip = textureLod(mipMaps_21, xy, 0.0).x; break;\n"
+"       case 22:mip = textureLod(mipMaps_22, xy, 0.0).x; break;\n"
+"       case 23:mip = textureLod(mipMaps_23, xy, 0.0).x; break;\n"
+"       case 24:mip = textureLod(mipMaps_24, xy, 0.0).x; break;\n"
+"       case 25:mip = textureLod(mipMaps_25, xy, 0.0).x; break;\n"
+"       case 26:mip = textureLod(mipMaps_26, xy, 0.0).x; break;\n"
+"       case 27:mip = textureLod(mipMaps_27, xy, 0.0).x; break;\n"
+"       case 28:mip = textureLod(mipMaps_28, xy, 0.0).x; break;\n"
+"       case 29:mip = textureLod(mipMaps_29, xy, 0.0).x; break;\n"
+"       case 30:mip = textureLod(mipMaps_30, xy, 0.0).x; break;\n"
+"       case 31:mip = textureLod(mipMaps_31, xy, 0.0).x; break;\n"
+"   }\n"
+"   frag_color.x = mip;"
+"   frag_color.y = mip;"
+"   frag_color.z = mip;"
+"   frag_color.w = mip;"
 "}\n"
 "\n";
 const std::string basicProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
@@ -467,9 +552,11 @@ void initOpenGL() {
     glewInit();
     openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptorProgram.c_str(), sampleDescriptorProgram.length());
     openGLFragmentShader_refineKeyPoints = pixelShader(refineKeyPointsProgram.c_str(), refineKeyPointsProgram.length());
+    openGLFragmentShader_displayMipMap = pixelShader(displayMipMapProgram.c_str(), displayMipMapProgram.length());
     openGLVertexShader_basic = vertexShader(basicProgram.c_str(), basicProgram.length());
     openGLProgram_sampleDescriptors = program(openGLVertexShader_basic, openGLFragmentShader_sampleDescriptors);
     openGLProgram_refineKeyPoints = program(openGLVertexShader_basic, openGLFragmentShader_refineKeyPoints);
+    openGLProgram_displayMipMap = program(openGLVertexShader_basic, openGLFragmentShader_displayMipMap);
 }
 
 void upload2DFloatTexture(const GLuint& tex, const float* data, const unsigned int width, const int height, const bool nearest) {
@@ -541,7 +628,10 @@ void uploadDescriptorShape_openGL() {
     upload1DFloatTexture(openGLDescriptorShape[3], descriptorsY2, DESCRIPTORSIZE, openGLDescriptorShapeTextureWidth, openGLDescriptorShapeTextureHeight, true);
 }
 
+const std::vector<cv::Mat>* mipMaps2;
+
 void uploadMipMaps_openGL(const int mipmapsId, const std::vector<cv::Mat>& mipMaps) {
+    mipMaps2 = &mipMaps;
     glDeleteTextures(MAXMIPMAPS, openGLMipMaps[mipmapsId]);
     glGenTextures(mipMaps.size(), openGLMipMaps[mipmapsId]);
     for (int i = 0; i < mipMaps.size(); i++) {
@@ -551,9 +641,12 @@ void uploadMipMaps_openGL(const int mipmapsId, const std::vector<cv::Mat>& mipMa
     }
 }
 
+static std::vector<float> kpx;
+static std::vector<float> kpy;
+
 void uploadKeyPoints_openGL(const int keyPointsId, const std::vector<KeyPoint>& keyPoints) {
-    std::vector<float> kpx; kpx.resize(keyPoints.size());
-    std::vector<float> kpy; kpy.resize(keyPoints.size());
+    kpx.resize(keyPoints.size());
+    kpy.resize(keyPoints.size());
     for (int i = int(keyPoints.size()) - 1; i >= 0; i--) {
         kpx[i] = keyPoints[i].x;
         kpy[i] = keyPoints[i].y;
@@ -586,13 +679,13 @@ void testSetup() {
     cv::Mat m = cv::Mat::zeros(256, 256, CV_8U);
     for (int y = 0; y < 256; y++)
         for (int x = 0; x < 256; x++)
-            m.at<unsigned char>(y, x) = y < 100 ? 255 : 0;
+            m.at<unsigned char>(y, x) = x;
     uploadMipMaps_openGL(0, { m,m,m,m,m,m,m,m,m,m });
     for (int i = 0; i < DESCRIPTORSIZE; i++) {
         descriptorsX1[i] = 4;
-        descriptorsY1[i] = -4;
+        descriptorsY1[i] = 4;
         descriptorsX2[i] = 4;
-        descriptorsY2[i] = 4;
+        descriptorsY2[i] = -4;
     }
     uploadDescriptorShape_openGL();
 }
@@ -673,6 +766,38 @@ void sampleDescriptors_openGL(const int keyPointsId, const int descriptorsId, co
         }
     }
     delete[] data;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); checkGLError();
+    glUseProgram(0); checkGLError();
+    glActiveTexture(GL_TEXTURE0); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
+}
+
+void displayMipMap(int mipmapsId, int mipEnd) {
+    GLuint displayMipMap_location_mipMaps[32]; for (int i = 0; i < 32; i++) { displayMipMap_location_mipMaps[i] = glGetUniformLocation(openGLProgram_displayMipMap, ("mipMaps_" + std::to_string(i)).c_str()); checkGLError(); }
+    GLuint displayMipMap_location_mipMapWidth = glGetUniformLocation(openGLProgram_displayMipMap, "mipMapWidth"); checkGLError();
+    GLuint displayMipMap_location_mipMapHeight = glGetUniformLocation(openGLProgram_displayMipMap, "mipMapHeight"); checkGLError();
+    GLuint displayMipMap_location_texWidthKeyPoints = glGetUniformLocation(openGLProgram_displayMipMap, "texWidthKeyPoints"); checkGLError();
+    GLuint displayMipMap_location_texHeightKeyPoints = glGetUniformLocation(openGLProgram_displayMipMap, "texHeightKeyPoints"); checkGLError();
+    glUseProgram(openGLProgram_displayMipMap); checkGLError();
+    int j = 6 + 8;
+    for (int i = 0; i <= mipEnd; i++) {
+        glActiveTexture(GL_TEXTURE0 + j); checkGLError();
+        glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId][i]); checkGLError();
+        glUniform1i(displayMipMap_location_mipMaps[i], j); checkGLError();
+        j++;
+    }
+    std::vector<GLint> mipMapWidth;
+    std::vector<GLint> mipMapHeight;
+    for (int i = 0; i <= mipEnd; i++) {
+        mipMapWidth.push_back(openGLMipMapsTextureWidth[mipmapsId][i]);
+        mipMapHeight.push_back(openGLMipMapsTextureHeight[mipmapsId][i]);
+    }
+    glUniform1iv(displayMipMap_location_mipMapWidth, mipMapWidth.size(), &(mipMapWidth[0])); checkGLError();
+    glUniform1iv(displayMipMap_location_mipMapHeight, mipMapHeight.size(), &(mipMapHeight[0])); checkGLError();
+    glUniform1i(displayMipMap_location_texWidthKeyPoints, 1000); checkGLError();
+    glUniform1i(displayMipMap_location_texHeightKeyPoints, 1000); checkGLError();
+    glViewport(0, 0, 1000, 1000);
+    glRects(-1, -1, 1, 1);
     glBindFramebuffer(GL_FRAMEBUFFER, 0); checkGLError();
     glUseProgram(0); checkGLError();
     glActiveTexture(GL_TEXTURE0); checkGLError();
