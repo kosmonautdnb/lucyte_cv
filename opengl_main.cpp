@@ -147,6 +147,13 @@ int main(int argc, char** argv)
     long long t00 = X_Query_perf_counter();;
     long long fr = X_Query_perf_frequency();
     for (int steps = firstFrame + 1; steps <= lastFrame; steps += frameStep) {
+
+        glfwPollEvents();
+        glfwGetFramebufferSize(window, &window_width, &window_height);
+        glViewport(0, 0, window_width, window_height);
+        glClearColor(float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
         uploadMipMaps_openGL(0, mipmaps2);
@@ -160,7 +167,7 @@ int main(int argc, char** argv)
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);
         if (outputVideo) video.write(v);
         cv::setWindowTitle("keypoints", std::string("(OpenCL) Frame ") + std::to_string(steps - firstFrame) + " of " + std::to_string(lastFrame - firstFrame) + ", Keypoints " + std::to_string(validKeyPoints) + " of " + std::to_string(KEYPOINTCOUNT));
-        if (cv::waitKey(1) == 27)
+        if (cv::waitKey(1) == 27 || glfwWindowShouldClose(window))
             break;
 
         long long t4 = X_Query_perf_counter();
@@ -212,6 +219,7 @@ int main(int argc, char** argv)
             }
         }
         t3 = X_Query_perf_counter();
+        glfwSwapBuffers(window);
     }
 
     if (outputVideo) video.release();
