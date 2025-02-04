@@ -95,7 +95,7 @@ static std::string openCV_program =
 "       }\n"
 "   }\n"
 "\n"
-"   const float randomLike(const int index) {"
+"   const float randomLike(const int index) {\n"
 "       int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);\n"
 "       b = b ^ (b << 8) ^ (b * 23);\n"
 "       b >>= 3;\n"
