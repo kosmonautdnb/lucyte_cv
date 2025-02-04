@@ -139,7 +139,7 @@ int main(int argc, char** argv)
         sampleDescriptors_openGL(0,0,0, i, searchForDescriptors, descriptorScale, width, height, mipScale);
         uploadDescriptors_openGL(0, i, searchForDescriptors);
     }
-    //refineKeyPoints_openGL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openGL(0,0,0, keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
 
     long long t0 = X_Query_perf_counter();;
     long long t2 = X_Query_perf_counter();;
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
         std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        //refineKeyPoints_openGL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openGL(0, 0, 0, keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
         long long t1 = X_Query_perf_counter();
 
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);
