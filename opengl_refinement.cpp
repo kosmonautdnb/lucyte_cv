@@ -25,6 +25,9 @@ static int openGLKeyPointsTextureHeight[KEYPOINTIDCOUNT] = { 0 };
 static std::pair<GLuint, GLuint> openGLDescriptorRenderTarget[KEYPOINTIDCOUNT][MIPMAPIDCOUNT] = { {{0,0}} };
 static GLuint openGLDescriptorRenderTargetWidth[KEYPOINTIDCOUNT][MIPMAPIDCOUNT] = { {0} };
 static GLuint openGLDescriptorRenderTargetHeight[KEYPOINTIDCOUNT][MIPMAPIDCOUNT] = { {0} };
+static std::pair<GLuint, GLuint> openGLKeyPointsRenderTarget[KEYPOINTIDCOUNT] = { {0,0} };
+static GLuint openGLKeyPointsRenderTargetWidth[KEYPOINTIDCOUNT] = { 0 };
+static GLuint openGLKeyPointsRenderTargetHeight[KEYPOINTIDCOUNT] = { 0 };
 static GLuint openGLDescriptors[DESCRIPTORIDCOUNT][MAXMIPMAPS] = { {0} };
 static int openGLDescriptorsTextureWidth[DESCRIPTORIDCOUNT][MAXMIPMAPS] = { {0} };
 static int openGLDescriptorsTextureHeight[DESCRIPTORIDCOUNT][MAXMIPMAPS] = { {0} };
@@ -196,7 +199,7 @@ SHARED_SHADER_FUNCTIONS
 "   vec2 nsicd = vec2(-sina, cosa) * descriptorSize;\n"
 "   vec2 gdx = vec2(cosa,sina);\n"
 "   vec2 gdy = vec2(-sina,cosa);\n"
-"   vec2 xya = vec2(0,0);\n"
+"   vec2 xya = vec2(0.0,0.0);\n"
 "   vec2 sc = vec2(1.0/float(mipMapWidth[mipMap]),1.0/float(mipMapHeight[mipMap]));\n"
 "   dBits[0] = descriptor.x;"
 "   dBits[1] = descriptor.y;"
@@ -207,19 +210,19 @@ SHARED_SHADER_FUNCTIONS
 "       vec2 dp2 = descriptors2(b);\n"
 "       vec2 d1 = kp + vec2(dot(cosid,dp1), dot(nsicd,dp1));\n"
 "       vec2 d2 = kp + vec2(dot(cosid,dp2), dot(nsicd,dp2));\n"
-"       float l1 = textureLod(s, d1*sc, 0.0).x;\n"
-"       float l2 = textureLod(s, d2*sc, 0.0).x;\n"
+"       float l1 = textureLod(s, d1 * sc, 0.0).x;\n"
+"       float l2 = textureLod(s, d2 * sc, 0.0).x;\n"
 "       int b2 = (l2 < l1 ? 1 : 0);\n"
 "       if (b2 != ( int(dBits[b>>5]>>(b & 31)) & 1 )) {\n"
-"           vec2 gr = vec2( textureLod(s, d2 - gdx, 0.0).x - textureLod(s, d2 + gdx, 0.0).x , textureLod(s, d2 - gdy, 0.0).x - textureLod(s, d2 + gdy, 0.0).x )\n"
-"                    -vec2( textureLod(s, d1 - gdx, 0.0).x - textureLod(s, d1 + gdx, 0.0).x , textureLod(s, d1 - gdy, 0.0).x - textureLod(s, d1 + gdy, 0.0).x ); \n"
+"           vec2 gr = vec2( textureLod(s, (d2 - gdx) * sc, 0.0).x - textureLod(s, (d2 + gdx) * sc, 0.0).x , textureLod(s, (d2 - gdy) * sc, 0.0).x - textureLod(s, (d2 + gdy) * sc, 0.0).x )\n"
+"                    -vec2( textureLod(s, (d1 - gdx) * sc, 0.0).x - textureLod(s, (d1 + gdx) * sc, 0.0).x , textureLod(s, (d1 - gdy) * sc, 0.0).x - textureLod(s, (d1 + gdy) * sc, 0.0).x ); \n"
 "           if (b2 != 0) gr = -gr;\n"
 "           if (stepping != 0) gr = vec2((gr.x == 0.0) ? 0.0 : (gr.x > 0.0) ? 1.0 : -1.0, (gr.y == 0.0) ? 0.0 : (gr.y > 0.0) ? 1.0 : -1.0);\n"
 "           xya += gr * length(d2 - d1);\n"
 "       }\n"
 "   }\n"
 "   xya = normalize(xya) * (step / mipScale);\n"
-"   vec2 r = kpxy + vec2(cosa * xya.x + sina * xya.y, sina * xya.x + cosa * xya.y);\n"
+"   vec2 r = kpxy + vec2(cosa * xya.x + sina * xya.y, -sina * xya.x + cosa * xya.y);\n"
 "   const bool clipping = false; if (clipping) {\n"
 "       float w = float(mipMapWidth[0]);\n"
 "       float h = float(mipMapHeight[0]);\n"
@@ -420,6 +423,27 @@ void createUint32RenderTarget(std::pair<GLuint, GLuint> &dest, int width, int he
     dest = { framebufferId, renderedTexture };
 }
 
+void createFloatRenderTarget(std::pair<GLuint, GLuint>& dest, int width, int height, bool nearest) {
+    glDeleteFramebuffers(1, &dest.first); checkGLError();
+    glDeleteTextures(1, &dest.second);
+    GLuint framebufferId = 0;
+    glGenFramebuffers(1, &framebufferId); checkGLError();
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferId); checkGLError();
+    GLuint renderedTexture;
+    glGenTextures(1, &renderedTexture);
+    glBindTexture(GL_TEXTURE_2D, renderedTexture); checkGLError();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, 0); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0); checkGLError();
+    GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawBuffers); checkGLError();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
+    dest = { framebufferId, renderedTexture };
+}
 
 void glfwErrorCallback(int error_code, const char* description) {
 
@@ -616,14 +640,16 @@ void sampleDescriptors_openGL(const int keyPointsId, const int descriptorsId, co
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, openGLDescriptorRenderTarget[keyPointsId][mipMap].first); checkGLError();
-    glViewport(0, 0, openGLKeyPointsTextureWidth[keyPointsId], openGLKeyPointsTextureHeight[keyPointsId]);
+    const int w = openGLDescriptorRenderTargetWidth[keyPointsId][mipMap];
+    const int h = openGLDescriptorRenderTargetHeight[keyPointsId][mipMap];
+    glViewport(0, 0, w, h);
     glRects(-1, -1, 1, 1);
-    unsigned int* data = new unsigned int[4 * openGLKeyPointsTextureWidth[keyPointsId] * openGLKeyPointsTextureHeight[keyPointsId]];
-    glReadPixels(0, 0, openGLKeyPointsTextureWidth[keyPointsId], openGLKeyPointsTextureHeight[keyPointsId], GL_RGBA_INTEGER, GL_UNSIGNED_INT, data); checkGLError();
+    unsigned int* data = new unsigned int[4 * w * h];
+    glReadPixels(0, 0, w, h, GL_RGBA_INTEGER, GL_UNSIGNED_INT, data); checkGLError();
     for (int i = 0; i < descriptors.size(); i++) {
-        int x = i % openGLKeyPointsTextureWidth[keyPointsId];
-        int y = i / openGLKeyPointsTextureWidth[keyPointsId];
-        int texAdr = x + y * openGLKeyPointsTextureWidth[keyPointsId];
+        int x = i % w;
+        int y = i / w;
+        int texAdr = x + y * w;
         for (int j = 0; j < Descriptor::uint32count; ++j) {
             descriptors[i].bits[j] = data[texAdr * 4 + j];
         }
@@ -637,8 +663,8 @@ void sampleDescriptors_openGL(const int keyPointsId, const int descriptorsId, co
 
 void refineKeyPoints_openGL(const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE, std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors) {
     // OpenGL is not working, yet.
-    GLuint refineKeyPoints_location_mipMaps[32]; for (int i = 0; i < 32; i++) refineKeyPoints_location_mipMaps[i] = glGetUniformLocation(openGLProgram_refineKeyPoints, ("mipMaps_" + std::to_string(i)).c_str()); checkGLError();
-    GLuint refineKeyPoints_location_descriptors[32]; for (int i = 0; i < 32; i++) refineKeyPoints_location_descriptors[i] = glGetUniformLocation(openGLProgram_refineKeyPoints, ("descriptors_"+std::to_string(i)).c_str()); checkGLError();
+    GLuint refineKeyPoints_location_mipMaps[32]; for (int i = 0; i < 32; i++) { refineKeyPoints_location_mipMaps[i] = glGetUniformLocation(openGLProgram_refineKeyPoints, ("mipMaps_" + std::to_string(i)).c_str()); checkGLError(); }
+    GLuint refineKeyPoints_location_descriptors[32]; for (int i = 0; i < 32; i++) { refineKeyPoints_location_descriptors[i] = glGetUniformLocation(openGLProgram_refineKeyPoints, ("descriptors_" + std::to_string(i)).c_str()); checkGLError(); }
     GLuint refineKeyPoints_location_mipMapWidth = glGetUniformLocation(openGLProgram_refineKeyPoints, "mipMapWidth"); checkGLError();
     GLuint refineKeyPoints_location_mipMapHeight = glGetUniformLocation(openGLProgram_refineKeyPoints, "mipMapHeight"); checkGLError();
     GLuint refineKeyPoints_location_texWidthDescriptorShape = glGetUniformLocation(openGLProgram_refineKeyPoints, "texWidthDescriptorShape"); checkGLError();
@@ -718,9 +744,29 @@ void refineKeyPoints_openGL(const int keyPointsId, const int descriptorsId, cons
     glUniform1iv(refineKeyPoints_location_mipMapWidth, mipMapWidth.size(), &(mipMapWidth[0])); checkGLError();
     glUniform1iv(refineKeyPoints_location_mipMapHeight, mipMapHeight.size(), &(mipMapHeight[0])); checkGLError();
 
-    glViewport(0, 0, openGLKeyPointsTextureWidth[keyPointsId], openGLKeyPointsTextureHeight[keyPointsId]);
+    if (openGLKeyPointsTextureWidth[keyPointsId] != openGLKeyPointsRenderTargetWidth[keyPointsId]|| openGLKeyPointsTextureHeight[keyPointsId] != openGLKeyPointsRenderTargetHeight[keyPointsId]) {
+        openGLKeyPointsRenderTargetWidth[keyPointsId] = openGLKeyPointsTextureWidth[keyPointsId];
+        openGLKeyPointsRenderTargetHeight[keyPointsId] = openGLKeyPointsTextureHeight[keyPointsId];
+        createFloatRenderTarget(openGLKeyPointsRenderTarget[keyPointsId], openGLKeyPointsRenderTargetWidth[keyPointsId], openGLKeyPointsRenderTargetHeight[keyPointsId], true);
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, openGLKeyPointsRenderTarget[keyPointsId].first); checkGLError();
+    const int w = openGLKeyPointsRenderTargetWidth[keyPointsId];
+    const int h = openGLKeyPointsRenderTargetHeight[keyPointsId];
+    glViewport(0, 0, w, h);
     glRects(-1, -1, 1, 1);
-
+    float* data = new float[4 * w * h];
+    glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, data); checkGLError();
+    for (int i = 0; i < keyPointCount; i++) {
+        int x = i % w;
+        int y = i / w;
+        int texAdr = x + y * w;
+        destKeyPoints[i].x = (data[4 * texAdr + 0] + data[4 * texAdr + 2]) * 0.5;
+        destKeyPoints[i].y = (data[4 * texAdr + 1] + data[4 * texAdr + 3]) * 0.5;
+        const float dx = (data[4 * texAdr + 0] - data[4 * texAdr + 2]);
+        const float dy = (data[4 * texAdr + 1] - data[4 * texAdr + 3]);
+        destErrors[i] = sqrt(dx * dx + dy * dy);
+    }
+    delete[] data;
     glBindFramebuffer(GL_FRAMEBUFFER, 0); checkGLError();
     glUseProgram(0); checkGLError();
     glActiveTexture(GL_TEXTURE0); checkGLError();

@@ -136,7 +136,7 @@ static std::string openCV_program =
 "           }\n"
 "       }\n"
 "       xya = normalize(xya) * (step / mipScale);\n"
-"       float2 r = kpxy + (float2)(cosa * xya.x + sina * xya.y, sina * xya.x + cosa * xya.y);\n"
+"       float2 r = kpxy + (float2)(cosa * xya.x + sina * xya.y, -sina * xya.x + cosa * xya.y);\n"
 "       const bool clipping = false; if (clipping) {\n"
 "           const int w = (int)floor((float)width / mipScale);\n"
 "           const int h = (int)floor((float)height / mipScale);\n"
