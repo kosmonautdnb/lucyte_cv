@@ -33,6 +33,22 @@ static GLuint openGLFragmentShader_refineKeyPoints = 0;
 static GLuint openGLVertexShader_basic = 0;
 static GLuint openGLProgram_sampleDescriptors = 0;
 static GLuint openGLProgram_refineKeyPoints = 0;
+#define SHARED_SHADER_FUNCTIONS ""\
+"float t2d_nearest(sampler2D t, int x, int y, int width, int height)\n"\
+"{\n"\
+"   return textureLod(t,vec2((float(x)+0.25)/float(width),(float(y)+0.25)/float(height)),0.0).x;\n"\
+"}\n"\
+"vec2 descriptors1(int i) {\n"\
+"   float x = t2d_nearest(descriptor1x, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
+"   float y = t2d_nearest(descriptor1y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
+"   return vec2(x,y);\n"\
+"}\n"\
+"vec2 descriptors2(int i) {\n"\
+"   float x = t2d_nearest(descriptor2x, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
+"   float y = t2d_nearest(descriptor2y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
+"   return vec2(x,y);\n"\
+"}\n"
+
 const std::string sampleDescriptorProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
 "in vec2 p;\n"
 "out uvec4 frag_color;\n"
@@ -52,20 +68,7 @@ const std::string sampleDescriptorProgram = "#version 300 es\nprecision highp fl
 "uniform sampler2D mipMap;\n"
 "uniform sampler2D keyPointsx;\n"
 "uniform sampler2D keyPointsy;\n"
-"float t2d_nearest(sampler2D t, int x, int y, int width, int height)\n"
-"{\n"
-"   return textureLod(t,vec2((float(x)+0.25)/float(width),(float(y)+0.25)/float(height)),0.0).x;\n"
-"}\n"
-"vec2 descriptors1(int i) {\n"
-"   float x = t2d_nearest(descriptor1x, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"
-"   float y = t2d_nearest(descriptor1y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"
-"   return vec2(x,y);\n"
-"}\n"
-"vec2 descriptors2(int i) {\n"
-"   float x = t2d_nearest(descriptor2x, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"
-"   float y = t2d_nearest(descriptor2y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"
-"   return vec2(x,y);\n"
-"}\n"
+SHARED_SHADER_FUNCTIONS
 "void main()\n"
 "{\n"
 "       int txx = int(floor(p.x+0.25));\n"
@@ -85,6 +88,61 @@ const std::string sampleDescriptorProgram = "#version 300 es\nprecision highp fl
 "\n";
 const std::string refineKeyPointsProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
 "out vec4 frag_color;\n"
+"uniform sampler2DArray mipMaps;\n"
+"uniform int mipMapWidth[32];\n"
+"uniform int mipMapHeight[32];\n"
+"uniform float mipScale;\n"
+"uniform float descriptorScale;\n"
+"uniform int DESCRIPTORSIZE;\n"
+"uniform int stepping;\n"
+"uniform float step;\n"
+"unsigned int dBits[4];\n"
+"uniform int texWidthDescriptorShape;\n"
+"uniform int texHeightDescriptorShape;\n"
+"uniform sampler2D descriptor1x;\n"
+"uniform sampler2D descriptor1y;\n"
+"uniform sampler2D descriptor2x;\n"
+"uniform sampler2D descriptor2y;\n"
+SHARED_SHADER_FUNCTIONS
+"vec2 refineKeyPoint(vec2 kpxy, int mipMap, float angle, float descriptorScale) {\n"
+"   vec2 kp = kpxy * mipScale;\n"
+"   float descriptorSize = mipScale * descriptorScale;\n"
+"   float sina = sin(angle);\n"
+"   float cosa = cos(angle);\n"
+"   vec2 cosid = vec2(cosa, sina) * descriptorSize;\n"
+"   vec2 nsicd = vec2(-sina, cosa) * descriptorSize;\n"
+"   vec2 gdx = vec2(cosa,sina);\n"
+"   vec2 gdy = vec2(-sina,cosa);\n"
+"   vec2 xya = vec2(0,0);\n"
+"   vec2 sc = vec2(1.0/float(mipMapWidth[mipMap]),1.0/float(mipMapHeight[mipMap]));\n"
+"   for (int b = 0; b < DESCRIPTORSIZE; ++b) {\n"
+"       vec2 dp1 = descriptors1(b);"
+"       vec2 dp2 = descriptors2(b);"
+"       vec2 d1 = kp + vec2(dot(cosid,dp1), dot(nsicd,dp1));\n"
+"       vec2 d2 = kp + vec2(dot(cosid,dp2), dot(nsicd,dp2));\n"
+"       float l1 = textureLod(mipMaps, vec3(d1*sc,float(mipMap)), 0.0).x;\n"
+"       float l2 = textureLod(mipMaps, vec3(d2*sc,float(mipMap)), 0.0).x;\n"
+"       int b2 = (l2 < l1 ? 1 : 0);\n"
+"       if (b2 != ( int(dBits[b>>5]>>(b & 31)) & 1 )) {\n"
+"           vec2 gr = vec2( textureLod(mipMaps, vec3(d2 - gdx,float(mipMap)), 0.0).x - textureLod(mipMaps, vec3(d2 + gdx,float(mipMap)), 0.0).x , textureLod(mipMaps, vec3(d2 - gdy,float(mipMap)), 0.0).x - textureLod(mipMaps, vec3(d2 + gdy,float(mipMap)), 0.0).x )\n"
+"                    -vec2( textureLod(mipMaps, vec3(d1 - gdx,float(mipMap)), 0.0).x - textureLod(mipMaps, vec3(d1 + gdx,float(mipMap)), 0.0).x , textureLod(mipMaps, vec3(d1 - gdy,float(mipMap)), 0.0).x - textureLod(mipMaps, vec3(d1 + gdy,float(mipMap)), 0.0).x ); \n"
+"           if (b2 != 0) gr = -gr;\n"
+"           if (stepping != 0) gr = vec2((gr.x == 0.f) ? 0.f : (gr.x > 0.f) ? 1.f : -1.f, (gr.y == 0.f) ? 0.f : (gr.y > 0.f) ? 1.f : -1.f);\n"
+"           xya += gr * length(d2 - d1);\n"
+"       }\n"
+"   }\n"
+"   xya = normalize(xya) * (step / mipScale);\n"
+"   vec2 r = kpxy + vec2(cosa * xya.x + sina * xya.y, sina * xya.x + cosa * xya.y);\n"
+"   const bool clipping = false; if (clipping) {\n"
+"       float w = float(mipMapWidth[0]);\n"
+"       float h = float(mipMapHeight[0]);\n"
+"       if (r.x < 0.0) r.x = 0.0;\n"
+"       if (r.y < 0.0) r.y = 0.0;\n"
+"       if (r.x >= w - 1.0) r.x = w - 1.0;\n"
+"       if (r.y >= h - 1.0) r.y = h - 1.0;\n"
+"   }\n"
+"   return r;\n"
+"}\n"
 "void main()\n"
 "{\n"
 "    frag_color = vec4(1.0,0.5,0.2,1.0);\n"
