@@ -282,7 +282,6 @@ SHARED_SHADER_FUNCTIONS
 "               step = STEPSIZE * descriptorScale;\n"
 "               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.0 - SCALEINVARIANCE;\n"
 "               angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.0 - ROTATIONINVARIANCE) / 360.0 * 2.0 * 3.1415927f;\n"
-"\n"               
 "               switch(i) {\n"
 "                   case  0: kp = refineKeyPoint( mipMaps_0, kp, i, descriptorNeeded); break;\n"
 "                   case  1: kp = refineKeyPoint( mipMaps_1, kp, i, descriptorNeeded); break;\n"
@@ -637,6 +636,7 @@ void sampleDescriptors_openGL(const int keyPointsId, const int descriptorsId, co
 }
 
 void refineKeyPoints_openGL(const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE, std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors) {
+    // OpenGL is not working, yet.
     GLuint refineKeyPoints_location_mipMaps[32]; for (int i = 0; i < 32; i++) refineKeyPoints_location_mipMaps[i] = glGetUniformLocation(openGLProgram_refineKeyPoints, ("mipMaps_" + std::to_string(i)).c_str()); checkGLError();
     GLuint refineKeyPoints_location_descriptors[32]; for (int i = 0; i < 32; i++) refineKeyPoints_location_descriptors[i] = glGetUniformLocation(openGLProgram_refineKeyPoints, ("descriptors_"+std::to_string(i)).c_str()); checkGLError();
     GLuint refineKeyPoints_location_mipMapWidth = glGetUniformLocation(openGLProgram_refineKeyPoints, "mipMapWidth"); checkGLError();
