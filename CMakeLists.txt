@@ -10,11 +10,14 @@ function(dump_cmake_variables)
 	endforeach()
 endfunction()
 
+list(APPEND CMAKE_PREFIX_PATH "c:/!mad/lib/glew")
+find_package( GLEW )                              
 find_package( OpenCV REQUIRED )                              
 find_package( OpenCL REQUIRED )                              
 find_package( OpenMP )
 find_package( OpenGL )
 find_package( glfw3 )
+
 
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -23,7 +26,6 @@ if (OPENMP_FOUND)
 endif()
 
 include_directories(${OpenCL_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS})
-
 
 set(lucyte_common constants.hpp config.hpp refinement.cpp refinement.hpp descriptors.cpp descriptors.hpp)
 
@@ -76,5 +78,5 @@ target_link_libraries(lucyte_KITTIE_stereo ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
 if (OpenGL_FOUND AND glfw3_FOUND)
 	add_executable(lucyte_opengl opengl_main.cpp ${lucyte_common} ${lucyte_opengl})
-	target_link_libraries(lucyte_opengl ${OpenCV_LIBS} glfw ${OPENGL_LIBRARIES})
+	target_link_libraries(lucyte_opengl ${OpenCV_LIBS} glfw ${OPENGL_LIBRARIES} GLEW::GLEW)
 endif()
