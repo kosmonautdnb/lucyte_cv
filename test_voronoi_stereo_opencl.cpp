@@ -194,8 +194,8 @@ int main(int argc, char** argv)
         const int height = mipmaps1[i].rows;
         searchForDescriptorsLeft[i].resize(keyPointsLeft.size());
         sampleDescriptors_openCL(i, searchForDescriptorsLeft, descriptorScale, width, height, mipScale);
-        uploadDescriptors_openCL(i, searchForDescriptorsLeft);
     }
+    uploadDescriptors_openCL(mipEnd, searchForDescriptorsLeft);
     uploadMipMaps_openCL(mipmaps3);
     refineKeyPoints_openCL(keyPointsRight, errorsRight, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     uploadMipMaps_openCL(mipmaps2);
@@ -265,8 +265,8 @@ int main(int argc, char** argv)
                         searchForDescriptorsLeft[i][j] = resampledDescriptors[i][j];
                     }
                 }
-                uploadDescriptors_openCL(i, searchForDescriptorsLeft);
             }
+            uploadDescriptors_openCL(mipEnd, searchForDescriptorsLeft);
         }
     }
 

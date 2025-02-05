@@ -118,8 +118,8 @@ int main(int argc, char** argv)
         const int height = mipmaps1[i].rows;
         searchForDescriptors[i].resize(keyPoints.size());
         sampleDescriptors_openGL(0,0,0, i, searchForDescriptors, descriptorScale, width, height, mipScale);
-        uploadDescriptors_openGL(0, i, searchForDescriptors);
     }
+    uploadDescriptors_openGL(0, mipEnd, searchForDescriptors);
     refineKeyPoints_openGL(0,0,0, keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
 
     long long t0 = X_Query_perf_counter();;
@@ -196,8 +196,8 @@ int main(int argc, char** argv)
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
                     }
                 }
-                uploadDescriptors_openGL(0, i, searchForDescriptors);
             }
+            uploadDescriptors_openGL(0, mipEnd, searchForDescriptors);
         }
         t3 = X_Query_perf_counter();
         glfwSwapBuffers(window);

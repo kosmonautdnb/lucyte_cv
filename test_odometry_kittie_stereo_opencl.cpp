@@ -141,9 +141,9 @@ int main(int argc, char** argv) {
         }
         for (int i = 0; i <= mipEnd; i++) {
             sampleDescriptors_openCL_waitfor(0, 0, i, lastFrameLeftDescriptors);
-            uploadDescriptors_openCL(0, 0, i, lastFrameLeftDescriptors);
-            if (wait) uploadDescriptors_openCL_waitfor(0, 0, i);
         }
+        uploadDescriptors_openCL(0, 0, mipEnd, lastFrameLeftDescriptors);
+        if (wait) uploadDescriptors_openCL_waitfor(0, 0, mipEnd);
         lastFrameLeftImageKeyPoints = leftImageKeyPoints;
         lastFrameLeftImageErrors = leftImageErrors;
         lastFrameRightImageKeyPoints = rightImageKeyPoints;

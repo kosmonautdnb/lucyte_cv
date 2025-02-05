@@ -125,8 +125,8 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
             const int width = mips1[i].cols;
             const int height = mips1[i].rows;
             sampleDescriptors_openCL(i, d1, descriptorScale, width, height, mipScale);
-            uploadDescriptors_openCL(i, d1);
         }
+        uploadDescriptors_openCL(mipEnd, d1);
         uploadMipMaps_openCL(mips2);
         refineKeyPoints_openCL(p, e, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         points2.resize(points1.size());

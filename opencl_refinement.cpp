@@ -442,23 +442,27 @@ void uploadKeyPoints_openCL_waitfor(const int queueId, const int keyPointsId) {
     keyPointsYEvent[queueId][keyPointsId].wait();
 }
 
-void uploadDescriptors_openCL(const int queueId, const int descriptorsId, const int mipMap, const std::vector<std::vector<Descriptor>>& sourceMips) {
-    uploadDescriptors_openCL_waitfor(queueId, descriptorsId, mipMap);
-    const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
-    if ((descriptors.size() * Descriptor::uint32count) > openCLDescriptorBits[queueId][descriptorsId][mipMap].size()) {
-        openCLDescriptorBits[queueId][descriptorsId][mipMap].resize(descriptors.size() * Descriptor::uint32count);
-        openCLBits[queueId][descriptorsId][mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * Descriptor::uint32count * descriptors.size());
-    }
-    for (int i = int(descriptors.size()) - 1; i >= 0; i--) {
-        for (int j = 0; j < Descriptor::uint32count; j++) {
-            openCLDescriptorBits[queueId][descriptorsId][mipMap][j + i * Descriptor::uint32count] = descriptors[i].bits[j];
+void uploadDescriptors_openCL(const int queueId, const int descriptorsId, const int mipEnd, const std::vector<std::vector<Descriptor>>& sourceMips) {
+    uploadDescriptors_openCL_waitfor(queueId, descriptorsId, mipEnd);
+    for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
+        const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
+        if ((descriptors.size() * Descriptor::uint32count) > openCLDescriptorBits[queueId][descriptorsId][mipMap].size()) {
+            openCLDescriptorBits[queueId][descriptorsId][mipMap].resize(descriptors.size() * Descriptor::uint32count);
+            openCLBits[queueId][descriptorsId][mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * Descriptor::uint32count * descriptors.size());
         }
+        for (int i = int(descriptors.size()) - 1; i >= 0; i--) {
+            for (int j = 0; j < Descriptor::uint32count; j++) {
+                openCLDescriptorBits[queueId][descriptorsId][mipMap][j + i * Descriptor::uint32count] = descriptors[i].bits[j];
+            }
+        }
+        openCLQueue[queueId].enqueueWriteBuffer(openCLBits[queueId][descriptorsId][mipMap], CLNONBLOCKING, 0, sizeof(unsigned int) * Descriptor::uint32count * descriptors.size(), &(openCLDescriptorBits[queueId][descriptorsId][mipMap][0]), nullptr, &(descriptorEvent[queueId][descriptorsId][mipMap]));
     }
-    openCLQueue[queueId].enqueueWriteBuffer(openCLBits[queueId][descriptorsId][mipMap], CLNONBLOCKING, 0, sizeof(unsigned int) * Descriptor::uint32count * descriptors.size(), &(openCLDescriptorBits[queueId][descriptorsId][mipMap][0]), nullptr, &(descriptorEvent[queueId][descriptorsId][mipMap]));
 }
 
-void uploadDescriptors_openCL_waitfor(const int queueId, const int descriptorsId, const int mipMap) {
-    descriptorEvent[queueId][descriptorsId][mipMap].wait();
+void uploadDescriptors_openCL_waitfor(const int queueId, const int descriptorsId, const int mipEnd) {
+    for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
+        descriptorEvent[queueId][descriptorsId][mipMap].wait();
+    }
 }
 
 void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipMap, const int keyPointCount, const float descriptorScale, const int width, const int height, const float mipScale) {
@@ -570,9 +574,9 @@ void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {
     uploadKeyPoints_openCL(0, 0, keyPoints);
     uploadKeyPoints_openCL_waitfor(0, 0);
 }
-void uploadDescriptors_openCL(const int mipMap, const std::vector<std::vector<Descriptor>>& sourceMips) {
-    uploadDescriptors_openCL(0, 0, mipMap, sourceMips);
-    uploadDescriptors_openCL_waitfor(0, 0, mipMap);
+void uploadDescriptors_openCL(const int mipEnd, const std::vector<std::vector<Descriptor>>& sourceMips) {
+    uploadDescriptors_openCL(0, 0, mipEnd, sourceMips);
+    uploadDescriptors_openCL_waitfor(0, 0, mipEnd);
 }
 void sampleDescriptors_openCL(const int mipMap, std::vector<std::vector<Descriptor>>& destMips, const float descriptorScale, const int width, const int height, const float mipScale) {
     sampleDescriptors_openCL(0, 0, 0, 0, mipMap, destMips[mipMap].size(), descriptorScale, width, height, mipScale);

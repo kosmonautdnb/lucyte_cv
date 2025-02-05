@@ -126,9 +126,9 @@ int main(int argc, char** argv)
         sampleDescriptors_openCL(lastBuffer, 0,0,0, i, keyPoints.size(), descriptorScale, width, height, mipScale);
         sampleDescriptors_openCL_waitfor(thisBuffer, 0, i, searchForDescriptors);
         sampleDescriptors_openCL_waitfor(lastBuffer, 0, i, searchForDescriptors);
-        uploadDescriptors_openCL(thisBuffer, 0, i, searchForDescriptors);
-        uploadDescriptors_openCL(lastBuffer, 0, i, searchForDescriptors);
     }
+    uploadDescriptors_openCL(thisBuffer, 0, mipEnd, searchForDescriptors);
+    uploadDescriptors_openCL(lastBuffer, 0, mipEnd, searchForDescriptors);
 
     long long t0 = X_Query_perf_counter();;
     long long t2 = X_Query_perf_counter();;
@@ -159,8 +159,8 @@ int main(int argc, char** argv)
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
                     }
                 }
-                uploadDescriptors_openCL(thisBuffer, 0, i, searchForDescriptors);
             }
+            uploadDescriptors_openCL(thisBuffer, 0, mipEnd, searchForDescriptors);
         }
         refineKeyPoints_openCL(thisBuffer, 0,0,0, keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         refineKeyPoints_openCL_waitfor(lastBuffer, 0, keyPoints, errors);

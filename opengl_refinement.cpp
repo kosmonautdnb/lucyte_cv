@@ -685,15 +685,17 @@ void uploadKeyPoints_openGL(const int keyPointsId, const std::vector<KeyPoint>& 
     upload1DFloatTexture(openGLKeyPointsY[keyPointsId], &(kpy[0]), keyPoints.size(), openGLKeyPointsTextureWidth[keyPointsId], openGLKeyPointsTextureHeight[keyPointsId], true);
 }
 
-void uploadDescriptors_openGL(const int descriptorsId, const int mipMap, const std::vector<std::vector<Descriptor>>& sourceMips) {
-    const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
-    std::vector<unsigned int> bits; bits.resize(4 * descriptors.size());
-    for (int i = int(descriptors.size()) - 1; i >= 0; i--) {
-        for (int j = 0; j < Descriptor::uint32count; j++) {
-            bits[j + i * 4] = descriptors[i].bits[j];
+void uploadDescriptors_openGL(const int descriptorsId, const int mipEnd, const std::vector<std::vector<Descriptor>>& sourceMips) {
+    for (int i = 0; i <= mipEnd; i++) {
+        const std::vector<Descriptor>& descriptors = sourceMips[i];
+        std::vector<unsigned int> bits; bits.resize(4 * descriptors.size());
+        for (int i = int(descriptors.size()) - 1; i >= 0; i--) {
+            for (int j = 0; j < Descriptor::uint32count; j++) {
+                bits[j + i * 4] = descriptors[i].bits[j];
+            }
         }
+        upload1Duint324Texture(openGLDescriptors[descriptorsId][i], &(bits[0]), bits.size() / 4, openGLDescriptorsTextureWidth[descriptorsId][i], openGLDescriptorsTextureHeight[descriptorsId][i], true);
     }
-    upload1Duint324Texture(openGLDescriptors[descriptorsId][mipMap], &(bits[0]), bits.size() / 4, openGLDescriptorsTextureWidth[descriptorsId][mipMap], openGLDescriptorsTextureHeight[descriptorsId][mipMap],true);
 }
 
 void testSetup() {
