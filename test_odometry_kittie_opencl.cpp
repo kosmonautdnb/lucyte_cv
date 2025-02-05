@@ -117,15 +117,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
         }
         uploadKeyPoints_openCL(p);
         uploadMipMaps_openCL(mips1);
-        d1.resize(mips1.size());
-        for (int i = 0; i <= mipEnd; i++) {
-            d1[i].resize(size);
-            const float mipScale = powf(MIPSCALE, float(i));
-            const float descriptorScale = 1.f / mipScale;
-            const int width = mips1[i].cols;
-            const int height = mips1[i].rows;
-            sampleDescriptors_openCL(i, d1, descriptorScale, width, height, mipScale);
-        }
+        sampleDescriptors_openCL(mipEnd, d1, 1.f, MIPSCALE);
         uploadDescriptors_openCL(mipEnd, d1);
         uploadMipMaps_openCL(mips2);
         refineKeyPoints_openCL(p, e, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);

@@ -130,17 +130,8 @@ int main(int argc, char** argv) {
         uploadKeyPoints_openCL(0, 1, leftImageKeyPoints); if (wait) uploadKeyPoints_openCL_waitfor(0, 1);
         std::vector<std::vector<Descriptor>> lastFrameLeftDescriptors;
         lastFrameLeftDescriptors.resize(leftMipMaps.size());
-        for (int i = 0; i <= mipEnd; i++) {
-            lastFrameLeftDescriptors[i].resize(leftImageKeyPoints.size());
-            const float mipScale = powf(MIPSCALE, float(i));
-            const float descriptorScale = 1.f / mipScale;
-            const int width = leftMipMaps[i].cols;
-            const int height = leftMipMaps[i].rows;
-            sampleDescriptors_openCL(0, 0, 0, (doubleBuffer^1) * 2 + 0, i, leftImageKeyPoints.size(), descriptorScale, width, height, mipScale);
-        }
-        for (int i = 0; i <= mipEnd; i++) {
-            sampleDescriptors_openCL_waitfor(0, 0, i, lastFrameLeftDescriptors);
-        }
+        sampleDescriptors_openCL(0, 0, 0, (doubleBuffer ^ 1) * 2 + 0, mipEnd, 1.f, MIPSCALE);
+        sampleDescriptors_openCL_waitfor(0, 0, 0, 0, mipEnd, lastFrameLeftDescriptors);
         uploadDescriptors_openCL(0, 0, mipEnd, lastFrameLeftDescriptors);
         if (wait) uploadDescriptors_openCL_waitfor(0, 0, mipEnd);
         lastFrameLeftImageKeyPoints = leftImageKeyPoints;

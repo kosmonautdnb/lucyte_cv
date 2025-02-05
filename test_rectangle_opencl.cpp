@@ -112,14 +112,7 @@ int main(int argc, char** argv)
         if (left == 0) break;
         printf("%d,", left);
         uploadKeyPoints_openCL(keyPoints);
-        for (int i = mipEnd; i >= 0; i--) {
-            const float mipScale = powf(MIPSCALE, float(i));
-            const float descriptorScale = 1.f / mipScale;
-            const int width = mipmaps1[i].cols;
-            const int height = mipmaps1[i].rows;
-            searchForDescriptors[i].resize(keyPoints.size());
-            sampleDescriptors_openCL(i, searchForDescriptors, descriptorScale, width, height, mipScale);
-        }
+        sampleDescriptors_openCL(mipEnd, searchForDescriptors, 1.f, MIPSCALE);
         uploadDescriptors_openCL(mipEnd, searchForDescriptors);
         refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         for (int i = 0; i < KEYPOINTCOUNT; i++) {
@@ -151,20 +144,11 @@ int main(int argc, char** argv)
         const bool resample = true;
         if (resample) {
             std::vector<std::vector<Descriptor>> resampledDescriptors;
-            resampledDescriptors.resize(mipmaps2.size());
-            for (int i = mipEnd; i >= 0; i--) {
-                const float mipScale = powf(MIPSCALE, float(i));
-                const float descriptorScale = 1.f / mipScale;
-                const int width = mipmaps2[i].cols;
-                const int height = mipmaps2[i].rows;
-                resampledDescriptors[i].resize(keyPoints.size());
-                sampleDescriptors_openCL(i, resampledDescriptors, descriptorScale, width, height, mipScale);
-                for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
+            sampleDescriptors_openCL(mipEnd, resampledDescriptors, 1.f, MIPSCALE);
+            for (int i = mipEnd; i >= 0; i--)
+                for (int j = keyPoints.size() - 1; j >= 0; j--)
+                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS))
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
-                    }
-                }
-            }
             uploadDescriptors_openCL(mipEnd, searchForDescriptors);
         }
     }
