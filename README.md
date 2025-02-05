@@ -11,7 +11,7 @@ Day drive: https://www.youtube.com/watch?v=6K82WeEhKBI
 
 Night drive: https://www.youtube.com/watch?v=A_0tm-1DTm4
 
-Lucyte Algorithm vs. Optical Flow(KLT) by Kanade Lucas Tomasi: https://www.youtube.com/watch?v=pYw6Db9fh_Y
+Lucyte Algorithm vs. Optical Flow(KLT): https://www.youtube.com/watch?v=pYw6Db9fh_Y
 
 Complicated light with Lucyte vs. KLT: https://www.youtube.com/watch?v=P3CnGRe1MFs
 
