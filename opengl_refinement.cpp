@@ -89,7 +89,7 @@ SHARED_SHADER_FUNCTIONS
 "       frag_color = uvec4(b[0],b[1],b[2],b[3]);\n"
 "}\n"
 "\n";
-const std::string refineKeyPointsProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
+const std::string refineKeyPointsProgram = ""\
 "in vec2 p;\n"
 "out vec4 frag_color;\n"
 "uniform sampler2D mipMaps_0;\n"
@@ -204,8 +204,10 @@ SHARED_SHADER_FUNCTIONS
 "   dBits[2] = descriptor.z;"
 "   dBits[3] = descriptor.w;"
 "   for (int b = 0; b < DESCRIPTORSIZE; b++) {\n"
-"       vec2 dp1 = descriptors1(b);\n"
-"       vec2 dp2 = descriptors2(b);\n"
+//"       vec2 dp1 = descriptors1(b);\n"
+//"       vec2 dp2 = descriptors2(b);\n"
+"       vec2 dp1 = vec2(descriptors1x[b],descriptors1y[b]);\n"
+"       vec2 dp2 = vec2(descriptors2x[b],descriptors2y[b]);\n"
 "       vec2 d1 = (kp + vec2(dot(cosid,dp1), dot(nsicd,dp1)))*sc;\n"
 "       vec2 d2 = (kp + vec2(dot(cosid,dp2), dot(nsicd,dp2)))*sc;\n"
 "       float l1 = textureLod(s, d1, 0.0).x;\n"
@@ -546,9 +548,32 @@ void initOpenGL() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+    std::string descriptors1x = "float descriptors1x[" + std::to_string(DESCRIPTORSIZE) + "] = float [](";
+    std::string descriptors1y = "float descriptors1y[" + std::to_string(DESCRIPTORSIZE) + "] = float [](";
+    std::string descriptors2x = "float descriptors2x[" + std::to_string(DESCRIPTORSIZE) + "] = float [](";
+    std::string descriptors2y = "float descriptors2y[" + std::to_string(DESCRIPTORSIZE) + "] = float [](";
+    for (int i = 0; i < DESCRIPTORSIZE; i++) {
+        if (i != 0) {
+            descriptors1x += ",";
+            descriptors1y += ",";
+            descriptors2x += ",";
+            descriptors2y += ",";
+        }
+        descriptors1x += std::to_string(descriptorsX1[i]);
+        descriptors1y += std::to_string(descriptorsY1[i]);
+        descriptors2x += std::to_string(descriptorsX2[i]);
+        descriptors2y += std::to_string(descriptorsY2[i]);
+    }
+    descriptors1x += ");\n";
+    descriptors1y += ");\n";
+    descriptors2x += ");\n";
+    descriptors2y += ");\n";
+
+    std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors1x + descriptors1y + descriptors2x + descriptors2y + refineKeyPointsProgram;
+
     glewInit();
     openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptorProgram.c_str(), sampleDescriptorProgram.length());
-    openGLFragmentShader_refineKeyPoints = pixelShader(refineKeyPointsProgram.c_str(), refineKeyPointsProgram.length());
+    openGLFragmentShader_refineKeyPoints = pixelShader(refineKeys.c_str(), refineKeys.length());
     openGLFragmentShader_displayMipMap = pixelShader(displayMipMapProgram.c_str(), displayMipMapProgram.length());
     openGLVertexShader_basic = vertexShader(basicProgram.c_str(), basicProgram.length());
     openGLProgram_sampleDescriptors = program(openGLVertexShader_basic, openGLFragmentShader_sampleDescriptors);
