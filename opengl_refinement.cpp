@@ -39,19 +39,16 @@ static GLuint openGLProgram_sampleDescriptors = 0;
 static GLuint openGLProgram_refineKeyPoints = 0;
 static GLuint openGLProgram_displayMipMap = 0;
 #define SHARED_SHADER_FUNCTIONS ""\
-"float t2d_nearest(sampler2D t, int x, int y, int width, int height)\n"\
+"vec2 t2d_nearest(sampler2D t1, sampler2D t2, int x, int y, int width, int height)\n"\
 "{\n"\
-"   return textureLod(t,vec2((float(x)+0.25)/float(width),(float(y)+0.25)/float(height)),0.0).x;\n"\
+"   vec2 k = vec2((float(x)+0.25)/float(width),(float(y)+0.25)/float(height));\n"\
+"   return vec2(textureLod(t1,k,0.0).x,textureLod(t2,k,0.0).x);\n"\
 "}\n"\
 "vec2 descriptors1(int i) {\n"\
-"   float x = t2d_nearest(descriptor1x, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
-"   float y = t2d_nearest(descriptor1y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
-"   return vec2(x,y);\n"\
+"   return t2d_nearest(descriptor1x, descriptor1y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
 "}\n"\
 "vec2 descriptors2(int i) {\n"\
-"   float x = t2d_nearest(descriptor2x, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
-"   float y = t2d_nearest(descriptor2y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
-"   return vec2(x,y);\n"\
+"   return t2d_nearest(descriptor2x, descriptor2y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
 "}\n"
 
 const std::string sampleDescriptorProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
@@ -79,7 +76,7 @@ SHARED_SHADER_FUNCTIONS
 "       int txx = int(floor(p.x+0.25));\n"
 "       int txy = int(floor(p.y+0.25));\n"
 "       float descriptorSize = descriptorScale * mipScale;\n"
-"       vec2 kp = vec2(t2d_nearest(keyPointsx,txx,txy,texWidthKeyPoints,texHeightKeyPoints),t2d_nearest(keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints));\n"
+"       vec2 kp = t2d_nearest(keyPointsx,keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints);\n"
 "       kp *= mipScale;\n"
 "       vec2 sc = vec2(1.0/float(texWidthMipMap),1.0/float(texHeightMipMap));\n"
 "       unsigned int b[4]; b[0]=unsigned int(0); b[1]=unsigned int(0); b[2]=unsigned int(0); b[3]=unsigned int(0);\n"
@@ -198,8 +195,8 @@ SHARED_SHADER_FUNCTIONS
 "   float cosa = cos(angle);\n"
 "   vec2 cosid = vec2(cosa, sina) * descriptorScale;\n"
 "   vec2 nsicd = vec2(-sina, cosa) * descriptorScale;\n"
-"   vec2 gdx = vec2(cosa,sina) / mipScale;\n"
-"   vec2 gdy = vec2(-sina,cosa) / mipScale;\n"
+"   vec2 gdx = vec2(cosa,sina) / mipScale * sc;\n"
+"   vec2 gdy = vec2(-sina,cosa) / mipScale * sc;\n"
 "   vec2 xya = vec2(0.0,0.0);\n"
 "   unsigned int dBits[4];\n"
 "   dBits[0] = descriptor.x;"
@@ -209,17 +206,17 @@ SHARED_SHADER_FUNCTIONS
 "   for (int b = 0; b < DESCRIPTORSIZE; b++) {\n"
 "       vec2 dp1 = descriptors1(b);\n"
 "       vec2 dp2 = descriptors2(b);\n"
-"       vec2 d1 = kp + vec2(dot(cosid,dp1), dot(nsicd,dp1));\n"
-"       vec2 d2 = kp + vec2(dot(cosid,dp2), dot(nsicd,dp2));\n"
-"       float l1 = textureLod(s, d1 * sc, 0.0).x;\n"
-"       float l2 = textureLod(s, d2 * sc, 0.0).x;\n"
+"       vec2 d1 = (kp + vec2(dot(cosid,dp1), dot(nsicd,dp1)))*sc;\n"
+"       vec2 d2 = (kp + vec2(dot(cosid,dp2), dot(nsicd,dp2)))*sc;\n"
+"       float l1 = textureLod(s, d1, 0.0).x;\n"
+"       float l2 = textureLod(s, d2, 0.0).x;\n"
 "       unsigned int b2 = l2 < l1 ? unsigned int(1) : unsigned int(0);\n"
 "       if (b2 != ((dBits[b>>5]>>unsigned int(b & 31)) & unsigned int(1)) ) {\n"
-"           vec2 gr = vec2( textureLod(s, (d2 - gdx) * sc, 0.0).x - textureLod(s, (d2 + gdx) * sc, 0.0).x , textureLod(s, (d2 - gdy) * sc, 0.0).x - textureLod(s, (d2 + gdy) * sc, 0.0).x )\n"
-"                    -vec2( textureLod(s, (d1 - gdx) * sc, 0.0).x - textureLod(s, (d1 + gdx) * sc, 0.0).x , textureLod(s, (d1 - gdy) * sc, 0.0).x - textureLod(s, (d1 + gdy) * sc, 0.0).x );\n"
+"           vec2 gr = vec2( textureLod(s, d2 - gdx, 0.0).x - textureLod(s, d2 + gdx, 0.0).x , textureLod(s, d2 - gdy, 0.0).x - textureLod(s, d2 + gdy, 0.0).x )\n"
+"                    -vec2( textureLod(s, d1 - gdx, 0.0).x - textureLod(s, d1 + gdx, 0.0).x , textureLod(s, d1 - gdy, 0.0).x - textureLod(s, d1 + gdy, 0.0).x );\n"
 "           if (b2 != unsigned int(0)) gr = -gr;\n"
 "           if (stepping != 0) gr = vec2((gr.x == 0.0) ? 0.0 : (gr.x > 0.0) ? 1.0 : -1.0, (gr.y == 0.0) ? 0.0 : (gr.y > 0.0) ? 1.0 : -1.0);\n"
-"           xya += gr * length(d2 - d1);\n"
+"           xya += gr * distance(d2,d1);\n"
 "       }\n"
 "   }\n"
 "   float l = length(xya);\n"
@@ -244,7 +241,7 @@ SHARED_SHADER_FUNCTIONS
 "   int descriptorNrY = descriptorNr / texWidthDescriptors;\n"
 "   vec2 descriptorNrXY = vec2(float(descriptorNrX) + 0.25,float(descriptorNrY) + 0.25) / vec2(float(texWidthDescriptors),float(texHeightDescriptors));\n"
 "   for(int v = 0; v < 2; v++) {\n"
-"       vec2 kp = vec2(t2d_nearest(keyPointsx,txx,txy,texWidthKeyPoints,texHeightKeyPoints),t2d_nearest(keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints));\n"
+"       vec2 kp = t2d_nearest(keyPointsx,keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints);\n"
 "       for(int i = mipEnd; i >= 0; i--) {\n"
 "               uvec4 descriptorNeeded;\n"
 "               switch(i) {\n"
