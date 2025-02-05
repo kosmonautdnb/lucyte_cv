@@ -6,6 +6,8 @@ GLFWwindow* window = NULL;
 int window_width;
 int window_height;
 
+extern float DESCRIPTORSCALE;
+
 static const int MAXMIPMAPS = 32;
 static const int MIPMAPIDCOUNT = 8;
 static const int KEYPOINTIDCOUNT = 2;
@@ -537,6 +539,8 @@ void glfwErrorCallback(int error_code, const char* description) {
 }
 
 void initOpenGL() {
+    defaultDescriptorShape(DESCRIPTORSCALE);
+
     glfwSetErrorCallback(glfwErrorCallback);
     if (!glfwInit())
         exit(0);
@@ -593,6 +597,7 @@ void initOpenGL() {
             glGenTextures(1, &(openGLDescriptors[i][j]));
         }
     }
+    uploadDescriptorShape_openGL();
 }
 
 void upload2DFloatTexture(const GLuint& tex, const float* data, const unsigned int width, const int height, const bool nearest) {

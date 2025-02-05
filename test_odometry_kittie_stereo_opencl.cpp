@@ -66,9 +66,8 @@ double getAbsoluteScale(int frame_id, int sequence_id, double z_cal) {
 }
 
 int main(int argc, char** argv) {
-    defaultDescriptorShape(DESCRIPTORSCALE);
+
     initOpenCL();
-    uploadDescriptorShape_openCL();
 
     cv::Mat E, R, t, mask, R_f, t_f;
     R = cv::Mat::zeros(3, 3, CV_64F);

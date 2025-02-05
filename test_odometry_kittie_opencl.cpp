@@ -223,9 +223,7 @@ double getAbsoluteScale(int frame_id, int sequence_id, double z_cal) {
 
 int main(int argc, char** argv) {
 
-    defaultDescriptorShape(DESCRIPTORSCALE);
     initOpenCL();
-    uploadDescriptorShape_openCL();
 
     cv::VideoWriter video;
     video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(1280, 720), true);

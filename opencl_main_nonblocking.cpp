@@ -90,11 +90,8 @@ int main(int argc, char** argv)
 {
     int thisBuffer = 0, lastBuffer = thisBuffer ^ 1;
 
-    srand(SEED);
-    defaultDescriptorShape(DESCRIPTORSCALE);
     initOpenCL();
-    uploadDescriptorShape_openCL(thisBuffer);
-    uploadDescriptorShape_openCL(lastBuffer);
+    srand(SEED);
 
     cv::Mat mat1 = loadImage(firstFrame);
     cv::VideoWriter video;

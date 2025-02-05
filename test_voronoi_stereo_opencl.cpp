@@ -159,10 +159,8 @@ cv::Mat loadImageRight(int frame) {
 
 int main(int argc, char** argv)
 {
-    srand(SEED);
-    defaultDescriptorShape(DESCRIPTORSCALE);
     initOpenCL();
-    uploadDescriptorShape_openCL();
+    srand(SEED);
 
     cv::Mat mat1 = loadImageLeft(stereoFirstFrame);
     cv::VideoWriter video;

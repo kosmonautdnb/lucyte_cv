@@ -137,8 +137,8 @@ cv::Mat overlay(std::vector<cv::Point2f> positions) {
 
 int main(int argc, char** argv)
 {
-    srand(SEED);
     defaultDescriptorShape(DESCRIPTORSCALE);
+    srand(SEED);
 
     cv::Mat mat1 = loadImage(firstFrame);
     mipmaps1 = mipMaps(mat1);

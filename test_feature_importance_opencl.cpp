@@ -119,10 +119,8 @@ cv::Mat loadImage(int frame) {
 
 int main(int argc, char** argv)
 {
-    srand(SEED);
-    defaultDescriptorShape(DESCRIPTORSCALE);
     initOpenCL();
-    uploadDescriptorShape_openCL();
+    srand(SEED);
 
     cv::Mat mat1 = loadImage(firstFrame);
     cv::VideoWriter video;

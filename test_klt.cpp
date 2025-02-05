@@ -257,8 +257,8 @@ cv::Mat testFrame(const cv::Mat &image) {
 
 int main(int argc, char** argv)
 {
-    srand(SEED);
     defaultDescriptorShape(DESCRIPTORSCALE);
+    srand(SEED);
 
     cv::VideoWriter video;
     if (outputVideo) video = cv::VideoWriter(outputBenchmarkVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(512 * 3, 512 * 2), true);

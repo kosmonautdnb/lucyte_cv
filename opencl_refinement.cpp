@@ -11,6 +11,7 @@
 #include "constants.hpp"
 
 #define CLNONBLOCKING CL_FALSE
+extern float DESCRIPTORSCALE;
 static const int MAXMIPMAPS = 32;
 static const int QUEUECOUNT = 2;
 static const int MIPMAPIDCOUNT = 8;
@@ -320,6 +321,8 @@ static std::string openCV_program =
 "\n";
 
 void initOpenCL() {
+    defaultDescriptorShape(DESCRIPTORSCALE);
+
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
     if (platforms.empty()) {
@@ -363,6 +366,7 @@ void initOpenCL() {
         openCLDescriptors2[i] = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(float) * 2 * DESCRIPTORSIZE);
         sampleDescriptor_cl[i] = cl::Kernel(openCLProgram, "sampleDescriptor_kernel");
         refineKeyPoints_cl[i] = cl::Kernel(openCLProgram, "refineKeyPoints_kernel");
+        uploadDescriptorShape_openCL(i);
     }
 }
 

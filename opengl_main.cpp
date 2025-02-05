@@ -87,10 +87,8 @@ cv::Mat loadImage(int frame) {
 
 int main(int argc, char** argv)
 {
-    srand(SEED);
-    defaultDescriptorShape(DESCRIPTORSCALE);
     initOpenGL();
-    uploadDescriptorShape_openGL();
+    srand(SEED);
 
     cv::Mat mat1 = loadImage(firstFrame);
     cv::VideoWriter video;

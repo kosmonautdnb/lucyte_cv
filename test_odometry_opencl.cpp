@@ -142,10 +142,8 @@ cv::Mat overlay(std::vector<cv::Point2f> positions) {
 
 int main(int argc, char** argv)
 {
-    srand(SEED);
-    defaultDescriptorShape(DESCRIPTORSCALE);
     initOpenCL();
-    uploadDescriptorShape_openCL();
+    srand(SEED);
 
     cv::Mat mat1 = loadImage(firstFrame);
     cv::VideoWriter video;
