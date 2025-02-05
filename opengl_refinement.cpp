@@ -51,7 +51,7 @@ static GLuint openGLProgram_displayMipMap = 0;
 "   return t2d_nearest(descriptor2x, descriptor2y, i % texWidthDescriptorShape, i / texWidthDescriptorShape, texWidthDescriptorShape, texHeightDescriptorShape);\n"\
 "}\n"
 
-const std::string sampleDescriptorProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
+const std::string sampleDescriptorProgram = ""
 "in vec2 p;\n"
 "out uvec4 frag_color;\n"
 "uniform int texWidthDescriptorShape;\n"
@@ -82,8 +82,8 @@ SHARED_SHADER_FUNCTIONS
 "       unsigned int b[4]; b[0]=unsigned int(0); b[1]=unsigned int(0); b[2]=unsigned int(0); b[3]=unsigned int(0);\n"
 "       for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
 "       {\n"
-"           float l1 = textureLod(mipMap, (kp + descriptors1(i) * descriptorSize) * sc, 0.0).x;\n"
-"           float l2 = textureLod(mipMap, (kp + descriptors2(i) * descriptorSize) * sc, 0.0).x;\n"
+"           float l1 = textureLod(mipMap, (kp + vec2(descriptors1x[i],descriptors1y[i]) * descriptorSize) * sc, 0.0).x;\n"
+"           float l2 = textureLod(mipMap, (kp + vec2(descriptors2x[i],descriptors2y[i]) * descriptorSize) * sc, 0.0).x;\n"
 "           b[i>>5] += (l2 < l1) ? unsigned int(1)<<unsigne int(i & 31) : unsigned int(0);\n"
 "       }\n"
 "       frag_color = uvec4(b[0],b[1],b[2],b[3]);\n"
@@ -570,9 +570,10 @@ void initOpenGL() {
     descriptors2y += ");\n";
 
     std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors1x + descriptors1y + descriptors2x + descriptors2y + refineKeyPointsProgram;
+    std::string sampleDescriptors = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors1x + descriptors1y + descriptors2x + descriptors2y + sampleDescriptorProgram;
 
     glewInit();
-    openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptorProgram.c_str(), sampleDescriptorProgram.length());
+    openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptors.c_str(), sampleDescriptors.length());
     openGLFragmentShader_refineKeyPoints = pixelShader(refineKeys.c_str(), refineKeys.length());
     openGLFragmentShader_displayMipMap = pixelShader(displayMipMapProgram.c_str(), displayMipMapProgram.length());
     openGLVertexShader_basic = vertexShader(basicProgram.c_str(), basicProgram.length());
