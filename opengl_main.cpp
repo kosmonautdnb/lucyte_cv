@@ -110,15 +110,7 @@ int main(int argc, char** argv)
     uploadKeyPoints_openGL(0,keyPoints);
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
-    searchForDescriptors.resize(mipmaps1.size());
-    for (int i = mipEnd; i >= 0; i--) {
-        const float mipScale = powf(MIPSCALE, float(i));
-        const float descriptorScale = 1.f / mipScale;
-        const int width = mipmaps1[i].cols;
-        const int height = mipmaps1[i].rows;
-        searchForDescriptors[i].resize(keyPoints.size());
-        sampleDescriptors_openGL(0,0,0, i, searchForDescriptors, descriptorScale, width, height, mipScale);
-    }
+    sampleDescriptors_openGL(0, 0, 0, mipEnd, searchForDescriptors, 1.f, MIPSCALE);
     uploadDescriptors_openGL(0, mipEnd, searchForDescriptors);
     refineKeyPoints_openGL(0,0,0, keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
 
@@ -183,20 +175,11 @@ int main(int argc, char** argv)
         const bool resample = true;
         if (resample) {
             std::vector<std::vector<Descriptor>> resampledDescriptors;
-            resampledDescriptors.resize(mipmaps2.size());
-            for (int i = mipEnd; i >= 0; i--) {
-                const float mipScale = powf(MIPSCALE, float(i));
-                const float descriptorScale = 1.f / mipScale;
-                const int width = mipmaps2[i].cols;
-                const int height = mipmaps2[i].rows;
-                resampledDescriptors[i].resize(keyPoints.size());
-                sampleDescriptors_openGL(0,0,0, i, resampledDescriptors, descriptorScale, width, height, mipScale);
-                for (int j = keyPoints.size() - 1; j >= 0; j--) {
-                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS)) {
+            sampleDescriptors_openGL(0, 0, 0, mipEnd, resampledDescriptors, 1.f, MIPSCALE);
+            for (int i = mipEnd; i >= 0; i--)
+                for (int j = keyPoints.size() - 1; j >= 0; j--)
+                    if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS))
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
-                    }
-                }
-            }
             uploadDescriptors_openGL(0, mipEnd, searchForDescriptors);
         }
         t3 = X_Query_perf_counter();
