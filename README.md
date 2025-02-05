@@ -1,4 +1,4 @@
-# Lucyte with OpenCV
+# Lucyte Feature Tracker
 by Stefan Mader
 
 A novel feature/point tracking approach that uses the descriptors to locate the features in an image. Ensuring luminance invariance.
