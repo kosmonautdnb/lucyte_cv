@@ -6,4 +6,5 @@
 #define __PLATFORM_IOS__ 3
 #define __CURRENT_PLATFORM__ __PLATFORM_WINDOWS__
 
+#define lcLog printf
 #define KEYPOINTCOUNT 1000
