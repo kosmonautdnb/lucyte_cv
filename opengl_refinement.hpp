@@ -5,7 +5,7 @@
 
 void initOpenGL();
 void uploadDescriptorShape_openGL();
-void uploadMipMaps_openGL(int mipmapsId, const std::vector<MipMap>& mipMaps);
+void uploadMipMaps_openGL(int mipmapsId, const MipMap& baseLevel);
 void uploadKeyPoints_openGL(int keyPointsId, const std::vector<KeyPoint>& keyPoints);
 void uploadDescriptors_openGL(int descriptorsId, int mipEnd, const std::vector<std::vector<Descriptor>>& sourceMips);
 void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId, int mipEnd, std::vector<std::vector<Descriptor>>& destMips, float DESCRIPTORSCALE2, float MIPSCALE);
