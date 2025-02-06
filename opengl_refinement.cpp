@@ -742,6 +742,20 @@ void uploadDescriptors_openGL(int descriptorsId, int mipEnd, const std::vector<s
     }
 }
 
+void fullScreenRect() {
+    GLfloat model[] =
+    {
+        -1.f, -1.f, // lower left
+        -1.f, 1.f, // upper left
+        1.f, -1.f, // lower right
+        1.f, 1.f  // upper right
+    };
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 0, model);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
 void displayMipMap(int mipmapsId, int mipEnd) {
     GLint displayMipMap_location_mipMaps[32]; for (int i = 0; i < 32; i++) { displayMipMap_location_mipMaps[i] = glGetUniformLocation(openGLProgram_displayMipMap, ("mipMaps_" + std::to_string(i)).c_str()); checkGLError(); }
     GLint displayMipMap_location_mipMapWidth = glGetUniformLocation(openGLProgram_displayMipMap, "mipMapWidth"); checkGLError();
@@ -767,7 +781,7 @@ void displayMipMap(int mipmapsId, int mipEnd) {
     glUniform1i(displayMipMap_location_texWidthKeyPoints, 1000); checkGLError();
     glUniform1i(displayMipMap_location_texHeightKeyPoints, 1000); checkGLError();
     glViewport(0, 0, 1000, 1000);
-    glRects(-1, -1, 1, 1);
+    fullScreenRect();
     glBindFramebuffer(GL_FRAMEBUFFER, 0); checkGLError();
     glUseProgram(0); checkGLError();
     glActiveTexture(GL_TEXTURE0); checkGLError();
@@ -843,7 +857,7 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
         const int w = (int)openGLDescriptorRenderTargetWidth[keyPointsId][mipMap];
         const int h = (int)openGLDescriptorRenderTargetHeight[keyPointsId][mipMap];
         glViewport(0, 0, w, h);
-        glRects(-1, -1, 1, 1);
+        fullScreenRect();
     }
     for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
         std::vector<Descriptor>& descriptors = destMips[mipMap];
@@ -962,7 +976,7 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     const int w = (int)openGLKeyPointsRenderTargetWidth[keyPointsId];
     const int h = (int)openGLKeyPointsRenderTargetHeight[keyPointsId];
     glViewport(0, 0, w, h);
-    glRects(-1, -1, 1, 1);
+    fullScreenRect();
     float* data = new float[4 * w * h];
     glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, data); checkGLError();
     for (int i = 0; i < keyPointCount; i++) {
