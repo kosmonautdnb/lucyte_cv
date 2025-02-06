@@ -31,9 +31,9 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, const std::v
                 const float a = atan2(kltFinishKeyPoints[i].x - kltStartKeyPoints[i].x, kltFinishKeyPoints[i].y - kltStartKeyPoints[i].y);
                 const float sx = 2.f;
                 const float sy = 4.f;
-                cv::line(mat, kltFinishKeyPoints[i], cv::Point(kltFinishKeyPoints[i].x - sy * sin(a) - sx * cos(a), kltFinishKeyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
-                cv::line(mat, kltFinishKeyPoints[i], cv::Point(kltFinishKeyPoints[i].x - sy * sin(a) + sx * cos(a), kltFinishKeyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
-                cv::line(mat, kltStartKeyPoints[i], cv::Point(kltFinishKeyPoints[i].x, kltFinishKeyPoints[i].y), cv::Scalar(255, 255, 255));
+                cv::line(mat, kltFinishKeyPoints[i], cv::Point2f(kltFinishKeyPoints[i].x - sy * sinf(a) - sx * cosf(a), kltFinishKeyPoints[i].y - sy * cosf(a) + sx * sinf(a)), cv::Scalar(255, 255, 255));
+                cv::line(mat, kltFinishKeyPoints[i], cv::Point2f(kltFinishKeyPoints[i].x - sy * sinf(a) + sx * cosf(a), kltFinishKeyPoints[i].y - sy * cosf(a) - sx * sinf(a)), cv::Scalar(255, 255, 255));
+                cv::line(mat, kltStartKeyPoints[i], cv::Point2f(kltFinishKeyPoints[i].x, kltFinishKeyPoints[i].y), cv::Scalar(255, 255, 255));
             }
         }
     }
@@ -63,8 +63,8 @@ int main(int argc, char** argv)
     std::vector<cv::Point2f> keyPoints,resultKeyPoints;
     keyPoints.resize(KEYPOINTCOUNT);
     for (int i = 0; i < keyPoints.size(); ++i) {
-        keyPoints[i].x = frrand2(mat1.cols);
-        keyPoints[i].y = frrand2(mat1.rows);
+        keyPoints[i].x = frrand2((float)mat1.cols);
+        keyPoints[i].y = frrand2((float)mat1.rows);
     }
 
     cv::Mat m1, m2;
@@ -75,12 +75,7 @@ int main(int argc, char** argv)
         cv::Mat status;
         std::vector<float> err;
         cv::TermCriteria criteria = cv::TermCriteria((cv::TermCriteria::COUNT)+(cv::TermCriteria::EPS), 10, 0.03);
-        try {
-            cv::calcOpticalFlowPyrLK(matg1, matg2, keyPoints, resultKeyPoints, status, err, cv::Size(15, 15), 2, criteria);
-        }
-        catch (cv::Exception& a) {
-            int debug = 1;
-        }
+        cv::calcOpticalFlowPyrLK(matg1, matg2, keyPoints, resultKeyPoints, status, err, cv::Size(15, 15), 2, criteria);
 
         cv::Mat v = output("keypoints", mat2, keyPoints, resultKeyPoints, err);
         if (outputVideo) video.write(v);
@@ -96,19 +91,19 @@ int main(int argc, char** argv)
         if (readd) {
             const int width = mat2.cols;
             const int height = mat2.rows;
-            for (int j = keyPoints.size() - 1; j >= 0; j--) {
+            for (int j = (int)keyPoints.size() - 1; j >= 0; j--) {
                 cv::Point2f &k = keyPoints[j];
                 const float LEFT = 10;
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
                 if ((k.x < LEFT) || (k.x >= width-RIGHT) || (k.y < TOP) || (k.y >= height-BOTTOM)) {
-                    k.x = frrand2(width);
-                    k.y = frrand2(height);
+                    k.x = frrand2((float)width);
+                    k.y = frrand2((float)height);
                 }
                 if (err[j]>=MAXERROR) {
-                    k.x = frrand2(width);
-                    k.y = frrand2(height);
+                    k.x = frrand2((float)width);
+                    k.y = frrand2((float)height);
                 }
             }
         }

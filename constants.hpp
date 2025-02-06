@@ -1,30 +1,9 @@
 // Lucyte Created on: 29.01.2025 by Stefan Mader
 #pragma once
+
+#define __PLATFORM_WINDOWS__ 1
+#define __PLATFORM_ANDROID__ 2
+#define __PLATFORM_IOS__ 3
+#define __CURRENT_PLATFORM__ __PLATFORM_WINDOWS__
+
 #define KEYPOINTCOUNT 1000
-
-#define DESCRIPTORSHAPE_64 0
-#define DESCRIPTORSHAPE_38 1
-#define DESCRIPTORSHAPE_SPIRAL 2
-#define DESCRIPTORSHAPE_CROSSES 3
-#define DESCRIPTORSHAPE DESCRIPTORSHAPE_SPIRAL
-
-
-#if DESCRIPTORSHAPE == 0
-#define DESCRIPTORSIZE 64
-#define defaultDescriptorShape defaultDescriptorShape64
-#endif
-
-#if DESCRIPTORSHAPE == 1
-#define DESCRIPTORSIZE 38
-#define defaultDescriptorShape defaultDescriptorShape38
-#endif
-
-#if DESCRIPTORSHAPE == 2
-#define DESCRIPTORSIZE 128
-#define defaultDescriptorShape(__RAD__) defaultDescriptorShapeSpiral(__RAD__, DESCRIPTORSIZE);
-#endif
-
-#if DESCRIPTORSHAPE == 3
-#define DESCRIPTORSIZE 96
-#define defaultDescriptorShape(__RAD__) defaultDescriptorShapeCrosses(__RAD__, DESCRIPTORSIZE);
-#endif

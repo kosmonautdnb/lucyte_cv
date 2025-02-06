@@ -8,24 +8,25 @@
 #include <fstream>
 #include <sstream>
 
+#define KEYPOINTCOUNT2 3000
+
 std::string absoluteScaleFileName = "g:/KITTIE/data_odometry_poses/dataset/poses/00.txt";
 std::string filenamesLeft = "g:/KITTIE/data_odometry_color/dataset/sequences/00/image_2/%06d.png";
 std::string filenamesRight = "g:/KITTIE/data_odometry_color/dataset/sequences/00/image_3/%06d.png";
-double absx, absy, absz;
-double startx, starty, startz;
-#define KEYPOINTCOUNT 3000
+float absx, absy, absz;
+float startx, starty, startz;
 
+std::vector<MipMap> mipMaps(const std::vector<cv::Mat>& m) { std::vector<MipMap> r; r.resize(m.size()); for (int i = 0; i < r.size(); i++) { r[i].width = m[i].cols; r[i].height = m[i].rows; r[i].data = m[i].data; } return r; }
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     cv::Mat k;
-    k = mat.clone();
-    //cv::cvtColor(mat, k, cv::COLOR_RGB2GRAY);
+    cv::cvtColor(mat, k, cv::COLOR_RGB2GRAY);
     int width = k.cols;
     int height = k.rows;
     std::vector<cv::Mat> mipmaps;
     while (k.cols > 4 && k.rows > 4) {
         cv::Mat clone = k.clone();
         mipmaps.push_back(clone);
-        cv::resize(k, k, cv::Size(k.cols * MIPSCALE, k.rows * MIPSCALE), 0.f, 0.f, cv::INTER_AREA);
+        cv::resize(k, k, cv::Size((int)(floorf((float)k.cols * MIPSCALE)), (int)(floorf((float)k.rows * MIPSCALE))), 0.f, 0.f, cv::INTER_AREA);
     }
     return mipmaps;
 }
@@ -49,15 +50,15 @@ double getAbsoluteScale(int frame_id, int sequence_id, double z_cal) {
                 if (j == 3)  x = z;
             }
             if (i == 0) {
-                startx = x;
-                starty = y;
-                startz = z;
+                startx = (float)x;
+                starty = (float)y;
+                startz = (float)z;
             }
             i++;
         }
-        absx = x_prev - startx;
-        absy = y_prev - starty;
-        absz = z_prev - startz;
+        absx = (float)(x_prev - startx);
+        absy = (float)(y_prev - starty);
+        absz = (float)(z_prev - startz);
     }
     else {
         return 0;
@@ -108,12 +109,12 @@ int main(int argc, char** argv) {
         cv::Mat rightImage_grey; cv::cvtColor(rightImage, rightImage_grey, cv::COLOR_BGR2GRAY);
         leftMipMaps = mipMaps(leftImage_grey);
         rightMipMaps = mipMaps(rightImage_grey);
-        const int mipEnd = leftMipMaps.size() - 1;
+        const int mipEnd = (int)leftMipMaps.size() - 1;
         const bool wait = true;
-        uploadMipMaps_openCL(0, doubleBuffer * 2 + 0, leftMipMaps);  if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 0);
-        uploadMipMaps_openCL(0, doubleBuffer * 2 + 1, rightMipMaps); if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 1);
+        uploadMipMaps_openCL(0, doubleBuffer * 2 + 0, mipMaps(leftMipMaps));  if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 0);
+        uploadMipMaps_openCL(0, doubleBuffer * 2 + 1, mipMaps(rightMipMaps)); if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 1);
 
-        const int missing = KEYPOINTCOUNT - leftImageKeyPoints.size();
+        const int missing = KEYPOINTCOUNT2 - (int)leftImageKeyPoints.size();
         std::vector<cv::KeyPoint> corners;
         cv::FAST(lastLeftImage_grey, corners, 20, true);
         for (int i = 0; i < missing; i++) {
@@ -138,12 +139,12 @@ int main(int argc, char** argv) {
         lastFrameLeftImageErrors = leftImageErrors;
         lastFrameRightImageKeyPoints = rightImageKeyPoints;
         lastFrameRightImageErrors = rightImageErrors;
-        refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, (int)leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         if (wait) refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
-        refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, (int)leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         if (!wait) refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
         refineKeyPoints_openCL_waitfor(0, 1, rightImageKeyPoints, rightImageErrors);
-        for (int i = leftImageKeyPoints.size() - 1; i >= 0; i--) {
+        for (int i = (int)leftImageKeyPoints.size() - 1; i >= 0; i--) {
             const double deltaXToRight = leftImageKeyPoints[i].x - rightImageKeyPoints[i].x;
             const double deltaYToRight = leftImageKeyPoints[i].y - rightImageKeyPoints[i].y;
             if (leftImageErrors[i] > 0.05 || abs(deltaYToRight)>2.0) {
@@ -177,10 +178,10 @@ int main(int argc, char** argv) {
             for (int i = 0; i < thisFeaturesRight.size(); i++) cv::line(rightImage, thisFeaturesRight[i], lastFeaturesRight[i], cv::Scalar(255, 0, 255));
         }
 
-        int x = int(t_f.at<double>(0));
-        int z = int(t_f.at<double>(2));
-        circle(traj, cv::Point(absx + 300, absz + 100), 1, CV_RGB(255, 255, 0), 2);
-        circle(traj, cv::Point(x + 300, z + 100), 1, CV_RGB(255, 0, 0), 2);
+        float x = float(t_f.at<double>(0));
+        float z = float(t_f.at<double>(2));
+        circle(traj, cv::Point2f(absx + 300.f, absz + 100.f), 1, CV_RGB(255, 255, 0), 2);
+        circle(traj, cv::Point2f(x + 300.f, z + 100.f), 1, CV_RGB(255, 0, 0), 2);
 
         imshow("left", leftImage);
         imshow("right", rightImage);

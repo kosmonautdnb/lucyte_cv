@@ -50,7 +50,7 @@ THE SOFTWARE.
 
 #define MAX_FRAME 1000
 #define MIN_NUM_FEAT 2000
-#define KEYPOINTCOUNT (MIN_NUM_FEAT*2)
+#define KEYPOINTCOUNT2 (MIN_NUM_FEAT*2)
 //#define KLT
 
 using namespace cv;
@@ -61,17 +61,18 @@ float frrand2(float rad) {
 }
 std::vector<cv::Mat> mipmaps1;
 std::vector<cv::Mat> mipmaps2;
+
+std::vector<MipMap> mipMaps(const std::vector<cv::Mat>& m) { std::vector<MipMap> r; r.resize(m.size()); for (int i = 0; i < r.size(); i++) { r[i].width = m[i].cols; r[i].height = m[i].rows; r[i].data = m[i].data; } return r; }
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     cv::Mat k;
-    k = mat.clone();
-    //cv::cvtColor(mat, k, cv::COLOR_RGB2GRAY);
+    cv::cvtColor(mat, k, cv::COLOR_RGB2GRAY);
     int width = k.cols;
     int height = k.rows;
     std::vector<cv::Mat> mipmaps;
     while (k.cols > 4 && k.rows > 4) {
         cv::Mat clone = k.clone();
         mipmaps.push_back(clone);
-        cv::resize(k, k, cv::Size(k.cols * MIPSCALE, k.rows * MIPSCALE), 0.f, 0.f, cv::INTER_AREA);
+        cv::resize(k, k, cv::Size((int)(floorf((float)k.cols * MIPSCALE)), (int)(floorf((float)k.rows * MIPSCALE))), 0.f, 0.f, cv::INTER_AREA);
     }
     return mipmaps;
 }
@@ -107,7 +108,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
 #else // KLT
     std::vector<::KeyPoint> p;
     std::vector<float> e;
-    int size = KEYPOINTCOUNT;
+    int size = KEYPOINTCOUNT2;
     if (size > 4) {
         p.resize(size);
         e.resize(size);
@@ -116,10 +117,10 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
             p[i].y = points1[i].y;
         }
         uploadKeyPoints_openCL(p);
-        uploadMipMaps_openCL(mips1);
+        uploadMipMaps_openCL(mipMaps(mips1));
         sampleDescriptors_openCL(mipEnd, d1, 1.f, MIPSCALE);
         uploadDescriptors_openCL(mipEnd, d1);
-        uploadMipMaps_openCL(mips2);
+        uploadMipMaps_openCL(mipMaps(mips2));
         refineKeyPoints_openCL(p, e, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         points2.resize(points1.size());
         for (int i = 0; i < points1.size(); i++) {
@@ -127,7 +128,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
             points2[i].y = p[i].y;
         }
         int indexCorrection = 0;
-        int a = points2.size();
+        int a = (int)points2.size();
         for (int i = 0; i < a; i++)
         {
             Point2f pt = points2.at(i - indexCorrection);
@@ -151,7 +152,7 @@ void featureDetection(Mat img_1, vector<Point2f>& points1, std::vector<cv::Mat> 
     vector<Point2f> points1b;
     cv::KeyPoint::convert(keypoints_1, points1b, vector<int>());
     points1.clear();
-    for (int i = 0; i < KEYPOINTCOUNT && (!points1b.empty()); ++i) {
+    for (int i = 0; i < KEYPOINTCOUNT2 && (!points1b.empty()); ++i) {
         int b = rand() % points1b.size();
         points1.push_back(points1b[b]);
         points1b.erase(points1b.begin() + b);
@@ -166,8 +167,8 @@ std::string filenames1 = "g:/KITTIE/data_odometry_color/dataset/sequences/00/ima
 std::string filenames2 = "g:/KITTIE/data_odometry_color/dataset/sequences/00/image_2/%06d.png";
 
 // IMP: Change the file directories (4 places) according to where your dataset is saved before running!
-double absx, absy, absz;
-double startx, starty, startz;
+float absx, absy, absz;
+float startx, starty, startz;
 
 double getAbsoluteScale(int frame_id, int sequence_id, double z_cal) {
 
@@ -191,15 +192,15 @@ double getAbsoluteScale(int frame_id, int sequence_id, double z_cal) {
                 if (j == 3)  x = z;
             }
             if (i == 0) {
-                startx = x;
-                starty = y;
-                startz = z;
+                startx = (float)x;
+                starty = (float)y;
+                startz = (float)z;
             }
             i++;
         }
-        absx = x_prev - startx;
-        absy = y_prev - starty;
-        absz = z_prev - startz;
+        absx = (float)(x_prev - startx);
+        absy = (float)(y_prev - starty);
+        absz = (float)(z_prev - startz);
         //myfile.close();
     }
 
@@ -256,9 +257,9 @@ int main(int argc, char** argv) {
 
     // feature detection, tracking
     vector<Point2f> points1, points2;        //vectors to store the coordinates of the feature points
-    featureDetection(img_1, points1, mipmaps1, mipmaps1.size()-1);        //detect features in img_1
+    featureDetection(img_1, points1, mipmaps1, (int)mipmaps1.size()-1);        //detect features in img_1
     vector<uchar> status;
-    featureTracking(img_1, img_2, points1, points2, status, mipmaps1, mipmaps2, mipmaps1.size()-1); //track those features to img_2
+    featureTracking(img_1, img_2, points1, points2, status, mipmaps1, mipmaps2, (int)mipmaps1.size()-1); //track those features to img_2
 
     //TODO: add a fucntion to load these values directly from KITTI's calib files
     // WARNING: different sequences in the KITTI VO dataset have different intrinsic/extrinsic parameters
@@ -300,14 +301,14 @@ int main(int argc, char** argv) {
         mipmaps2 = mipMaps(currImage);
 
         vector<uchar> status;
-        featureTracking(prevImage, currImage, prevFeatures, currFeatures, status, mipmaps1, mipmaps2, mipmaps1.size()-1);
+        featureTracking(prevImage, currImage, prevFeatures, currFeatures, status, mipmaps1, mipmaps2, (int)mipmaps1.size()-1);
 
         if (currFeatures.size() > 3 && prevFeatures.size() > 3) {
             E = findEssentialMat(currFeatures, prevFeatures, focal, pp, RANSAC, 0.999, 1.0, mask);
             recoverPose(E, currFeatures, prevFeatures, R, t, focal, pp, mask);
         }
 
-        Mat prevPts(2, prevFeatures.size(), CV_64F), currPts(2, currFeatures.size(), CV_64F);
+        Mat prevPts(2, (int)prevFeatures.size(), CV_64F), currPts(2, (int)currFeatures.size(), CV_64F);
 
 
         for (int i = 0; i < prevFeatures.size(); i++) {   //this (x,y) combination makes sense as observed from the source code of triangulatePoints on GitHub
@@ -340,8 +341,8 @@ int main(int argc, char** argv) {
         if (prevFeatures.size() < MIN_NUM_FEAT) {
             //cout << "Number of tracked features reduced to " << prevFeatures.size() << endl;
             //cout << "trigerring redection" << endl;
-            featureDetection(prevImage, prevFeatures, mipmaps1, mipmaps1.size()-1);
-            featureTracking(prevImage, currImage, prevFeatures, currFeatures, status, mipmaps1, mipmaps2, mipmaps1.size()-1);
+            featureDetection(prevImage, prevFeatures, mipmaps1, (int)mipmaps1.size()-1);
+            featureTracking(prevImage, currImage, prevFeatures, currFeatures, status, mipmaps1, mipmaps2, (int)mipmaps1.size()-1);
         }
 
         for (int i = 0; i < currFeatures.size(); i++) {
@@ -353,18 +354,18 @@ int main(int argc, char** argv) {
         mipmaps1 = mipMaps(prevImage);
 
 
-        int x = int(t_f.at<double>(0)) + 300;
-        int y = int(t_f.at<double>(2)) + 100;
-        circle(traj, Point(absx + 300, absz + 100), 1, CV_RGB(255, 255, 0), 2);
-        circle(traj, Point(x, y), 1, CV_RGB(255, 0, 0), 2);
+        float x = float(t_f.at<double>(0)) + 300.f;
+        float y = float(t_f.at<double>(2)) + 100.f;
+        circle(traj, Point2f(absx + 300.f, absz + 100.f), 1, CV_RGB(255, 255, 0), 2);
+        circle(traj, Point2f(x, y), 1, CV_RGB(255, 0, 0), 2);
 
-        rectangle(traj, Point(10, 0), Point(traj.cols, 80), CV_RGB(0, 0, 0), cv::FILLED);
-        cv::Point textOrg1(10, 20);
+        rectangle(traj, Point2f(10.f, 0), Point2f((float)traj.cols, 80.f), CV_RGB(0, 0, 0), cv::FILLED);
+        cv::Point2f textOrg1(10.f, 20.f);
         snprintf(text, 100, "Frame:%d of %d (KITTIE Benchmark)", numFrame, MAX_FRAME);
         putText(traj, text, textOrg1, fontFace, fontScale, Scalar::all(255), thickness, 8);
         snprintf(text, 100, "Coordinates: x = %02fm y = %02fm z = %02fm", t_f.at<double>(0), t_f.at<double>(1), t_f.at<double>(2));
         putText(traj, text, textOrg, fontFace, fontScale, Scalar::all(255), thickness, 8);
-        cv::Point textOrg2(10, 65);
+        cv::Point2f textOrg2(10, 65);
         snprintf(text, 100, "GroundTruth: x = %02fm y = %02fm z = %02fm", absx, absy, absz);
         putText(traj, text, textOrg2, fontFace, fontScale, Scalar::all(255), thickness, 8);
 

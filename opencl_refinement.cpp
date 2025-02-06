@@ -11,7 +11,6 @@
 #include "constants.hpp"
 
 #define CLNONBLOCKING CL_FALSE
-extern float DESCRIPTORSCALE;
 static const int MAXMIPMAPS = 32;
 static const int QUEUECOUNT = 2;
 static const int MIPMAPIDCOUNT = 8;
@@ -323,7 +322,7 @@ static std::string openCV_program =
 "\n";
 
 void initOpenCL() {
-    defaultDescriptorShape(DESCRIPTORSCALE);
+    defaultDescriptorShape;
 
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
@@ -390,16 +389,16 @@ void uploadDescriptorShape_openCL(const int queueId) {
     openCLQueue[queueId].enqueueWriteBuffer(openCLDescriptors2[queueId], CL_TRUE, 0, sizeof(float) * 2 * DESCRIPTORSIZE, &(descriptors2[0]));
 }
 
-void uploadMipMaps_openCL(const int queueId, const int mipmapsId,const std::vector<cv::Mat> &mipMaps) {
+void uploadMipMaps_openCL(const int queueId, const int mipmapsId,const std::vector<MipMap> &mipMaps) {
     uploadMipMaps_openCL_waitfor(queueId, mipmapsId);
     if (mipMaps.empty()) return;
     if (mipMaps.size() >= MAXMIPMAPS) {
         printf("Error: too many mipmaps %d of %d\n", int(mipMaps.size()), MAXMIPMAPS);
     }
-    if (mipMaps.size() != mipMapWidths[queueId][mipmapsId].size() || mipMaps[0].cols != mipMapWidths[queueId][mipmapsId][0] || mipMaps[0].rows != mipMapHeights[queueId][mipmapsId][0]) { // can be blocking
+    if (mipMaps.size() != mipMapWidths[queueId][mipmapsId].size() || mipMaps[0].width != mipMapWidths[queueId][mipmapsId][0] || mipMaps[0].height != mipMapHeights[queueId][mipmapsId][0]) { // can be blocking
         for (int i = 0; i < mipMaps.size(); i++) {
             int success = 0;
-            openCLMipMaps[queueId][mipmapsId][i] = cl::Image2D(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, cl::ImageFormat(CL_R, CL_UNORM_INT8), mipMaps[i].cols, mipMaps[i].rows, 0, nullptr, &success);
+            openCLMipMaps[queueId][mipmapsId][i] = cl::Image2D(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, cl::ImageFormat(CL_R, CL_UNORM_INT8), mipMaps[i].width, mipMaps[i].height, 0, nullptr, &success);
             if (success != CL_SUCCESS) 
                 exit(1);
         }
@@ -407,18 +406,18 @@ void uploadMipMaps_openCL(const int queueId, const int mipmapsId,const std::vect
         openCLMipMapHeights[queueId][mipmapsId] = cl::Buffer(openCLContext, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * mipMaps.size());
         mipMapWidths[queueId][mipmapsId].resize(mipMaps.size());
         mipMapHeights[queueId][mipmapsId].resize(mipMaps.size());
-        for (int i = 0; i < mipMapWidths[queueId][mipmapsId].size(); i++) mipMapWidths[queueId][mipmapsId][i] = mipMaps[i].cols;
-        for (int i = 0; i < mipMapHeights[queueId][mipmapsId].size(); i++) mipMapHeights[queueId][mipmapsId][i] = mipMaps[i].rows;
+        for (int i = 0; i < mipMapWidths[queueId][mipmapsId].size(); i++) mipMapWidths[queueId][mipmapsId][i] = mipMaps[i].width;
+        for (int i = 0; i < mipMapHeights[queueId][mipmapsId].size(); i++) mipMapHeights[queueId][mipmapsId][i] = mipMaps[i].height;
         openCLQueue[queueId].enqueueWriteBuffer(openCLMipMapWidths[queueId][mipmapsId], CL_TRUE, 0, sizeof(unsigned int) * mipMapWidths[queueId][mipmapsId].size(), &(mipMapWidths[queueId][mipmapsId][0]));
         openCLQueue[queueId].enqueueWriteBuffer(openCLMipMapHeights[queueId][mipmapsId], CL_TRUE, 0, sizeof(unsigned int) * mipMapHeights[queueId][mipmapsId].size(), &(mipMapHeights[queueId][mipmapsId][0]));
     }
     for (int i = 0; i < mipMaps.size(); i++) {
         cl::array<cl::size_type, 2> origin = { 0,0 };
-        cl::array<cl::size_type, 2> region = { cl::size_type(mipMaps[i].cols), cl::size_type(mipMaps[i].rows) };
+        cl::array<cl::size_type, 2> region = { cl::size_type(mipMaps[i].width), cl::size_type(mipMaps[i].height) };
         if (openCLQueue[queueId].enqueueWriteImage(openCLMipMaps[queueId][mipmapsId][i], CLNONBLOCKING, origin, region, 0, 0, (uchar* const)mipMaps[i].data, nullptr, &(mipMapUploadEvent[queueId][mipmapsId][i])) != CL_SUCCESS)
             exit(1);
     }
-    mipMapCounts[queueId][mipmapsId] = mipMaps.size();
+    mipMapCounts[queueId][mipmapsId] = (int)mipMaps.size();
 }
 
 void uploadMipMaps_openCL_waitfor(const int queueId, const int mipmapsId) {
@@ -444,7 +443,7 @@ void uploadKeyPoints_openCL(const int queueId, const int keyPointsId, const std:
     }
     openCLQueue[queueId].enqueueWriteBuffer(openCLKeyPointsX[queueId][keyPointsId], CLNONBLOCKING, 0, sizeof(float)*keyPoints.size(), &(openCLKpx[queueId][keyPointsId][0]), nullptr, &(keyPointsXEvent[queueId][keyPointsId]));
     openCLQueue[queueId].enqueueWriteBuffer(openCLKeyPointsY[queueId][keyPointsId], CLNONBLOCKING, 0, sizeof(float)*keyPoints.size(), &(openCLKpy[queueId][keyPointsId][0]), nullptr, &(keyPointsYEvent[queueId][keyPointsId]));
-    keyPointCounts[queueId][keyPointsId] = keyPoints.size();
+    keyPointCounts[queueId][keyPointsId] = (int)keyPoints.size();
 }
 
 void uploadKeyPoints_openCL_waitfor(const int queueId, const int keyPointsId) {
@@ -475,11 +474,11 @@ void uploadDescriptors_openCL_waitfor(const int queueId, const int descriptorsId
     }
 }
 
-void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipEnd, const float DESCRIPTORSCALE, const float MIPSCALE) {
+void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipEnd, const float DESCRIPTORSCALE2, const float MIPSCALE) {
     const int keyPointCount = keyPointCounts[queueId][keyPointsId];
     for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
         const float mipScale = powf(MIPSCALE, float(mipMap));
-        const float descriptorScale = DESCRIPTORSCALE / mipScale;
+        const float descriptorScale = DESCRIPTORSCALE2 / mipScale;
         if ((keyPointCount * Descriptor::uint32count) > openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size()) {
             openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].resize(keyPointCount * Descriptor::uint32count);
             openCLBitsFull[queueId][descriptorsId][mipMap] = cl::Buffer(openCLContext, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, sizeof(unsigned int) * openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size());
@@ -586,7 +585,7 @@ void refineKeyPoints_openCL_waitfor(const int queueId, const int keyPointsId, st
 void uploadDescriptorShape_openCL() {
     uploadDescriptorShape_openCL(0);
 }
-void uploadMipMaps_openCL(const std::vector<cv::Mat>& mipMaps) {
+void uploadMipMaps_openCL(const std::vector<MipMap>& mipMaps) {
     uploadMipMaps_openCL(0, 0, mipMaps);
     uploadMipMaps_openCL_waitfor(0, 0);
 }
@@ -598,11 +597,11 @@ void uploadDescriptors_openCL(const int mipEnd, const std::vector<std::vector<De
     uploadDescriptors_openCL(0, 0, mipEnd, sourceMips);
     uploadDescriptors_openCL_waitfor(0, 0, mipEnd);
 }
-void sampleDescriptors_openCL(const int mipEnd, std::vector<std::vector<Descriptor>>& destMips, const float DESCRIPTORSCALE, const float MIPSCALE) {
-    sampleDescriptors_openCL(0, 0, 0, 0, mipEnd, DESCRIPTORSCALE, MIPSCALE);
+void sampleDescriptors_openCL(const int mipEnd, std::vector<std::vector<Descriptor>>& destMips, const float DESCRIPTORSCALE2, const float MIPSCALE) {
+    sampleDescriptors_openCL(0, 0, 0, 0, mipEnd, DESCRIPTORSCALE2, MIPSCALE);
     sampleDescriptors_openCL_waitfor(0, 0, 0,0, mipEnd, destMips);
 }
 void refineKeyPoints_openCL(std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
-    refineKeyPoints_openCL(0, 0, 0, 0, destKeyPoints.size(), mipEnd, STEPCOUNT, stepping, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(0, 0, 0, 0, (int)destKeyPoints.size(), mipEnd, STEPCOUNT, stepping, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     refineKeyPoints_openCL_waitfor(0, 0, destKeyPoints, destErrors);
 }

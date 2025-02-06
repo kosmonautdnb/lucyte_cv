@@ -44,12 +44,12 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
             const float sx = 2.f;
             const float sy = 4.f;
             if (distance >= MAXVARIANCEINPIXELS) {
-                cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
-                cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
-                cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
+                cv::line(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), cv::Point2f(keyPoints[i].x - sy * sinf(a) - sx * cosf(a), keyPoints[i].y - sy * cosf(a) + sx * sinf(a)), cv::Scalar(255, 255, 255));
+                cv::line(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), cv::Point2f(keyPoints[i].x - sy * sinf(a) + sx * cosf(a), keyPoints[i].y - sy * cosf(a) - sx * sinf(a)), cv::Scalar(255, 255, 255));
+                cv::line(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), cv::Point2f(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
             }
             else {
-                cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), MAXVARIANCEINPIXELS, cv::Scalar(255, 255, 255));
+                cv::circle(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), (int)floorf(MAXVARIANCEINPIXELS), cv::Scalar(255, 255, 255));
             }
         }
     }
@@ -57,6 +57,7 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
     return mat;
 }
 
+std::vector<MipMap> mipMaps(const std::vector<cv::Mat>& m) { std::vector<MipMap> r; r.resize(m.size()); for (int i = 0; i < r.size(); i++) { r[i].width = m[i].cols; r[i].height = m[i].rows; r[i].data = m[i].data; } return r; }
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     cv::Mat k;
     cv::cvtColor(mat, k, cv::COLOR_RGB2GRAY);
@@ -66,7 +67,7 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     while (k.cols > 4 && k.rows > 4) {
         cv::Mat clone = k.clone();
         mipmaps.push_back(clone);
-        cv::resize(k, k, cv::Size(k.cols * MIPSCALE, k.rows * MIPSCALE), 0.f, 0.f, cv::INTER_AREA);
+        cv::resize(k, k, cv::Size((int)(floorf((float)k.cols * MIPSCALE)), (int)(floorf((float)k.rows * MIPSCALE))), 0.f, 0.f, cv::INTER_AREA);
     }
     return mipmaps;
 }
@@ -86,8 +87,8 @@ int main(int argc, char** argv)
     cv::VideoWriter video;
     if (outputVideo) video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
-    uploadMipMaps_openCL(mipmaps1);
-    int mipEnd = MIPEND * (mipmaps1.size() - 1);
+    uploadMipMaps_openCL(mipMaps(mipmaps1));
+    int mipEnd = (int)floorf(MIPEND * (float)(mipmaps1.size() - 1));
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
 
@@ -128,7 +129,7 @@ int main(int argc, char** argv)
     for (int steps = firstFrame; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
         mipmaps2 = mipMaps(mat2);
-        uploadMipMaps_openCL(mipmaps2);
+        uploadMipMaps_openCL(mipMaps(mipmaps2));
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
         refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
@@ -146,7 +147,7 @@ int main(int argc, char** argv)
             std::vector<std::vector<Descriptor>> resampledDescriptors;
             sampleDescriptors_openCL(mipEnd, resampledDescriptors, 1.f, MIPSCALE);
             for (int i = mipEnd; i >= 0; i--)
-                for (int j = keyPoints.size() - 1; j >= 0; j--)
+                for (int j = (int)keyPoints.size() - 1; j >= 0; j--)
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS))
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
             uploadDescriptors_openCL(mipEnd, searchForDescriptors);

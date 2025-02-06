@@ -3,14 +3,14 @@
 #include <math.h>
 #include <omp.h>
 
-int texf(const unsigned char* s, const int x, const int y, const int width, const int height) {
+int texf(const unsigned char* s, const int x, const int y, const unsigned int width, const unsigned int height) {
     int xr = x >> 10;
     int yr = y >> 10;
     if ((unsigned int)xr >= (width - 1) || (unsigned int)yr >= (height - 1)) {
         if (xr < 0) xr = 0;
         if (yr < 0) yr = 0;
-        if (xr >= (width - 1)) xr = width - 2;
-        if (yr >= (height - 1)) yr = height - 2;
+        if (xr >= int(width - 1)) xr = width - 2;
+        if (yr >= int(height - 1)) yr = height - 2;
     }
     s += xr + yr * width;
     const unsigned short a = *((unsigned short*)(s));
@@ -24,7 +24,7 @@ int texf(const unsigned char* s, const int x, const int y, const int width, cons
     return (((xc2 - xc1) * (y & 1023)) >> 9) + (xc1 << 1); // 10 bit
 }
 
-int tex(const unsigned char* s, const float x, const float y, const int width, const int height) {
+int tex(const unsigned char* s, const float x, const float y, const unsigned int width, const unsigned int height) {
     return texf(s, int(floorf(x * 1024.f)), int(floorf(y * 1024.f)),width,height);
 }
 
@@ -47,8 +47,8 @@ float sampleDescriptor(const KeyPoint& kp, Descriptor& d, const unsigned char* s
 }
 
 KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const float mipScale) {
-    const int kp2x = floorf(kp.x * mipScale * 1024.f);
-    const int kp2y = floorf(kp.y * mipScale * 1024.f);
+    const int kp2x = int(floorf(kp.x * mipScale * 1024.f));
+    const int kp2y = int(floorf(kp.y * mipScale * 1024.f));
     const float descriptorSize = mipScale * descriptorScale;
     const float sina = sinf(angle);
     const float cosa = cosf(angle);
@@ -100,8 +100,8 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     r.x = kp.x + (cosa * xa + sina * ya) * stepSize;
     r.y = kp.y + (-sina * xa + cosa * ya) * stepSize;
     const bool clipping = false; if (clipping) {
-        const int w = int(floorf(float(width) / mipScale));
-        const int h = int(floorf(float(height) / mipScale));
+        const float w = floorf(float(width) / mipScale);
+        const float h = floorf(float(height) / mipScale);
         if (r.x < 0) r.x = 0;
         if (r.y < 0) r.y = 0;
         if (r.x >= w - 1) r.x = w - 1;

@@ -57,12 +57,12 @@ cv::Mat output(const std::string& windowName, const cv::Mat& image, std::vector<
                 const float sx = 2.f;
                 const float sy = 4.f;
                 if (distance >= MAXVARIANCEINPIXELS) {
-                    cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) - sx * cos(a), keyPoints[i].y - sy * cos(a) + sx * sin(a)), cv::Scalar(255, 255, 255));
-                    cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(keyPoints[i].x - sy * sin(a) + sx * cos(a), keyPoints[i].y - sy * cos(a) - sx * sin(a)), cv::Scalar(255, 255, 255));
-                    cv::line(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), cv::Point(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
+                    cv::line(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), cv::Point2f(keyPoints[i].x - sy * sinf(a) - sx * cosf(a), keyPoints[i].y - sy * cosf(a) + sx * sinf(a)), cv::Scalar(255, 255, 255));
+                    cv::line(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), cv::Point2f(keyPoints[i].x - sy * sinf(a) + sx * cosf(a), keyPoints[i].y - sy * cosf(a) - sx * sinf(a)), cv::Scalar(255, 255, 255));
+                    cv::line(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), cv::Point2f(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y), cv::Scalar(255, 255, 255));
                 }
                 else {
-                    cv::circle(mat, cv::Point(keyPoints[i].x, keyPoints[i].y), MAXVARIANCEINPIXELS, cv::Scalar(255, 255, 255));
+                    cv::circle(mat, cv::Point2f(keyPoints[i].x, keyPoints[i].y), (int)(floorf(MAXVARIANCEINPIXELS)), cv::Scalar(255, 255, 255));
                 }
             }
         }
@@ -91,7 +91,7 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
     while (k.cols > 4 && k.rows > 4) {
         cv::Mat clone = k.clone();
         mipmaps.push_back(clone);
-        cv::resize(k, k, cv::Size(k.cols * MIPSCALE, k.rows * MIPSCALE), 0.f, 0.f, cv::INTER_AREA);
+        cv::resize(k, k, cv::Size((int)(floorf((float)k.cols * MIPSCALE)), (int)(floorf((float)k.rows * MIPSCALE))), 0.f, 0.f, cv::INTER_AREA);
     }
     return mipmaps;
 }
@@ -104,14 +104,14 @@ cv::Mat loadImage(int frame) {
 
 cv::Mat overlay(std::vector<cv::Point2f> positions) {
     cv::Point2f maxP, minP;
-    int start = positions.size() - 1 - 200;
+    int start = (int)positions.size() - 1 - 200;
     if (start < 0) start = 0;
     cv::Mat canvas;
     canvas.create(320, 320, CV_8UC3);
     canvas = cv::Mat::zeros(320, 320, CV_8UC3);
-    const float m = 10;
+    const float m = 10.f;
     bool first = true;
-    for (int i = positions.size() - 1; i >= start; i--) {
+    for (int i = (int)positions.size() - 1; i >= start; i--) {
         cv::Point2f& p = positions[i];
         if (first || p.x < minP.x) minP.x = p.x;
         if (first || p.x > maxP.x) maxP.x = p.x;
@@ -119,17 +119,17 @@ cv::Mat overlay(std::vector<cv::Point2f> positions) {
         if (first || p.y > maxP.y) maxP.y = p.y;
         first = false;
     }
-    maxP.x += 0.01;
-    maxP.y += 0.01;
-    minP.x -= 0.01;
-    minP.y -= 0.01;
-    for (int i = positions.size() - 1; i >= start + 1; i--) {
+    maxP.x += 0.01f;
+    maxP.y += 0.01f;
+    minP.x -= 0.01f;
+    minP.y -= 0.01f;
+    for (int i = (int)positions.size() - 1; i >= start + 1; i--) {
         cv::Point2f p1 = positions[i - 1];
         cv::Point2f p2 = positions[i];
-        p1.x = (p1.x - minP.x) * (canvas.cols - m * 2) / (maxP.x - minP.x) + m;
-        p1.y = (p1.y - minP.y) * (canvas.rows - m * 2) / (maxP.y - minP.y) + m;
-        p2.x = (p2.x - minP.x) * (canvas.cols - m * 2) / (maxP.x - minP.x) + m;
-        p2.y = (p2.y - minP.y) * (canvas.rows - m * 2) / (maxP.y - minP.y) + m;
+        p1.x = (p1.x - minP.x) * (canvas.cols - m * 2.f) / (maxP.x - minP.x) + m;
+        p1.y = (p1.y - minP.y) * (canvas.rows - m * 2.f) / (maxP.y - minP.y) + m;
+        p2.x = (p2.x - minP.x) * (canvas.cols - m * 2.f) / (maxP.x - minP.x) + m;
+        p2.y = (p2.y - minP.y) * (canvas.rows - m * 2.f) / (maxP.y - minP.y) + m;
         cv::line(canvas, p1, p2, cv::Scalar(255, 255, 255), 2);
     }
     return canvas;
@@ -137,20 +137,20 @@ cv::Mat overlay(std::vector<cv::Point2f> positions) {
 
 int main(int argc, char** argv)
 {
-    defaultDescriptorShape(DESCRIPTORSCALE);
+    defaultDescriptorShape;
     srand(SEED);
 
     cv::Mat mat1 = loadImage(firstFrame);
     mipmaps1 = mipMaps(mat1);
-    int mipEnd = MIPEND * (mipmaps1.size() - 1);
+    int mipEnd = (int)(floorf(MIPEND * (float)(mipmaps1.size() - 1)));
 
     std::vector<KeyPoint> keyPoints;
     std::vector<float> errors;
     keyPoints.resize(KEYPOINTCOUNT);
     errors.resize(KEYPOINTCOUNT);
-    for (int i = 0; i < keyPoints.size(); ++i) {
-        keyPoints[i].x = frrand2(mipmaps1[0].cols);
-        keyPoints[i].y = frrand2(mipmaps1[0].rows);
+    for (int i = 0; i < (int)keyPoints.size(); ++i) {
+        keyPoints[i].x = frrand2((float)mipmaps1[0].cols);
+        keyPoints[i].y = frrand2((float)mipmaps1[0].rows);
     }
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
         std::vector<float> lastFrameErrors = errors;
         for (int v = 0; v < 2; v++) {
 #pragma omp parallel for num_threads(32)
-            for (int j = keyPoints.size() - 1; j >= 0; j--) {
+            for (int j = (int)keyPoints.size() - 1; j >= 0; j--) {
                 //KeyPoint kp = { mipmaps2[0].cols * 0.5f, mipmaps2[0].rows * 0.5f };
                 KeyPoint kp = keyPoints[j];
                 for (int i = mipEnd; i >= 0; i--) {
@@ -195,9 +195,8 @@ int main(int argc, char** argv)
                         const float mipScale = powf(MIPSCALE, float(i));
                         float descriptorScale = 1.f / mipScale;
                         const float step = STEPSIZE * descriptorScale;
-                        descriptorScale *= (1.0 + frrand(SCALEINVARIANCE));
+                        descriptorScale *= (1.f + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
-                        Descriptor foundDescriptor;
                         kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
                     }
                 }
@@ -214,9 +213,9 @@ int main(int argc, char** argv)
         std::vector<cv::Point2f> cvPoints1;
         std::vector<cv::Point2f> cvPoints2;
         for (int i = 0; i < KEYPOINTCOUNT; i++) {
-            const double distanceX = keyPoints[i].x - lastFrameKeyPoints[i].x;
-            const double distanceY = keyPoints[i].y - lastFrameKeyPoints[i].y;
-            const double distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
+            const float distanceX = keyPoints[i].x - lastFrameKeyPoints[i].x;
+            const float distanceY = keyPoints[i].y - lastFrameKeyPoints[i].y;
+            const float distance = sqrtf(distanceX * distanceX + distanceY * distanceY);
             if (errors[i] < MAXVARIANCEINPIXELS && lastFrameErrors[i] < MAXVARIANCEINPIXELS && distance < maxLength) {
                 cvPoints1.push_back(cv::Point2f(lastFrameKeyPoints[i].x, lastFrameKeyPoints[i].y));
                 cvPoints2.push_back(cv::Point2f(keyPoints[i].x, keyPoints[i].y));
@@ -230,8 +229,8 @@ int main(int argc, char** argv)
             const float length = 1.f;
             T = T + length * R * translation;
             R *= rotation;
-            currentPosition.x = T.at<double>(0);
-            currentPosition.y = T.at<double>(2);
+            currentPosition.x = (float)T.at<double>(0);
+            currentPosition.y = (float)T.at<double>(2);
             cv::Point2f position;
             position.x = -currentPosition.x;
             position.y = -currentPosition.y;
@@ -244,15 +243,15 @@ int main(int argc, char** argv)
         if (readd) {
             const int width = mipmaps2[0].cols;
             const int height = mipmaps2[0].rows;
-            for (int j = keyPoints.size() - 1; j >= 0; j--) {
+            for (int j = (int)keyPoints.size() - 1; j >= 0; j--) {
                 KeyPoint& k = keyPoints[j];
                 const float LEFT = 10;
                 const float RIGHT = 10;
                 const float TOP = 10;
                 const float BOTTOM = 10;
                 if ((k.x < LEFT) || (k.x >= width - RIGHT) || (k.y < TOP) || (k.y >= height - BOTTOM) || (errors[j] >= MAXVARIANCEINPIXELS)) {
-                    k.x = frrand2(width);
-                    k.y = frrand2(height);
+                    k.x = frrand2((float)width);
+                    k.y = frrand2((float)height);
                     errors[j] = 0;
                 }
             }
@@ -266,7 +265,7 @@ int main(int argc, char** argv)
                 const int width = mipmaps2[i].cols;
                 const int height = mipmaps2[i].rows;
 #pragma omp parallel for num_threads(32)
-                for (int j = keyPoints.size() - 1; j >= 0; j--) {
+                for (int j = (int)keyPoints.size() - 1; j >= 0; j--) {
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS))
                         sampleDescriptor(keyPoints[j], searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, width, height, mipScale);
                 }
