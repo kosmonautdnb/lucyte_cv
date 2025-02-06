@@ -103,12 +103,12 @@ SHARED_SHADER_FUNCTIONS
 "       vec2 kp = t2d_nearest(keyPointsx,keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints);\n"
 "       kp *= mipScale;\n"
 "       vec2 sc = vec2(1.0/float(texWidthMipMap),1.0/float(texHeightMipMap));\n"
-"       unsigned int b[4]; b[0]=unsigned int(0); b[1]=unsigned int(0); b[2]=unsigned int(0); b[3]=unsigned int(0);\n"
+"       uint b[4]; b[0]=uint(0); b[1]=uint(0); b[2]=uint(0); b[3]=uint(0);\n"
 "       for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
 "       {\n"
 "           float l1 = textureLod(mipMap, (kp + vec2(descriptors1x[i],descriptors1y[i]) * descriptorSize) * sc, 0.0).x;\n"
 "           float l2 = textureLod(mipMap, (kp + vec2(descriptors2x[i],descriptors2y[i]) * descriptorSize) * sc, 0.0).x;\n"
-"           b[i>>5] += (l2 < l1) ? unsigned int(1)<<unsigne int(i & 31) : unsigned int(0);\n"
+"           b[i>>5] += (l2 < l1) ? uint(1)<<uint(i & 31) : uint(0);\n"
 "       }\n"
 "       frag_color = uvec4(b[0],b[1],b[2],b[3]);\n"
 "}\n"
@@ -222,7 +222,7 @@ SHARED_SHADER_FUNCTIONS
 "   vec2 gdx = vec2(cosa,sina) / mipScale * sc;\n"
 "   vec2 gdy = vec2(-sina,cosa) / mipScale * sc;\n"
 "   vec2 xya = vec2(0.0,0.0);\n"
-"   unsigned int dBits[4];\n"
+"   uint dBits[4];\n"
 "   dBits[0] = descriptor.x;"
 "   dBits[1] = descriptor.y;"
 "   dBits[2] = descriptor.z;"
@@ -236,11 +236,11 @@ SHARED_SHADER_FUNCTIONS
 "       vec2 d2 = (kp + vec2(dot(cosid,dp2), dot(nsicd,dp2)))*sc;\n"
 "       float l1 = textureLod(s, d1, 0.0).x;\n"
 "       float l2 = textureLod(s, d2, 0.0).x;\n"
-"       unsigned int b2 = l2 < l1 ? unsigned int(1) : unsigned int(0);\n"
-"       if (b2 != ((dBits[b>>5]>>unsigned int(b & 31)) & unsigned int(1)) ) {\n"
+"       uint b2 = l2 < l1 ? uint(1) : uint(0);\n"
+"       if (b2 != ((dBits[b>>5]>>uint(b & 31)) & uint(1)) ) {\n"
 "           vec2 gr = vec2( textureLod(s, d2 - gdx, 0.0).x - textureLod(s, d2 + gdx, 0.0).x , textureLod(s, d2 - gdy, 0.0).x - textureLod(s, d2 + gdy, 0.0).x )\n"
 "                    -vec2( textureLod(s, d1 - gdx, 0.0).x - textureLod(s, d1 + gdx, 0.0).x , textureLod(s, d1 - gdy, 0.0).x - textureLod(s, d1 + gdy, 0.0).x );\n"
-"           if (b2 != unsigned int(0)) gr = -gr;\n"
+"           if (b2 != uint(0)) gr = -gr;\n"
 "           if (stepping != 0) gr = vec2((gr.x == 0.0) ? 0.0 : (gr.x > 0.0) ? 1.0 : -1.0, (gr.y == 0.0) ? 0.0 : (gr.y > 0.0) ? 1.0 : -1.0);\n"
 "           xya += gr * distance(d2,d1);\n"
 "       }\n"
@@ -743,17 +743,27 @@ void uploadDescriptors_openGL(int descriptorsId, int mipEnd, const std::vector<s
 }
 
 void fullScreenRect() {
-    GLfloat model[] =
-    {
-        -1.f, -1.f, // lower left
-        -1.f, 1.f, // upper left
-        1.f, -1.f, // lower right
-        1.f, 1.f  // upper right
+    float points[] = {
+            1.0f,  1.0f,  0.0f,
+            1.0f, -1.0f,  0.0f,
+            -1.0f, -1.0f,  0.0f,
+            1.0f,  1.0f,  0.0f,
+            -1.0f,  1.0f,  0.0f,
+            -1.0f, -1.0f,  0.0f
     };
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 0, model);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    GLuint vbo = 0;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, 3 * 6 * sizeof(float), points, GL_STATIC_DRAW);
+    GLuint vao = 0;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
 }
 
 void displayMipMap(int mipmapsId, int mipEnd) {
