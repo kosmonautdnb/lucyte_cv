@@ -702,7 +702,6 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
         glUniform1i(sampleDescriptors_location_texWidthKeyPoints, openGLKeyPointsTextureWidth[keyPointsId]); checkGLError();
         glUniform1i(sampleDescriptors_location_texHeightKeyPoints, openGLKeyPointsTextureHeight[keyPointsId]); checkGLError();
         glUniform1i(sampleDescriptors_location_DESCRIPTORSIZE, DESCRIPTORSIZE); checkGLError();
-        glUniform1i(sampleDescriptors_location_DESCRIPTORSIZE, DESCRIPTORSIZE); checkGLError();
         glUniform1f(sampleDescriptors_location_descriptorScale, descriptorScale); checkGLError();
         glUniform1f(sampleDescriptors_location_mipScale, mipScale); checkGLError();
         glUniform1i(sampleDescriptors_location_mipLevel, mipMap); checkGLError();
