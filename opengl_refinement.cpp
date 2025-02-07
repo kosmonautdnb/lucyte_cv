@@ -242,6 +242,7 @@ const std::string displayMipMapProgram = "#version 300 es\nprecision highp float
 "{\n"
 "   vec2 sc = vec2(1.0/float(mipMapWidth),1.0/float(mipMapHeight));\n"
 "   vec2 xy = p * sc;\n"
+"   xy.y = 1.0 - xy.y;\n"
 "   float mip = textureLod( mipMap, xy, float(mipLevel) ).x;\n"
 "   frag_color.x = mip;"
 "   frag_color.y = mip;"
@@ -574,7 +575,7 @@ void fullScreenRect() {
     glDeleteBuffers(1, &vbo);
 }
 
-void displayMipMap(int mipmapsId, int mipLevel) {
+void displayMipMap(int mipmapsId, int mipLevel, int screenWidth, int screenHeight) {
     GLint displayMipMap_location_mipMap = glGetUniformLocation(openGLProgram_displayMipMap, "mipMap"); checkGLError();
     GLint displayMipMap_location_mipLevel = glGetUniformLocation(openGLProgram_displayMipMap, "mipLevel"); checkGLError();
     GLint displayMipMap_location_mipMapWidth = glGetUniformLocation(openGLProgram_displayMipMap, "mipMapWidth"); checkGLError();
@@ -588,9 +589,9 @@ void displayMipMap(int mipmapsId, int mipLevel) {
     glUniform1i(displayMipMap_location_mipLevel, mipLevel); checkGLError();
     glUniform1i(displayMipMap_location_mipMapWidth, openGLMipMapsTextureWidth[mipmapsId]); checkGLError();
     glUniform1i(displayMipMap_location_mipMapHeight, openGLMipMapsTextureHeight[mipmapsId]); checkGLError();
-    glUniform1i(displayMipMap_location_texWidthKeyPoints, 1000); checkGLError();
-    glUniform1i(displayMipMap_location_texHeightKeyPoints, 1000); checkGLError();
-    glViewport(0, 0, 1000, 1000);
+    glUniform1i(displayMipMap_location_texWidthKeyPoints, screenWidth); checkGLError();
+    glUniform1i(displayMipMap_location_texHeightKeyPoints, screenHeight); checkGLError();
+    glViewport(0, 0, screenWidth, screenHeight);
     fullScreenRect();
     glBindFramebuffer(GL_FRAMEBUFFER, 0); checkGLError();
     glUseProgram(0); checkGLError();
