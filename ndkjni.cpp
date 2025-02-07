@@ -52,7 +52,7 @@ Java_com_example_lucyteandroid_MyGLRenderer_initOpenGL(JNIEnv *env, jobject thiz
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_lucyteandroid_MyGLRenderer_uploadMipMap(JNIEnv *env, jobject thiz,
-                                                         jbyteArray base_mip_map, jint width,
+                                                         jint mipmapsId, jbyteArray base_mip_map, jint width,
                                                          jint height) {
     jboolean isCopy;
     jbyte* data = env->GetByteArrayElements(base_mip_map, &isCopy);
@@ -60,7 +60,7 @@ Java_com_example_lucyteandroid_MyGLRenderer_uploadMipMap(JNIEnv *env, jobject th
     k.width = width;
     k.height = height;
     k.data = (unsigned char*)data;
-    uploadMipMaps_openGL(0,k);
+    uploadMipMaps_openGL(mipmapsId,k);
     env->ReleaseByteArrayElements(base_mip_map, data, JNI_ABORT);
 }
 
@@ -130,7 +130,7 @@ Java_com_example_lucyteandroid_MyGLRenderer_sampleDescriptors(JNIEnv *env, jobje
     jboolean isCopy;
     jint* dsc = env->GetIntArrayElements(descriptors, &isCopy);
     unsigned int *d = (unsigned int*)dsc;
-    for (int i = 0; i < mip_end; i++)
+    for (int i = 0; i <= mip_end; i++)
         for (int j = 0; j < key_point_count; j++)
             for (int k = 0; k < uint32_count; k++)
                 *d++ = destMips[i][j].bits[k];
