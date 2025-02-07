@@ -102,8 +102,8 @@ SHARED_SHADER_FUNCTIONS
 "           float m = float(mipLevel);\n"
 "           for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
 "           {\n"
-"               float l1 = textureLod(mipMap, (kp + descriptors1[i] * descriptorScale) * sc, m).x;\n"
-"               float l2 = textureLod(mipMap, (kp + descriptors2[i] * descriptorScale) * sc, m).x;\n"
+"               float l1 = textureLod(mipMap, (kp + descriptors12[i].xy * descriptorScale) * sc, m).x;\n"
+"               float l2 = textureLod(mipMap, (kp + descriptors12[i].zw * descriptorScale) * sc, m).x;\n"
 "               b[i>>5] += (l2 < l1) ? uint(1)<<uint(i & 31) : uint(0);\n"
 "           }\n"
 "       }\n"
@@ -147,10 +147,11 @@ SHARED_SHADER_FUNCTIONS
 "}\n"
 "vec2 refineKeyPoint(sampler2D s, vec2 kp, float m, uvec4 descriptor) {\n"
 "   vec2 sc = vec2(1.0/float(mipMapWidth),1.0/float(mipMapHeight));\n"
+"   vec2 kp2 = kp * sc;\n"
 "   float sina = sin(angle);\n"
 "   float cosa = cos(angle);\n"
-"   vec2 cosid = vec2(cosa, sina) * descriptorScale;\n"
-"   vec2 nsicd = vec2(-sina, cosa) * descriptorScale;\n"
+"   vec2 cosid = vec2(cosa, sina) * descriptorScale * sc.x;\n"
+"   vec2 nsicd = vec2(-sina, cosa) * descriptorScale * sc.y;\n"
 "   vec2 gdx = vec2(cosa,sina) / mipScale * sc;\n"
 "   vec2 gdy = vec2(-sina,cosa) / mipScale * sc;\n"
 "   vec2 xya = vec2(0.0,0.0);\n"
@@ -160,10 +161,9 @@ SHARED_SHADER_FUNCTIONS
 "   dBits[2] = descriptor.z;"
 "   dBits[3] = descriptor.w;"
 "   for (int b = 0; b < DESCRIPTORSIZE; b++) {\n"
-"       vec2 dp1 = descriptors1[b];\n"
-"       vec2 dp2 = descriptors2[b];\n"
-"       vec2 d1 = (kp + vec2(dot(cosid,dp1), dot(nsicd,dp1)))*sc;\n"
-"       vec2 d2 = (kp + vec2(dot(cosid,dp2), dot(nsicd,dp2)))*sc;\n"
+"       vec4 dp = descriptors12[b];\n"
+"       vec2 d1 = kp2 + vec2(dot(cosid,dp.xy), dot(nsicd,dp.xy));\n"
+"       vec2 d2 = kp2 + vec2(dot(cosid,dp.zw), dot(nsicd,dp.zw));\n"
 "       uint b2 = textureLod(s, d2, m).x < textureLod(s, d1, m).x ? uint(1) : uint(0);\n"
 "       if (b2 != ((dBits[b>>5]>>uint(b & 31)) & uint(1)) ) {\n"
 "           vec2 gr = vec2( textureLod(s, d2 - gdx, m).x - textureLod(s, d2 + gdx, m).x , textureLod(s, d2 - gdy, m).x - textureLod(s, d2 + gdy, m).x )\n"
@@ -283,21 +283,17 @@ void initOpenGL() {
     glewInit();
 #endif // __CURRENT_PLATFORM__ == __PLATFORM_WINDOWS__
 
-    std::string descriptors1 = "vec2 descriptors1[" + std::to_string(DESCRIPTORSIZE) + "] = vec2 [](";
-    std::string descriptors2 = "vec2 descriptors2[" + std::to_string(DESCRIPTORSIZE) + "] = vec2 [](";
+    std::string descriptors12 = "vec4 descriptors12[" + std::to_string(DESCRIPTORSIZE) + "] = vec4 [](";
     for (int i = 0; i < DESCRIPTORSIZE; i++) {
         if (i != 0) {
-            descriptors1 += ",";
-            descriptors2 += ",";
+            descriptors12 += ",";
         }
-        descriptors1 += "vec2(" + std::to_string(descriptorsX1[i]) + "," + std::to_string(descriptorsY1[i]) + ")";
-        descriptors2 += "vec2(" + std::to_string(descriptorsX2[i]) + "," + std::to_string(descriptorsY2[i]) + ")";
+        descriptors12 += "vec4(" + std::to_string(descriptorsX1[i]) + "," + std::to_string(descriptorsY1[i]) + "," + std::to_string(descriptorsX2[i]) + "," + std::to_string(descriptorsY2[i]) + ")";
     }
-    descriptors1 += ");\n";
-    descriptors2 += ");\n";
+    descriptors12 += ");\n";
 
-    std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors1 + descriptors2 + refineKeyPointsProgram;
-    std::string sampleDescriptors = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors1 + descriptors2 + sampleDescriptorProgram;
+    std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + refineKeyPointsProgram;
+    std::string sampleDescriptors = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + sampleDescriptorProgram;
 
     openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptors.c_str(), (unsigned int)sampleDescriptors.length());
     openGLFragmentShader_refineKeyPoints = pixelShader(refineKeys.c_str(), (unsigned int)refineKeys.length());
