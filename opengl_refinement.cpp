@@ -28,7 +28,6 @@ bool glIsCancelled() {
 #include <GLES3/gl3.h>
 #endif // __CURRENT_PLATFORM__ == __PLATFORM_ANDROID__
 
-static const int MAXMIPMAPS = 32;
 static const int MIPMAPIDCOUNT = 8;
 static const int KEYPOINTIDCOUNT = 2;
 static const int DESCRIPTORIDCOUNT = 2;
@@ -46,14 +45,14 @@ static int openGLKeyPointsTextureWidth[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointsTextureHeight[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointCount[KEYPOINTIDCOUNT] = { 0 };
 static std::pair<GLuint, GLuint> openGLDescriptorRenderTarget[DESCRIPTORIDCOUNT] = { {0,0} };
-static GLuint openGLDescriptorRenderTargetWidth[DESCRIPTORIDCOUNT] = { {0} };
-static GLuint openGLDescriptorRenderTargetHeight[DESCRIPTORIDCOUNT] = { {0} };
+static GLuint openGLDescriptorRenderTargetWidth[DESCRIPTORIDCOUNT] = { 0 };
+static GLuint openGLDescriptorRenderTargetHeight[DESCRIPTORIDCOUNT] = { 0 };
 static std::pair<GLuint, GLuint> openGLKeyPointsRenderTarget[KEYPOINTIDCOUNT] = { {0,0} };
 static GLuint openGLKeyPointsRenderTargetWidth[KEYPOINTIDCOUNT] = { 0 };
 static GLuint openGLKeyPointsRenderTargetHeight[KEYPOINTIDCOUNT] = { 0 };
-static GLuint openGLDescriptors[DESCRIPTORIDCOUNT] = { {0} };
-static int openGLDescriptorsTextureWidth[DESCRIPTORIDCOUNT] = { {0} };
-static int openGLDescriptorsTextureHeight[DESCRIPTORIDCOUNT] = { {0} };
+static GLuint openGLDescriptors[DESCRIPTORIDCOUNT] = { 0 };
+static int openGLDescriptorsTextureWidth[DESCRIPTORIDCOUNT] = { 0 };
+static int openGLDescriptorsTextureHeight[DESCRIPTORIDCOUNT] = { 0 };
 static GLuint openGLFragmentShader_sampleDescriptors = 0;
 static GLuint openGLFragmentShader_refineKeyPoints = 0;
 static GLuint openGLFragmentShader_displayMipMap = 0;
@@ -271,7 +270,6 @@ GLuint program(GLuint vertexShader, GLuint pixelShader);
 void createUint324RenderTarget(std::pair<GLuint, GLuint>& dest, int width, int height, bool nearest);
 void createFloat4RenderTarget(std::pair<GLuint, GLuint>& dest, int width, int height, bool nearest);
 void upload2DFloatTexture(const GLuint& tex, const float* data, unsigned int width, unsigned int height, bool nearest);
-void upload2DUnsignedCharTexture(const GLuint& tex, const unsigned char* data, unsigned int width, unsigned int height, bool nearest);
 void upload1DFloatTexture(const GLuint& tex, const float* data, unsigned int count, int& width, int& height, bool nearest);
 void upload2Duint324Texture(const GLuint& tex, const unsigned int* data, unsigned int width, unsigned int height, bool nearest);
 void upload1Duint324Texture(const GLuint& tex, const unsigned int* data, unsigned int count, int& width, int& height, bool nearest);
@@ -458,16 +456,6 @@ void upload2DFloatTexture(const GLuint& tex, const float* data, unsigned int wid
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
 
-void upload2DUnsignedCharTexture(const GLuint& tex, const unsigned char* data, unsigned int width, unsigned int height, bool nearest) {
-    glBindTexture(GL_TEXTURE_2D, tex); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, (int)width, (int)height, 0, GL_RED, GL_UNSIGNED_BYTE, data); checkGLError();
-    glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
-}
-
 void upload1DFloatTexture(const GLuint& tex, const float* data, unsigned int count, int& width, int& height, bool nearest) {
     width = (int)count;
     height = 1;
@@ -580,7 +568,7 @@ void fullScreenRect() {
     glBindVertexArray(vao);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
@@ -798,6 +786,8 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     fullScreenRect();
     float* data = new float[4 * w * h];
     glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, data); checkGLError();
+    destKeyPoints.resize(keyPointCount);
+    destErrors.resize(keyPointCount);
     for (int i = 0; i < keyPointCount; i++) {
         const int x = i % w;
         const int y = i / w;
