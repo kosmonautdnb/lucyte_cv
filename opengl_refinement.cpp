@@ -45,9 +45,9 @@ static GLuint openGLKeyPointsY[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointsTextureWidth[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointsTextureHeight[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointCount[KEYPOINTIDCOUNT] = { 0 };
-static std::pair<GLuint, GLuint> openGLDescriptorRenderTarget[KEYPOINTIDCOUNT][MIPMAPIDCOUNT] = { {{0,0}} };
-static GLuint openGLDescriptorRenderTargetWidth[KEYPOINTIDCOUNT][MIPMAPIDCOUNT] = { {0} };
-static GLuint openGLDescriptorRenderTargetHeight[KEYPOINTIDCOUNT][MIPMAPIDCOUNT] = { {0} };
+static std::pair<GLuint, GLuint> openGLDescriptorRenderTarget[DESCRIPTORIDCOUNT] = { {0,0} };
+static GLuint openGLDescriptorRenderTargetWidth[DESCRIPTORIDCOUNT] = { {0} };
+static GLuint openGLDescriptorRenderTargetHeight[DESCRIPTORIDCOUNT] = { {0} };
 static std::pair<GLuint, GLuint> openGLKeyPointsRenderTarget[KEYPOINTIDCOUNT] = { {0,0} };
 static GLuint openGLKeyPointsRenderTargetWidth[KEYPOINTIDCOUNT] = { 0 };
 static GLuint openGLKeyPointsRenderTargetHeight[KEYPOINTIDCOUNT] = { 0 };
@@ -83,10 +83,13 @@ const std::string sampleDescriptorProgram = ""
 "uniform int texHeightMipMap;\n"
 "uniform int texWidthKeyPoints;\n"
 "uniform int texHeightKeyPoints;\n"
+"uniform int texWidthKeyPoints2;\n"
+"uniform int texHeightKeyPoints2;\n"
 "uniform int DESCRIPTORSIZE;\n"
-"uniform int mipLevel;\n"
-"uniform float descriptorScale;\n"
-"uniform float mipScale;\n"
+"uniform int mipEnd;\n"
+"uniform int keyPointCount;\n"
+"uniform float MIPSCALE;\n"
+"uniform float DESCRIPTORSCALE2;\n"
 "uniform sampler2D descriptor1x;\n"
 "uniform sampler2D descriptor1y;\n"
 "uniform sampler2D descriptor2x;\n"
@@ -97,18 +100,24 @@ const std::string sampleDescriptorProgram = ""
 SHARED_SHADER_FUNCTIONS
 "void main()\n"
 "{\n"
+"       uint b[4]; b[0]=uint(0); b[1]=uint(0); b[2]=uint(0); b[3]=uint(0);\n"
+"       vec2 sc = vec2(1.0/float(texWidthMipMap),1.0/float(texHeightMipMap));\n"
 "       int txx = int(floor(p.x+0.25));\n"
 "       int txy = int(floor(p.y+0.25));\n"
-"       vec2 kp = t2d_nearest(keyPointsx,keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints);\n"
-"       uint b[4]; b[0]=uint(0); b[1]=uint(0); b[2]=uint(0); b[3]=uint(0);\n"
-"       float m = float(mipLevel);\n"
-"       float descriptorSize = descriptorScale;\n"
-"       vec2 sc = vec2(1.0/float(texWidthMipMap),1.0/float(texHeightMipMap));\n"
-"       for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
-"       {\n"
-"           float l1 = textureLod(mipMap, (kp + vec2(descriptors1x[i],descriptors1y[i]) * descriptorSize) * sc, m).x;\n"
-"           float l2 = textureLod(mipMap, (kp + vec2(descriptors2x[i],descriptors2y[i]) * descriptorSize) * sc, m).x;\n"
-"           b[i>>5] += (l2 < l1) ? uint(1)<<uint(i & 31) : uint(0);\n"
+"       int t = txx + txy * texWidthKeyPoints;\n" 
+"       if (t < keyPointCount*(mipEnd+1)) {"
+"           int keyPointId = t % keyPointCount;\n"
+"           int mipLevel = t / keyPointCount;\n"
+"           vec2 kp = t2d_nearest(keyPointsx,keyPointsy,keyPointId % texWidthKeyPoints2,keyPointId / texWidthKeyPoints2,texWidthKeyPoints2,texHeightKeyPoints2);\n"
+"           float mipScale = pow(MIPSCALE,float(mipLevel));\n"
+"           float descriptorScale = DESCRIPTORSCALE2/mipScale;\n"
+"           float m = float(mipLevel);\n"
+"           for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
+"           {\n"
+"               float l1 = textureLod(mipMap, (kp + vec2(descriptors1x[i],descriptors1y[i]) * descriptorScale) * sc, m).x;\n"
+"               float l2 = textureLod(mipMap, (kp + vec2(descriptors2x[i],descriptors2y[i]) * descriptorScale) * sc, m).x;\n"
+"               b[i>>5] += (l2 < l1) ? uint(1)<<uint(i & 31) : uint(0);\n"
+"           }\n"
 "       }\n"
 "       frag_color = uvec4(b[0],b[1],b[2],b[3]);\n"
 "}\n"
@@ -667,12 +676,15 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     GLint sampleDescriptors_location_texHeightDescriptorShape = glGetUniformLocation(openGLProgram_sampleDescriptors, "texHeightDescriptorShape"); checkGLError();
     GLint sampleDescriptors_location_texWidthMipMap = glGetUniformLocation(openGLProgram_sampleDescriptors, "texWidthMipMap"); checkGLError();
     GLint sampleDescriptors_location_texHeightMipMap = glGetUniformLocation(openGLProgram_sampleDescriptors, "texHeightMipMap"); checkGLError();
-    GLint sampleDescriptors_location_mipLevel = glGetUniformLocation(openGLProgram_sampleDescriptors, "mipLevel"); checkGLError();
+    GLint sampleDescriptors_location_mipEnd = glGetUniformLocation(openGLProgram_sampleDescriptors, "mipEnd"); checkGLError();
+    GLint sampleDescriptors_location_MIPSCALE = glGetUniformLocation(openGLProgram_sampleDescriptors, "MIPSCALE"); checkGLError();
+    GLint sampleDescriptors_location_DESCRIPTORSCALE2 = glGetUniformLocation(openGLProgram_sampleDescriptors, "DESCRIPTORSCALE2"); checkGLError();
+    GLint sampleDescriptors_location_keyPointCount = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointCount"); checkGLError();
     GLint sampleDescriptors_location_texWidthKeyPoints = glGetUniformLocation(openGLProgram_sampleDescriptors, "texWidthKeyPoints"); checkGLError();
     GLint sampleDescriptors_location_texHeightKeyPoints = glGetUniformLocation(openGLProgram_sampleDescriptors, "texHeightKeyPoints"); checkGLError();
+    GLint sampleDescriptors_location_texWidthKeyPoints2 = glGetUniformLocation(openGLProgram_sampleDescriptors, "texWidthKeyPoints2"); checkGLError();
+    GLint sampleDescriptors_location_texHeightKeyPoints2 = glGetUniformLocation(openGLProgram_sampleDescriptors, "texHeightKeyPoints2"); checkGLError();
     GLint sampleDescriptors_location_DESCRIPTORSIZE = glGetUniformLocation(openGLProgram_sampleDescriptors, "DESCRIPTORSIZE"); checkGLError();
-    GLint sampleDescriptors_location_descriptorScale = glGetUniformLocation(openGLProgram_sampleDescriptors, "descriptorScale"); checkGLError();
-    GLint sampleDescriptors_location_mipScale = glGetUniformLocation(openGLProgram_sampleDescriptors, "mipScale"); checkGLError();
     GLint sampleDescriptors_location_descriptor1x = glGetUniformLocation(openGLProgram_sampleDescriptors, "descriptor1x"); checkGLError();
     GLint sampleDescriptors_location_descriptor1y = glGetUniformLocation(openGLProgram_sampleDescriptors, "descriptor1y"); checkGLError();
     GLint sampleDescriptors_location_descriptor2x = glGetUniformLocation(openGLProgram_sampleDescriptors, "descriptor2x"); checkGLError();
@@ -680,77 +692,81 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     GLint sampleDescriptors_location_mipMap = glGetUniformLocation(openGLProgram_sampleDescriptors, "mipMap"); checkGLError();
     GLint sampleDescriptors_location_keyPointsx = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsx"); checkGLError();
     GLint sampleDescriptors_location_keyPointsy = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsy"); checkGLError();
-
-    destMips.resize(mipEnd+1);
-    for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
-        std::vector<Descriptor>& descriptors = destMips[mipMap];
-        destMips[mipMap].resize(openGLKeyPointCount[keyPointsId]);
-        const float mipScale = powf(MIPSCALE, float(mipMap));
-        const float descriptorScale = DESCRIPTORSCALE2 / mipScale;
-
-        if (openGLKeyPointsTextureWidth[keyPointsId] != openGLDescriptorRenderTargetWidth[keyPointsId][mipMap] || openGLKeyPointsTextureHeight[keyPointsId] != openGLDescriptorRenderTargetHeight[keyPointsId][mipMap]) {
-            openGLDescriptorRenderTargetWidth[keyPointsId][mipMap] = openGLKeyPointsTextureWidth[keyPointsId];
-            openGLDescriptorRenderTargetHeight[keyPointsId][mipMap] = openGLKeyPointsTextureHeight[keyPointsId];
-            createUint324RenderTarget(openGLDescriptorRenderTarget[keyPointsId][mipMap], (int)openGLDescriptorRenderTargetWidth[keyPointsId][mipMap], (int)openGLDescriptorRenderTargetHeight[keyPointsId][mipMap], true);
-        }
-
-        glUseProgram(openGLProgram_sampleDescriptors); checkGLError();
-        glUniform1i(sampleDescriptors_location_texWidthDescriptorShape, openGLDescriptorShapeTextureWidth); checkGLError();
-        glUniform1i(sampleDescriptors_location_texHeightDescriptorShape, openGLDescriptorShapeTextureHeight); checkGLError();
-        glUniform1i(sampleDescriptors_location_texWidthMipMap, openGLMipMapsTextureWidth[mipmapsId]); checkGLError();
-        glUniform1i(sampleDescriptors_location_texHeightMipMap, openGLMipMapsTextureHeight[mipmapsId]); checkGLError();
-        glUniform1i(sampleDescriptors_location_texWidthKeyPoints, openGLKeyPointsTextureWidth[keyPointsId]); checkGLError();
-        glUniform1i(sampleDescriptors_location_texHeightKeyPoints, openGLKeyPointsTextureHeight[keyPointsId]); checkGLError();
-        glUniform1i(sampleDescriptors_location_DESCRIPTORSIZE, DESCRIPTORSIZE); checkGLError();
-        glUniform1f(sampleDescriptors_location_descriptorScale, descriptorScale); checkGLError();
-        glUniform1f(sampleDescriptors_location_mipScale, mipScale); checkGLError();
-        glUniform1i(sampleDescriptors_location_mipLevel, mipMap); checkGLError();
-
-        glActiveTexture(GL_TEXTURE0); checkGLError();
-        glBindTexture(GL_TEXTURE_2D, openGLKeyPointsX[keyPointsId]); checkGLError();
-        glUniform1i(sampleDescriptors_location_keyPointsx, 0); checkGLError();
-        glActiveTexture(GL_TEXTURE1); checkGLError();
-        glBindTexture(GL_TEXTURE_2D, openGLKeyPointsY[keyPointsId]); checkGLError();
-        glUniform1i(sampleDescriptors_location_keyPointsy, 1); checkGLError();
-        glActiveTexture(GL_TEXTURE2); checkGLError();
-        glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[0]); checkGLError();
-        glUniform1i(sampleDescriptors_location_descriptor1x, 2); checkGLError();
-        glActiveTexture(GL_TEXTURE3); checkGLError();
-        glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[1]); checkGLError();
-        glUniform1i(sampleDescriptors_location_descriptor1y, 3); checkGLError();
-        glActiveTexture(GL_TEXTURE4); checkGLError();
-        glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[2]); checkGLError();
-        glUniform1i(sampleDescriptors_location_descriptor2x, 4); checkGLError();
-        glActiveTexture(GL_TEXTURE5); checkGLError();
-        glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[3]); checkGLError();
-        glUniform1i(sampleDescriptors_location_descriptor2y, 5); checkGLError();
-        glActiveTexture(GL_TEXTURE6); checkGLError();
-        glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
-        glUniform1i(sampleDescriptors_location_mipMap, 6); checkGLError();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, openGLDescriptorRenderTarget[keyPointsId][mipMap].first); checkGLError();
-        const int w = (int)openGLDescriptorRenderTargetWidth[keyPointsId][mipMap];
-        const int h = (int)openGLDescriptorRenderTargetHeight[keyPointsId][mipMap];
-        glViewport(0, 0, w, h);
-        fullScreenRect();
+    
+    int descriptorCount = openGLKeyPointCount[keyPointsId] * (mipEnd + 1);
+    int descriptorX = descriptorCount;
+    int descriptorY = 1;
+    if (descriptorX > maxTextureSize) {
+        descriptorY = (descriptorX + maxTextureSize - 1) / maxTextureSize;
+        descriptorX = maxTextureSize;
     }
+    if (descriptorX != openGLDescriptorRenderTargetWidth[descriptorsId] || descriptorY != openGLDescriptorRenderTargetHeight[descriptorsId]) {
+        openGLDescriptorRenderTargetWidth[descriptorsId] = descriptorX;
+        openGLDescriptorRenderTargetHeight[descriptorsId] = descriptorY;
+        createUint324RenderTarget(openGLDescriptorRenderTarget[descriptorsId], (int)openGLDescriptorRenderTargetWidth[descriptorsId], (int)openGLDescriptorRenderTargetHeight[descriptorsId], true);
+    }
+
+    glUseProgram(openGLProgram_sampleDescriptors); checkGLError();
+    glUniform1i(sampleDescriptors_location_texWidthDescriptorShape, openGLDescriptorShapeTextureWidth); checkGLError();
+    glUniform1i(sampleDescriptors_location_texHeightDescriptorShape, openGLDescriptorShapeTextureHeight); checkGLError();
+    glUniform1i(sampleDescriptors_location_texWidthMipMap, openGLMipMapsTextureWidth[mipmapsId]); checkGLError();
+    glUniform1i(sampleDescriptors_location_texHeightMipMap, openGLMipMapsTextureHeight[mipmapsId]); checkGLError();
+    glUniform1i(sampleDescriptors_location_texWidthKeyPoints, descriptorX); checkGLError();
+    glUniform1i(sampleDescriptors_location_texHeightKeyPoints, descriptorY); checkGLError();
+    glUniform1i(sampleDescriptors_location_texWidthKeyPoints2, openGLKeyPointsTextureWidth[keyPointsId]); checkGLError();
+    glUniform1i(sampleDescriptors_location_texHeightKeyPoints2, openGLKeyPointsTextureHeight[keyPointsId]); checkGLError();
+    glUniform1i(sampleDescriptors_location_DESCRIPTORSIZE, DESCRIPTORSIZE); checkGLError();
+    glUniform1f(sampleDescriptors_location_DESCRIPTORSCALE2, DESCRIPTORSCALE2); checkGLError();
+    glUniform1f(sampleDescriptors_location_MIPSCALE, MIPSCALE); checkGLError();
+    glUniform1i(sampleDescriptors_location_mipEnd, mipEnd); checkGLError();
+    glUniform1i(sampleDescriptors_location_keyPointCount, openGLKeyPointCount[keyPointsId]); checkGLError();
+
+    glActiveTexture(GL_TEXTURE0); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLKeyPointsX[keyPointsId]); checkGLError();
+    glUniform1i(sampleDescriptors_location_keyPointsx, 0); checkGLError();
+    glActiveTexture(GL_TEXTURE1); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLKeyPointsY[keyPointsId]); checkGLError();
+    glUniform1i(sampleDescriptors_location_keyPointsy, 1); checkGLError();
+    glActiveTexture(GL_TEXTURE2); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[0]); checkGLError();
+    glUniform1i(sampleDescriptors_location_descriptor1x, 2); checkGLError();
+    glActiveTexture(GL_TEXTURE3); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[1]); checkGLError();
+    glUniform1i(sampleDescriptors_location_descriptor1y, 3); checkGLError();
+    glActiveTexture(GL_TEXTURE4); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[2]); checkGLError();
+    glUniform1i(sampleDescriptors_location_descriptor2x, 4); checkGLError();
+    glActiveTexture(GL_TEXTURE5); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLDescriptorShape[3]); checkGLError();
+    glUniform1i(sampleDescriptors_location_descriptor2y, 5); checkGLError();
+    glActiveTexture(GL_TEXTURE6); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
+    glUniform1i(sampleDescriptors_location_mipMap, 6); checkGLError();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, openGLDescriptorRenderTarget[keyPointsId].first); checkGLError();
+    glViewport(0, 0, descriptorX, descriptorY);
+    fullScreenRect();
+
+    unsigned int* data = new unsigned int[4 * descriptorX * descriptorY];
+    glReadPixels(0, 0, descriptorX, descriptorY, GL_RGBA_INTEGER, GL_UNSIGNED_INT, data); checkGLError();
+
+    destMips.resize(mipEnd + 1);
     for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
         std::vector<Descriptor>& descriptors = destMips[mipMap];
-        glBindFramebuffer(GL_FRAMEBUFFER, openGLDescriptorRenderTarget[keyPointsId][mipMap].first); checkGLError();
-        const int w = (int)openGLDescriptorRenderTargetWidth[keyPointsId][mipMap];
-        const int h = (int)openGLDescriptorRenderTargetHeight[keyPointsId][mipMap];
-        unsigned int* data = new unsigned int[4 * w * h];
-        glReadPixels(0, 0, w, h, GL_RGBA_INTEGER, GL_UNSIGNED_INT, data); checkGLError();
+        descriptors.resize(openGLKeyPointCount[keyPointsId]);
         for (int i = 0; i < descriptors.size(); i++) {
-            int x = i % w;
-            int y = i / w;
-            int texAdr = x + y * w;
+            int i2 = mipMap * openGLKeyPointCount[keyPointsId] + i;
+            int x = i2 % descriptorX;
+            int y = i2 / descriptorX;
+            int texAdr = x + y * descriptorX;
             for (int j = 0; j < Descriptor::uint32count; ++j) {
                 descriptors[i].bits[j] = data[texAdr * 4 + j];
             }
         }
-        delete[] data;
     }
+
+    delete[] data;
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0); checkGLError();
     glUseProgram(0); checkGLError();
     glActiveTexture(GL_TEXTURE0); checkGLError();
