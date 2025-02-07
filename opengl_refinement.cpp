@@ -575,7 +575,7 @@ void fullScreenRect() {
     glDeleteBuffers(1, &vbo);
 }
 
-void displayMipMap(int mipmapsId, int mipLevel, int screenWidth, int screenHeight) {
+void displayMipMap(int mipmapsId, int mipLevel, int screenWidth, int screenHeight, float scaleX, float scaleY) {
     GLint displayMipMap_location_mipMap = glGetUniformLocation(openGLProgram_displayMipMap, "mipMap"); checkGLError();
     GLint displayMipMap_location_mipLevel = glGetUniformLocation(openGLProgram_displayMipMap, "mipLevel"); checkGLError();
     GLint displayMipMap_location_mipMapWidth = glGetUniformLocation(openGLProgram_displayMipMap, "mipMapWidth"); checkGLError();
@@ -587,8 +587,8 @@ void displayMipMap(int mipmapsId, int mipLevel, int screenWidth, int screenHeigh
     glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
     glUniform1i(displayMipMap_location_mipMap, 0); checkGLError();
     glUniform1i(displayMipMap_location_mipLevel, mipLevel); checkGLError();
-    glUniform1i(displayMipMap_location_mipMapWidth, openGLMipMapsTextureWidth[mipmapsId]); checkGLError();
-    glUniform1i(displayMipMap_location_mipMapHeight, openGLMipMapsTextureHeight[mipmapsId]); checkGLError();
+    glUniform1i(displayMipMap_location_mipMapWidth, openGLMipMapsTextureWidth[mipmapsId] * scaleX); checkGLError();
+    glUniform1i(displayMipMap_location_mipMapHeight, openGLMipMapsTextureHeight[mipmapsId] * scaleY); checkGLError();
     glUniform1i(displayMipMap_location_texWidthKeyPoints, screenWidth); checkGLError();
     glUniform1i(displayMipMap_location_texHeightKeyPoints, screenHeight); checkGLError();
     glViewport(0, 0, screenWidth, screenHeight);

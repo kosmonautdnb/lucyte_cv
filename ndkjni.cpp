@@ -64,13 +64,13 @@ Java_com_example_lucyteandroid_MyGLRenderer_uploadMipMap(JNIEnv *env, jobject th
     env->ReleaseByteArrayElements(base_mip_map, data, JNI_ABORT);
 }
 
-void displayMipMap(int mipmapsId, int mipLevel, int screenWidth, int screenHeight);
+void displayMipMap(int mipmapsId, int mipLevel, int screenWidth, int screenHeight, float scaleX, float scaleY);
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_lucyteandroid_MyGLRenderer_displayMipMap(JNIEnv *env, jobject thiz,
-                                                          jint mipmaps_id, jint mip_map, jint screen_width, jint screen_height) {
-    displayMipMap(mipmaps_id,mip_map,screen_width,screen_height);
+                                                          jint mipmaps_id, jint mip_map, jint screen_width, jint screen_height, jfloat scaleX, jfloat scaleY) {
+    displayMipMap(mipmaps_id,mip_map,screen_width,screen_height, scaleX, scaleY);
 }
 extern "C"
 JNIEXPORT void JNICALL
@@ -165,6 +165,9 @@ Java_com_example_lucyteandroid_MyGLRenderer_refineKeyPoints(JNIEnv *env, jobject
     env->ReleaseFloatArrayElements(key_points_y, kpy, 0);
     env->ReleaseFloatArrayElements(errors, err, 0);
 }
+
+GLuint vbo = 0;
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_lucyteandroid_MyGLRenderer_drawRectangle(JNIEnv *env, jobject thiz, jfloat x0,
@@ -190,7 +193,6 @@ Java_com_example_lucyteandroid_MyGLRenderer_drawRectangle(JNIEnv *env, jobject t
             x0,  y1,  0.0f,
             x0, y0,  0.0f
     };
-    GLuint vbo = 0;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, 3 * 6 * sizeof(float), points, GL_STATIC_DRAW);
@@ -207,6 +209,48 @@ Java_com_example_lucyteandroid_MyGLRenderer_drawRectangle(JNIEnv *env, jobject t
     float a = (float)((color>>24) & 255)/255.f;
     glUniform4f(color_location,r,g,b,a);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glUseProgram(0);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_lucyteandroid_MyGLRenderer_drawLine(JNIEnv *env, jobject thiz, jfloat x0,
+                                                          jfloat y0, jfloat x1, jfloat y1,
+                                                          jint color, jint screen_width,
+                                                          jint screen_height) {
+    x0 /= (float)screen_width;
+    y0 /= (float)screen_height;
+    x1 /= (float)screen_width;
+    y1 /= (float)screen_height;
+    x0 = x0 * 2.f - 1.f;
+    y0 = (y0 * 2.f - 1.f) * -1.f;
+    x1 = x1 * 2.f - 1.f;
+    y1 = (y1 * 2.f - 1.f) * -1.f;
+    glViewport(0,0,screen_width, screen_height);
+
+    glUseProgram(openGLProgram_paintColor);
+    float points[] = {
+            x0,  y0,  0.0f,
+            x1, y1,  0.0f,
+    };
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, 3 * 2 * sizeof(float), points, GL_STATIC_DRAW);
+    GLuint vao = 0;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    GLint color_location = glGetUniformLocation(openGLProgram_paintColor, "color");
+    float r = (float)(color & 255)/255.f;
+    float g = (float)((color>>8) & 255)/255.f;
+    float b = (float)((color>>16) & 255)/255.f;
+    float a = (float)((color>>24) & 255)/255.f;
+    glUniform4f(color_location,r,g,b,a);
+    glDrawArrays(GL_LINES, 0, 2);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glUseProgram(0);
