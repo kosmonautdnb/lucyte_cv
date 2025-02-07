@@ -545,7 +545,7 @@ void uploadKeyPoints_openGL(int keyPointsId, const std::vector<KeyPoint>& keyPoi
 }
 
 void uploadDescriptors_openGL(int descriptorsId, int mipEnd, const std::vector<std::vector<Descriptor>>& sourceMips) {
-    const int keyPointCount = sourceMips[0].size();
+    const int keyPointCount = (int)sourceMips[0].size();
     const int allDescriptorCount = keyPointCount * (mipEnd + 1);
 
     std::vector<unsigned int> bits;
