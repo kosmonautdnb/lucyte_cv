@@ -99,14 +99,6 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     KeyPoint r;
     r.x = kp.x + xa * stepSize;
     r.y = kp.y + ya * stepSize;
-    const bool clipping = false; if (clipping) {
-        const float w = floorf(float(width) / mipScale);
-        const float h = floorf(float(height) / mipScale);
-        if (r.x < 0) r.x = 0;
-        if (r.y < 0) r.y = 0;
-        if (r.x >= w - 1) r.x = w - 1;
-        if (r.y >= h - 1) r.y = h - 1;
-    }
     return r;
 }
 
