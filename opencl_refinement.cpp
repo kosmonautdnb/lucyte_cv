@@ -248,7 +248,7 @@ static std::string openCV_program =
 "       dBits[31] = dbBits15;\n"
 "       const int KEYPOINTCOUNT = ints[0];\n"
 "       const int DESCRIPTORSIZE = ints[1];\n"
-"       const int mipEnd = ints[2];\n"
+"       const int mipLevels = ints[2];\n"
 "       const int STEPCOUNT = ints[3];\n"
 "       const int stepping = ints[4];\n"
 "       const int DESCRIPTORSIZE2 = ints[5];\n"
@@ -260,7 +260,7 @@ static std::string openCV_program =
 "       const int j = get_global_id(0) % KEYPOINTCOUNT;\n"
 //"       float2 kp = (float2)(widths[0] * 0.5, heights[0] * 0.5);\n" //keyPointsX/Y[j];\n"
 "       float2 kp = (float2)(keyPointsX[j], keyPointsY[j]);\n" //keyPointsX/Y[j];\n"
-"       for (int i = mipEnd; i >= 0; i--) {\n"
+"       for (int i = mipLevels-1; i >= 0; i--) {\n"
 "           const int width = widths[i];\n"
 "           const int height = heights[i];\n"
 "           for (int k = 0; k < STEPCOUNT; k++) {\n"
@@ -442,9 +442,9 @@ void uploadKeyPoints_openCL_waitfor(const int queueId, const int keyPointsId) {
     keyPointsYEvent[queueId][keyPointsId].wait();
 }
 
-void uploadDescriptors_openCL(const int queueId, const int descriptorsId, const int mipEnd, const std::vector<std::vector<Descriptor>>& sourceMips) {
-    uploadDescriptors_openCL_waitfor(queueId, descriptorsId, mipEnd);
-    for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
+void uploadDescriptors_openCL(const int queueId, const int descriptorsId, const int mipLevels, const std::vector<std::vector<Descriptor>>& sourceMips) {
+    uploadDescriptors_openCL_waitfor(queueId, descriptorsId, mipLevels);
+    for (int mipMap = 0; mipMap < mipLevels; mipMap++) {
         const std::vector<Descriptor>& descriptors = sourceMips[mipMap];
         if ((descriptors.size() * Descriptor::uint32count) > openCLDescriptorBits[queueId][descriptorsId][mipMap].size()) {
             openCLDescriptorBits[queueId][descriptorsId][mipMap].resize(descriptors.size() * Descriptor::uint32count);
@@ -459,15 +459,15 @@ void uploadDescriptors_openCL(const int queueId, const int descriptorsId, const 
     }
 }
 
-void uploadDescriptors_openCL_waitfor(const int queueId, const int descriptorsId, const int mipEnd) {
-    for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
+void uploadDescriptors_openCL_waitfor(const int queueId, const int descriptorsId, const int mipLevels) {
+    for (int mipMap = 0; mipMap < mipLevels; mipMap++) {
         descriptorEvent[queueId][descriptorsId][mipMap].wait();
     }
 }
 
-void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipEnd, const float DESCRIPTORSCALE2, const float MIPSCALE) {
+void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipLevels, const float DESCRIPTORSCALE2, const float MIPSCALE) {
     const int keyPointCount = keyPointCounts[queueId][keyPointsId];
-    for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
+    for (int mipMap = 0; mipMap < mipLevels; mipMap++) {
         const float mipScale = powf(MIPSCALE, float(mipMap));
         const float descriptorScale = DESCRIPTORSCALE2 / mipScale;
         if ((keyPointCount * Descriptor::uint32count) > openCLDescriptorBitsFull[queueId][descriptorsId][mipMap].size()) {
@@ -497,9 +497,9 @@ void sampleDescriptors_openCL(const int queueId, const int keyPointsId, const in
     }
 }
 
-void sampleDescriptors_openCL_waitfor(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipEnd, std::vector<std::vector<Descriptor>>& destMips) {
+void sampleDescriptors_openCL_waitfor(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int mipLevels, std::vector<std::vector<Descriptor>>& destMips) {
     destMips.resize(mipMapCounts[queueId][mipmapsId]);
-    for (int mipMap = 0; mipMap <= mipEnd; mipMap++) {
+    for (int mipMap = 0; mipMap < mipLevels; mipMap++) {
         const int keyPointCount = keyPointCounts[queueId][keyPointsId];
         std::vector<Descriptor>& dest = destMips[mipMap];
         dest.resize(keyPointCount);
@@ -515,10 +515,10 @@ void sampleDescriptors_openCL_waitfor(const int queueId, const int keyPointsId, 
 }
 
 
-void refineKeyPoints_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+void refineKeyPoints_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipLevels, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
     openCLInt1[queueId][0] = keyPointCount;
     openCLInt1[queueId][1] = DESCRIPTORSIZE;
-    openCLInt1[queueId][2] = mipEnd;
+    openCLInt1[queueId][2] = mipLevels;
     openCLInt1[queueId][3] = STEPCOUNT;
     openCLInt1[queueId][4] = stepping ? 1 : 0;
     openCLInt1[queueId][5] = Descriptor::uint32count * 32;
@@ -584,15 +584,15 @@ void uploadKeyPoints_openCL(const std::vector<KeyPoint>& keyPoints) {
     uploadKeyPoints_openCL(0, 0, keyPoints);
     uploadKeyPoints_openCL_waitfor(0, 0);
 }
-void uploadDescriptors_openCL(const int mipEnd, const std::vector<std::vector<Descriptor>>& sourceMips) {
-    uploadDescriptors_openCL(0, 0, mipEnd, sourceMips);
-    uploadDescriptors_openCL_waitfor(0, 0, mipEnd);
+void uploadDescriptors_openCL(const int mipLevels, const std::vector<std::vector<Descriptor>>& sourceMips) {
+    uploadDescriptors_openCL(0, 0, mipLevels, sourceMips);
+    uploadDescriptors_openCL_waitfor(0, 0, mipLevels);
 }
-void sampleDescriptors_openCL(const int mipEnd, std::vector<std::vector<Descriptor>>& destMips, const float DESCRIPTORSCALE2, const float MIPSCALE) {
-    sampleDescriptors_openCL(0, 0, 0, 0, mipEnd, DESCRIPTORSCALE2, MIPSCALE);
-    sampleDescriptors_openCL_waitfor(0, 0, 0,0, mipEnd, destMips);
+void sampleDescriptors_openCL(const int mipLevels, std::vector<std::vector<Descriptor>>& destMips, const float DESCRIPTORSCALE2, const float MIPSCALE) {
+    sampleDescriptors_openCL(0, 0, 0, 0, mipLevels, DESCRIPTORSCALE2, MIPSCALE);
+    sampleDescriptors_openCL_waitfor(0, 0, 0,0, mipLevels, destMips);
 }
-void refineKeyPoints_openCL(std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors, const int mipEnd, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
-    refineKeyPoints_openCL(0, 0, 0, 0, (int)destKeyPoints.size(), mipEnd, STEPCOUNT, stepping, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+void refineKeyPoints_openCL(std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors, const int mipLevels, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+    refineKeyPoints_openCL(0, 0, 0, 0, (int)destKeyPoints.size(), mipLevels, STEPCOUNT, stepping, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     refineKeyPoints_openCL_waitfor(0, 0, destKeyPoints, destErrors);
 }

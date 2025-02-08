@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
         cv::Mat rightImage_grey; cv::cvtColor(rightImage, rightImage_grey, cv::COLOR_BGR2GRAY);
         leftMipMaps = mipMaps(leftImage_grey);
         rightMipMaps = mipMaps(rightImage_grey);
-        const int mipEnd = (int)leftMipMaps.size() - 1;
+        const int mipLevels = (int)leftMipMaps.size();
         const bool wait = true;
         uploadMipMaps_openCL(0, doubleBuffer * 2 + 0, mipMaps(leftMipMaps));  if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 0);
         uploadMipMaps_openCL(0, doubleBuffer * 2 + 1, mipMaps(rightMipMaps)); if (wait) uploadMipMaps_openCL_waitfor(0, doubleBuffer * 2 + 1);
@@ -131,17 +131,17 @@ int main(int argc, char** argv) {
         uploadKeyPoints_openCL(0, 1, leftImageKeyPoints); if (wait) uploadKeyPoints_openCL_waitfor(0, 1);
         std::vector<std::vector<Descriptor>> lastFrameLeftDescriptors;
         lastFrameLeftDescriptors.resize(leftMipMaps.size());
-        sampleDescriptors_openCL(0, 0, 0, (doubleBuffer ^ 1) * 2 + 0, mipEnd, 1.f, MIPSCALE);
-        sampleDescriptors_openCL_waitfor(0, 0, 0, 0, mipEnd, lastFrameLeftDescriptors);
-        uploadDescriptors_openCL(0, 0, mipEnd, lastFrameLeftDescriptors);
-        if (wait) uploadDescriptors_openCL_waitfor(0, 0, mipEnd);
+        sampleDescriptors_openCL(0, 0, 0, (doubleBuffer ^ 1) * 2 + 0, mipLevels, 1.f, MIPSCALE);
+        sampleDescriptors_openCL_waitfor(0, 0, 0, 0, mipLevels, lastFrameLeftDescriptors);
+        uploadDescriptors_openCL(0, 0, mipLevels, lastFrameLeftDescriptors);
+        if (wait) uploadDescriptors_openCL_waitfor(0, 0, mipLevels);
         lastFrameLeftImageKeyPoints = leftImageKeyPoints;
         lastFrameLeftImageErrors = leftImageErrors;
         lastFrameRightImageKeyPoints = rightImageKeyPoints;
         lastFrameRightImageErrors = rightImageErrors;
-        refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, (int)leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, 0, 0, (doubleBuffer) * 2 + 0, (int)leftImageKeyPoints.size(), mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         if (wait) refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
-        refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, (int)leftImageKeyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(0, 0, 1, (doubleBuffer) * 2 + 1, (int)leftImageKeyPoints.size(), mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         if (!wait) refineKeyPoints_openCL_waitfor(0, 0, leftImageKeyPoints, leftImageErrors);
         refineKeyPoints_openCL_waitfor(0, 1, rightImageKeyPoints, rightImageErrors);
         for (int i = (int)leftImageKeyPoints.size() - 1; i >= 0; i--) {

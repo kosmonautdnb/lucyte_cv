@@ -121,16 +121,16 @@ JNIEXPORT void JNICALL
 Java_com_example_lucyteandroid_MyGLRenderer_sampleDescriptors(JNIEnv *env, jobject thiz,
                                                               jint key_points_id,
                                                               jint descriptors_id, jint mipmaps_id,
-                                                              jint mip_end, jint key_point_count, jint uint32_count,
+                                                              jint mip_levels, jint key_point_count, jint uint32_count,
                                                               jintArray descriptors,
                                                               jfloat descriptor_scale,
                                                               jfloat mip_scale) {
     std::vector<std::vector<Descriptor>> destMips;
-    sampleDescriptors_openGL(key_points_id, descriptors_id, mipmaps_id, mip_end, destMips, descriptor_scale, mip_scale);
+    sampleDescriptors_openGL(key_points_id, descriptors_id, mipmaps_id, mip_levels, destMips, descriptor_scale, mip_scale);
     jboolean isCopy;
     jint* dsc = env->GetIntArrayElements(descriptors, &isCopy);
     unsigned int *d = (unsigned int*)dsc;
-    for (int i = 0; i <= mip_end; i++)
+    for (int i = 0; i < mip_levels; i++)
         for (int j = 0; j < key_point_count; j++)
             for (int k = 0; k < uint32_count; k++)
                 *d++ = destMips[i][j].bits[k];
@@ -140,7 +140,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_lucyteandroid_MyGLRenderer_refineKeyPoints(JNIEnv *env, jobject thiz,
                                                             jint key_points_id, jint descriptors_id,
-                                                            jint mipmaps_id, jint mip_end,
+                                                            jint mipmaps_id, jint mip_levels,
                                                             jint key_point_count, jint uint32_count,
                                                             jint stepcount, jboolean stepping,
                                                             jfloat mipscale, jfloat stepsize,
@@ -151,7 +151,7 @@ Java_com_example_lucyteandroid_MyGLRenderer_refineKeyPoints(JNIEnv *env, jobject
                                                             jfloatArray errors) {
     std::vector<KeyPoint> destKeyPoints;
     std::vector<float> destErrors;
-    refineKeyPoints_openGL(key_points_id, descriptors_id, mipmaps_id, key_point_count, mip_end, stepcount, stepping, mipscale, stepsize, scaleinvariance, rotationinvariance, destKeyPoints, destErrors);
+    refineKeyPoints_openGL(key_points_id, descriptors_id, mipmaps_id, key_point_count, mip_levels, stepcount, stepping, mipscale, stepsize, scaleinvariance, rotationinvariance, destKeyPoints, destErrors);
     jboolean isCopy;
     jfloat* kpx = env->GetFloatArrayElements(key_points_x, &isCopy);
     jfloat* kpy = env->GetFloatArrayElements(key_points_y, &isCopy);

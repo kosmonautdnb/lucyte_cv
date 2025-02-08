@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(thisBuffer, 0, mipMaps(mipmaps1));
     uploadMipMaps_openCL(lastBuffer, 0, mipMaps(mipmaps1));
-    int mipEnd = (int)(floorf(MIPEND * float(mipmaps1.size() - 1)));
+    int mipLevels = (int)(floorf(MIPEND * float(mipmaps1.size())));
 
     std::vector<KeyPoint> keyPoints;
     std::vector<float> errors;
@@ -113,12 +113,12 @@ int main(int argc, char** argv)
     uploadKeyPoints_openCL(thisBuffer, 0, keyPoints);
     uploadKeyPoints_openCL(lastBuffer, 0, keyPoints);
 
-    sampleDescriptors_openCL(thisBuffer, 0, 0, 0, mipEnd, 1.f, MIPSCALE);
-    sampleDescriptors_openCL(lastBuffer, 0, 0, 0, mipEnd, 1.f, MIPSCALE);
-    sampleDescriptors_openCL_waitfor(thisBuffer, 0, 0, 0, mipEnd, searchForDescriptors);
-    sampleDescriptors_openCL_waitfor(lastBuffer, 0, 0, 0, mipEnd, searchForDescriptors);
-    uploadDescriptors_openCL(thisBuffer, 0, mipEnd, searchForDescriptors);
-    uploadDescriptors_openCL(lastBuffer, 0, mipEnd, searchForDescriptors);
+    sampleDescriptors_openCL(thisBuffer, 0, 0, 0, mipLevels, 1.f, MIPSCALE);
+    sampleDescriptors_openCL(lastBuffer, 0, 0, 0, mipLevels, 1.f, MIPSCALE);
+    sampleDescriptors_openCL_waitfor(thisBuffer, 0, 0, 0, mipLevels, searchForDescriptors);
+    sampleDescriptors_openCL_waitfor(lastBuffer, 0, 0, 0, mipLevels, searchForDescriptors);
+    uploadDescriptors_openCL(thisBuffer, 0, mipLevels, searchForDescriptors);
+    uploadDescriptors_openCL(lastBuffer, 0, mipLevels, searchForDescriptors);
 
     long long t0 = X_Query_perf_counter();;
     long long t2 = X_Query_perf_counter();;
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
     long long fr = X_Query_perf_frequency();
     cv::Mat mat2[2];
     bool first = true;
-    refineKeyPoints_openCL(thisBuffer, 0,0,0, (int)keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(thisBuffer, 0,0,0, (int)keyPoints.size(), mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     std::vector<KeyPoint> lastlastFrameKeyPoints;
     std::vector<float> lastlastFrameErrors;
     std::vector<std::vector<Descriptor>> resampledDescriptors;
@@ -141,14 +141,14 @@ int main(int argc, char** argv)
         uploadMipMaps_openCL(thisBuffer, 0, mipMaps(mipmaps2[thisBuffer]));
         t00 = X_Query_perf_counter();
         {
-            sampleDescriptors_openCL_waitfor(thisBuffer, 0, 0, 0, mipEnd, resampledDescriptors);
-            for (int i = mipEnd; i >= 0; i--)
+            sampleDescriptors_openCL_waitfor(thisBuffer, 0, 0, 0, mipLevels, resampledDescriptors);
+            for (int i = mipLevels-1; i >= 0; i--)
                 for (int j = (int)keyPoints.size() - 1; j >= 0; j--) 
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS))
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
-            uploadDescriptors_openCL(thisBuffer, 0, mipEnd, searchForDescriptors);
+            uploadDescriptors_openCL(thisBuffer, 0, mipLevels, searchForDescriptors);
         }
-        refineKeyPoints_openCL(thisBuffer, 0,0,0, (int)keyPoints.size(), mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(thisBuffer, 0,0,0, (int)keyPoints.size(), mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         refineKeyPoints_openCL_waitfor(lastBuffer, 0, keyPoints, errors);
         long long t1 = X_Query_perf_counter();
 
@@ -193,7 +193,7 @@ int main(int argc, char** argv)
         t2 = X_Query_perf_counter();
         const bool resample = true;
         if (resample && (!mipmaps2[thisBuffer].empty())) {
-            sampleDescriptors_openCL(lastBuffer, 0, 0, 0, mipEnd, 1.f, MIPSCALE);
+            sampleDescriptors_openCL(lastBuffer, 0, 0, 0, mipLevels, 1.f, MIPSCALE);
         }
         t3 = X_Query_perf_counter();
     }

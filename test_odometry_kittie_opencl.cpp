@@ -79,7 +79,7 @@ std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
 
 std::vector<std::vector<Descriptor>> d1;
 
-void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Point2f>& points2, vector<uchar>& status, std::vector<cv::Mat>& mips1, std::vector<cv::Mat>& mips2, int mipEnd) {
+void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Point2f>& points2, vector<uchar>& status, std::vector<cv::Mat>& mips1, std::vector<cv::Mat>& mips2, int mipLevels) {
 
 #ifdef KLT
     //this function automatically gets rid of points for which tracking fails
@@ -118,10 +118,10 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
         }
         uploadKeyPoints_openCL(p);
         uploadMipMaps_openCL(mipMaps(mips1));
-        sampleDescriptors_openCL(mipEnd, d1, 1.f, MIPSCALE);
-        uploadDescriptors_openCL(mipEnd, d1);
+        sampleDescriptors_openCL(mipLevels, d1, 1.f, MIPSCALE);
+        uploadDescriptors_openCL(mipLevels, d1);
         uploadMipMaps_openCL(mipMaps(mips2));
-        refineKeyPoints_openCL(p, e, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(p, e, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         points2.resize(points1.size());
         for (int i = 0; i < points1.size(); i++) {
             points2[i].x = p[i].x;
@@ -144,7 +144,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
 }
 
 
-void featureDetection(Mat img_1, vector<Point2f>& points1, std::vector<cv::Mat> &mips, int mipEnd) {
+void featureDetection(Mat img_1, vector<Point2f>& points1, std::vector<cv::Mat> &mips, int mipLevels) {
     vector<cv::KeyPoint> keypoints_1;
     int fast_threshold = 20;
     bool nonmaxSuppression = true;

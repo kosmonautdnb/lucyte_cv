@@ -142,7 +142,7 @@ int main(int argc, char** argv)
 
     cv::Mat mat1 = loadImage(firstFrame);
     mipmaps1 = mipMaps(mat1);
-    int mipEnd = (int)(floorf(MIPEND * (float)(mipmaps1.size() - 1)));
+    int mipLevels = (int)(floorf(MIPEND * (float)mipmaps1.size()));
 
     std::vector<KeyPoint> keyPoints;
     std::vector<float> errors;
@@ -155,7 +155,7 @@ int main(int argc, char** argv)
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     searchForDescriptors.resize(mipmaps1.size());
-    for (int i = mipEnd; i >= 0; i--) {
+    for (int i = mipLevels-1; i >= 0; i--) {
         const float mipScale = powf(MIPSCALE, float(i));
         const float descriptorScale = 1.f / mipScale;
         const int width = mipmaps1[i].cols;
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
             for (int j = (int)keyPoints.size() - 1; j >= 0; j--) {
                 //KeyPoint kp = { mipmaps2[0].cols * 0.5f, mipmaps2[0].rows * 0.5f };
                 KeyPoint kp = keyPoints[j];
-                for (int i = mipEnd; i >= 0; i--) {
+                for (int i = mipLevels-1; i >= 0; i--) {
                     const int width = mipmaps2[i].cols;
                     const int height = mipmaps2[i].rows;
                     for (int k = 0; k < STEPCOUNT; k++) {
@@ -259,7 +259,7 @@ int main(int argc, char** argv)
 
         const bool resample = true;
         if (resample) {
-            for (int i = mipEnd; i >= 0; i--) {
+            for (int i = mipLevels-1; i >= 0; i--) {
                 const float mipScale = powf(MIPSCALE, float(i));
                 const float descriptorScale = 1.f / mipScale;
                 const int width = mipmaps2[i].cols;

@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     if (outputVideo) video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), stereoOutputVideoFrameRate / double(stereoFrameStep), cv::Size(mat1.cols * 2, mat1.rows * 2), true);
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(mipMaps(mipmaps1));
-    int mipEnd = (int)floorf(MIPEND * (float)(mipmaps1.size() - 1));
+    int mipLevels = (int)floorf(MIPEND * (float)mipmaps1.size());
 
     std::vector<KeyPoint> keyPointsLeft;
     std::vector<float> errorsLeft;
@@ -185,12 +185,12 @@ int main(int argc, char** argv)
     uploadKeyPoints_openCL(keyPointsLeft);
 
     std::vector<std::vector<Descriptor>> searchForDescriptorsLeft;
-    sampleDescriptors_openCL(mipEnd, searchForDescriptorsLeft, 1.f, MIPSCALE);
-    uploadDescriptors_openCL(mipEnd, searchForDescriptorsLeft);
+    sampleDescriptors_openCL(mipLevels, searchForDescriptorsLeft, 1.f, MIPSCALE);
+    uploadDescriptors_openCL(mipLevels, searchForDescriptorsLeft);
     uploadMipMaps_openCL(mipMaps(mipmaps3));
-    refineKeyPoints_openCL(keyPointsRight, errorsRight, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(keyPointsRight, errorsRight, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     uploadMipMaps_openCL(mipMaps(mipmaps2));
-    refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     for (int steps = stereoFirstFrame+1; steps <= stereoLastFrame; steps += stereoFrameStep) {
         std::vector<KeyPoint> lastFrameKeyPointsLeft = keyPointsLeft;
@@ -205,9 +205,9 @@ int main(int argc, char** argv)
         mipmaps3 = mipMaps(mat3);
 
         uploadMipMaps_openCL(mipMaps(mipmaps3));
-        refineKeyPoints_openCL(keyPointsRight, errorsRight, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPointsRight, errorsRight, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         uploadMipMaps_openCL(mipMaps(mipmaps2));
-        refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
         cv::Mat v = output("keypoints", mat2, mat3, keyPointsLeft, errorsLeft, lastFrameKeyPointsLeft, lastFrameErrorsLeft,
             keyPointsRight, errorsRight, lastFrameKeyPointsRight, lastFrameErrorsRight);
@@ -243,12 +243,12 @@ int main(int argc, char** argv)
         const bool resample = true;
         if (resample) {
             std::vector<std::vector<Descriptor>> resampledDescriptors;
-            sampleDescriptors_openCL(mipEnd, resampledDescriptors, 1.f, MIPSCALE);
-            for (int i = mipEnd; i >= 0; i--)
+            sampleDescriptors_openCL(mipLevels, resampledDescriptors, 1.f, MIPSCALE);
+            for (int i = mipLevels-1; i >= 0; i--)
                 for (int j = (int)keyPointsLeft.size() - 1; j >= 0; j--)
                     if ((!RESAMPLEONVARIANCE) || (errorsLeft[j] < RESAMPLEONVARIANCERADIUS))
                         searchForDescriptorsLeft[i][j] = resampledDescriptors[i][j];
-            uploadDescriptors_openCL(mipEnd, searchForDescriptorsLeft);
+            uploadDescriptors_openCL(mipLevels, searchForDescriptorsLeft);
         }
     }
 

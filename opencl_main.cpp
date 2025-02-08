@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     if (outputVideo) video = cv::VideoWriter(outputVideoFileName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), outputVideoFrameRate / double(frameStep), cv::Size(mat1.cols, mat1.rows), true);
     mipmaps1 = mipMaps(mat1);
     uploadMipMaps_openCL(mipMaps(mipmaps1));
-    int mipEnd = (int)(floorf(MIPEND * (mipmaps1.size() - 1)));
+    int mipLevels = (int)floorf(MIPEND * mipmaps1.size());
 
     std::vector<KeyPoint> keyPoints;
     std::vector<float> errors;
@@ -109,9 +109,9 @@ int main(int argc, char** argv)
     uploadKeyPoints_openCL(keyPoints);
 
     std::vector<std::vector<Descriptor>> searchForDescriptors;
-    sampleDescriptors_openCL(mipEnd, searchForDescriptors, 1.f, MIPSCALE);
-    uploadDescriptors_openCL(mipEnd, searchForDescriptors);
-    refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    sampleDescriptors_openCL(mipLevels, searchForDescriptors, 1.f, MIPSCALE);
+    uploadDescriptors_openCL(mipLevels, searchForDescriptors);
+    refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     long long t0 = X_Query_perf_counter();
     long long t2 = X_Query_perf_counter();
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        refineKeyPoints_openCL(keyPoints, errors, mipEnd, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = X_Query_perf_counter();
 
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);
@@ -167,12 +167,12 @@ int main(int argc, char** argv)
         const bool resample = true;
         if (resample) {
             std::vector<std::vector<Descriptor>> resampledDescriptors;
-            sampleDescriptors_openCL(mipEnd, resampledDescriptors, 1.f, MIPSCALE);
-            for (int i = mipEnd; i >= 0; i--)
+            sampleDescriptors_openCL(mipLevels, resampledDescriptors, 1.f, MIPSCALE);
+            for (int i = mipLevels-1; i >= 0; i--)
                 for (int j = (int)keyPoints.size() - 1; j >= 0; j--)
                     if ((!RESAMPLEONVARIANCE) || (errors[j] < RESAMPLEONVARIANCERADIUS))
                         searchForDescriptors[i][j] = resampledDescriptors[i][j];
-            uploadDescriptors_openCL(mipEnd, searchForDescriptors);
+            uploadDescriptors_openCL(mipLevels, searchForDescriptors);
         }
         t3 = X_Query_perf_counter();
     }
