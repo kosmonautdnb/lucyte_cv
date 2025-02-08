@@ -39,8 +39,7 @@ static int openGLDescriptorShapeTextureHeight = 0;
 static GLuint openGLMipMaps[MIPMAPIDCOUNT] = { 0 };
 static int openGLMipMapsTextureWidth[MIPMAPIDCOUNT] = { 0 };
 static int openGLMipMapsTextureHeight[MIPMAPIDCOUNT] = { 0 };
-static GLuint openGLKeyPointsX[KEYPOINTIDCOUNT] = { 0 };
-static GLuint openGLKeyPointsY[KEYPOINTIDCOUNT] = { 0 };
+static GLuint openGLKeyPoints[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointsTextureWidth[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointsTextureHeight[KEYPOINTIDCOUNT] = { 0 };
 static int openGLKeyPointCount[KEYPOINTIDCOUNT] = { 0 };
@@ -61,181 +60,179 @@ static GLuint openGLProgram_sampleDescriptors = 0;
 static GLuint openGLProgram_refineKeyPoints = 0;
 static GLuint openGLProgram_displayMipMap = 0;
 #define SHARED_SHADER_FUNCTIONS ""\
-"vec2 t2d_nearest(sampler2D t1, sampler2D t2, int x, int y, int width, int height)\n"\
+"vec2 t2d_nearest(sampler2D t, int x, int y, int width, int height)\n"\
 "{\n"\
 "   vec2 k = vec2((float(x)+0.25)/float(width),(float(y)+0.25)/float(height));\n"\
-"   return vec2(textureLod(t1,k,0.0).x,textureLod(t2,k,0.0).x);\n"\
+"   return textureLod(t,k,0.0).xy;\n"\
 "}\n"
 const std::string sampleDescriptorProgram = ""
-"in vec2 p;\n"
-"out uvec4 frag_color;\n"
-"uniform int texWidthDescriptorShape;\n"
-"uniform int texHeightDescriptorShape;\n"
-"uniform int texWidthMipMap;\n"
-"uniform int texHeightMipMap;\n"
-"uniform int texWidthKeyPoints;\n"
-"uniform int texHeightKeyPoints;\n"
-"uniform int texWidthKeyPoints2;\n"
-"uniform int texHeightKeyPoints2;\n"
-"uniform int DESCRIPTORSIZE;\n"
-"uniform int mipEnd;\n"
-"uniform int keyPointCount;\n"
-"uniform float MIPSCALE;\n"
-"uniform float DESCRIPTORSCALE2;\n"
-"uniform sampler2D mipMap;\n"
-"uniform sampler2D keyPointsx;\n"
-"uniform sampler2D keyPointsy;\n"
-SHARED_SHADER_FUNCTIONS
-"void main()\n"
-"{\n"
-"       uint b[4]; b[0]=uint(0); b[1]=uint(0); b[2]=uint(0); b[3]=uint(0);\n"
-"       vec2 sc = vec2(1.0/float(texWidthMipMap),1.0/float(texHeightMipMap));\n"
-"       int txx = int(floor(p.x+0.25));\n"
-"       int txy = int(floor(p.y+0.25));\n"
-"       int t = txx + txy * texWidthKeyPoints;\n" 
-"       if (t < keyPointCount*(mipEnd+1)) {"
-"           int keyPointId = t % keyPointCount;\n"
-"           int mipLevel = t / keyPointCount;\n"
-"           vec2 kp = t2d_nearest(keyPointsx,keyPointsy,keyPointId % texWidthKeyPoints2,keyPointId / texWidthKeyPoints2,texWidthKeyPoints2,texHeightKeyPoints2);\n"
-"           float mipScale = pow(MIPSCALE,float(mipLevel));\n"
-"           float descriptorScale = DESCRIPTORSCALE2/mipScale;\n"
-"           float m = float(mipLevel);\n"
-"           for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
-"           {\n"
-"               float l1 = textureLod(mipMap, (kp + descriptors12[i].xy * descriptorScale) * sc, m).x;\n"
-"               float l2 = textureLod(mipMap, (kp + descriptors12[i].zw * descriptorScale) * sc, m).x;\n"
-"               b[i>>5] += (l2 < l1) ? uint(1)<<uint(i & 31) : uint(0);\n"
-"           }\n"
-"       }\n"
-"       frag_color = uvec4(b[0],b[1],b[2],b[3]);\n"
-"}\n"
-"\n";
+                                            "in vec2 p;\n"
+                                            "out uvec4 frag_color;\n"
+                                            "uniform int texWidthDescriptorShape;\n"
+                                            "uniform int texHeightDescriptorShape;\n"
+                                            "uniform int texWidthMipMap;\n"
+                                            "uniform int texHeightMipMap;\n"
+                                            "uniform int texWidthKeyPoints;\n"
+                                            "uniform int texHeightKeyPoints;\n"
+                                            "uniform int texWidthKeyPoints2;\n"
+                                            "uniform int texHeightKeyPoints2;\n"
+                                            "uniform int DESCRIPTORSIZE;\n"
+                                            "uniform int mipEnd;\n"
+                                            "uniform int keyPointCount;\n"
+                                            "uniform float MIPSCALE;\n"
+                                            "uniform float DESCRIPTORSCALE2;\n"
+                                            "uniform sampler2D mipMap;\n"
+                                            "uniform sampler2D keyPoints;\n"
+                                            SHARED_SHADER_FUNCTIONS
+                                            "void main()\n"
+                                            "{\n"
+                                            "       uint b[4]; b[0]=uint(0); b[1]=uint(0); b[2]=uint(0); b[3]=uint(0);\n"
+                                            "       vec2 sc = vec2(1.0/float(texWidthMipMap),1.0/float(texHeightMipMap));\n"
+                                            "       int txx = int(floor(p.x+0.25));\n"
+                                            "       int txy = int(floor(p.y+0.25));\n"
+                                            "       int t = txx + txy * texWidthKeyPoints;\n"
+                                            "       if (t < keyPointCount*(mipEnd+1)) {"
+                                            "           int keyPointId = t % keyPointCount;\n"
+                                            "           int mipLevel = t / keyPointCount;\n"
+                                            "           vec2 kp = t2d_nearest(keyPoints,keyPointId % texWidthKeyPoints2,keyPointId / texWidthKeyPoints2,texWidthKeyPoints2,texHeightKeyPoints2);\n"
+                                            "           float mipScale = pow(MIPSCALE,float(mipLevel));\n"
+                                            "           float descriptorScale = DESCRIPTORSCALE2/mipScale;\n"
+                                            "           float m = float(mipLevel);\n"
+                                            "           for(int i = 0; i < DESCRIPTORSIZE; i++)\n"
+                                            "           {\n"
+                                            "               float l1 = textureLod(mipMap, (kp + descriptors12[i].xy * descriptorScale) * sc, m).x;\n"
+                                            "               float l2 = textureLod(mipMap, (kp + descriptors12[i].zw * descriptorScale) * sc, m).x;\n"
+                                            "               b[i>>5] += (l2 < l1) ? uint(1)<<uint(i & 31) : uint(0);\n"
+                                            "           }\n"
+                                            "       }\n"
+                                            "       frag_color = uvec4(b[0],b[1],b[2],b[3]);\n"
+                                            "}\n"
+                                            "\n";
 const std::string refineKeyPointsProgram = ""\
 "in vec2 p;\n"
-"out vec4 frag_color;\n"
-"uniform sampler2D mipMap;\n"
-"uniform int mipMapWidth;\n"
-"uniform int mipMapHeight;\n"
-"uniform usampler2D descriptors;\n"
-"uniform int texWidthDescriptorShape;\n"
-"uniform int texHeightDescriptorShape;\n"
-"uniform int texWidthDescriptors;\n"
-"uniform int texHeightDescriptors;\n"
-"uniform int DESCRIPTORSIZE;\n"
-"uniform int stepping;\n"
-"uniform int mipEnd;\n"
-"uniform int STEPCOUNT;\n"
-"uniform float MIPSCALE;\n"
-"uniform float STEPSIZE;\n"
-"uniform float SCALEINVARIANCE;\n"
-"uniform float ROTATIONINVARIANCE;\n"
-"uniform int texWidthKeyPoints;\n"
-"uniform int texHeightKeyPoints;\n"
-"uniform sampler2D keyPointsx;\n"
-"uniform sampler2D keyPointsy;\n"
-"uniform int keyPointCount;\n"
-"float mipScale;\n"
-"float descriptorScale;\n"
-"float angle;\n"
-"float step;\n"
-SHARED_SHADER_FUNCTIONS
-"float randomLike(int index) {\n"
-"    int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);\n"
-"    b = b ^ (b << 8) ^ (b * 23);\n"
-"    b >>= 3;\n"
-"    return float(b & 0xffff) / float(0x10000);\n"
-"}\n"
-"vec2 refineKeyPoint(sampler2D s, vec2 kp, float m, uvec4 descriptor) {\n"
-"   vec2 sc = vec2(1.0/float(mipMapWidth),1.0/float(mipMapHeight));\n"
-"   vec2 kp2 = kp * sc;\n"
-"   float sina = sin(angle);\n"
-"   float cosa = cos(angle);\n"
-"   vec2 cosid = vec2(cosa, sina) * descriptorScale * sc.x;\n"
-"   vec2 nsicd = vec2(-sina, cosa) * descriptorScale * sc.y;\n"
-"   vec2 gdx = vec2(sc.x / mipScale,0.0);\n"
-"   vec2 gdy = vec2(0.0, sc.y / mipScale);\n"
-"   vec2 xya = vec2(0.0,0.0);\n"
-"   uint dBits[4];\n"
-"   dBits[0] = descriptor.x;"
-"   dBits[1] = descriptor.y;"
-"   dBits[2] = descriptor.z;"
-"   dBits[3] = descriptor.w;"
-"   for (int b = 0; b < DESCRIPTORSIZE; b++) {\n"
-"       vec4 dp = descriptors12[b];\n"
-"       vec2 d1 = kp2 + vec2(dot(cosid,dp.xy), dot(nsicd,dp.xy));\n"
-"       vec2 d2 = kp2 + vec2(dot(cosid,dp.zw), dot(nsicd,dp.zw));\n"
-"       vec2 df = vec2(textureLod(s, d1, m).x,textureLod(s, d2, m).x);\n"
-"       uint b2 = df.y < df.x ? uint(1) : uint(0);\n"
-"       if (b2 != ((dBits[b>>5]>>uint(b & 31)) & uint(1)) ) {\n"
-"           vec2 gr = vec2( textureLod(s, d2 - gdx, m).x - textureLod(s, d2 + gdx, m).x , textureLod(s, d2 - gdy, m).x - textureLod(s, d2 + gdy, m).x )\n"
-"                    -vec2( textureLod(s, d1 - gdx, m).x - textureLod(s, d1 + gdx, m).x , textureLod(s, d1 - gdy, m).x - textureLod(s, d1 + gdy, m).x );\n"
-"           if (b2 != uint(0)) gr = -gr;\n"
-"           if (stepping != 0) gr = vec2((gr.x == 0.0) ? 0.0 : (gr.x > 0.0) ? 1.0 : -1.0, (gr.y == 0.0) ? 0.0 : (gr.y > 0.0) ? 1.0 : -1.0);\n"
-"           xya += gr * distance(d2,d1);\n"
-"       }\n"
-"   }\n"
-"   float l = length(xya);\n"
-"   if (l != 0.0) xya *= step / mipScale / l;\n"
-"   return kp + xya;\n"
-"}\n"
-"void main()\n"
-"{\n"
-"   int txx = int(floor(p.x+0.25));\n"
-"   int txy = int(floor(p.y+0.25));\n"
-"   int descriptorNr = txx + txy * texWidthKeyPoints;\n"
-"   for(int v = 0; v < 2; v++) {\n"
-"       vec2 kp = t2d_nearest(keyPointsx,keyPointsy,txx,txy,texWidthKeyPoints,texHeightKeyPoints);\n"
-"       for(int i = mipEnd; i >= 0; i--) {\n"
-"           int descriptorNr2 = descriptorNr + i * keyPointCount;\n"
-"           int descriptorNrX = descriptorNr2 % texWidthDescriptors;\n"
-"           int descriptorNrY = descriptorNr2 / texWidthDescriptors;\n"
-"           vec2 descriptorNrXY = vec2(float(descriptorNrX) + 0.25,float(descriptorNrY) + 0.25) / vec2(float(texWidthDescriptors),float(texHeightDescriptors));\n"
-"           uvec4 descriptorNeeded = textureLod( descriptors, descriptorNrXY, 0.0);\n"
-"           for(int k = 0; k < STEPCOUNT; k++) {\n"
-"               mipScale = pow(MIPSCALE, float(i));\n"
-"               descriptorScale = 1.0 / mipScale;\n"
-"               step = STEPSIZE * descriptorScale;\n"
-"               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.0 - SCALEINVARIANCE;\n"
-"               angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.0 - ROTATIONINVARIANCE) / 360.0 * 2.0 * 3.1415927;\n"
-"               kp = refineKeyPoint( mipMap, kp, float(i), descriptorNeeded);\n"
-"           }\n"
-"       }\n"
-"       switch(v) {\n"
-"           case 0: frag_color.xy = kp; break;\n"
-"           case 1: frag_color.zw = kp; break;\n"
-"       }\n"
-"   }\n"
-"}\n"
-"\n";
+                                           "out vec4 frag_color;\n"
+                                           "uniform sampler2D mipMap;\n"
+                                           "uniform int mipMapWidth;\n"
+                                           "uniform int mipMapHeight;\n"
+                                           "uniform usampler2D descriptors;\n"
+                                           "uniform int texWidthDescriptorShape;\n"
+                                           "uniform int texHeightDescriptorShape;\n"
+                                           "uniform int texWidthDescriptors;\n"
+                                           "uniform int texHeightDescriptors;\n"
+                                           "uniform int DESCRIPTORSIZE;\n"
+                                           "uniform int stepping;\n"
+                                           "uniform int mipEnd;\n"
+                                           "uniform int STEPCOUNT;\n"
+                                           "uniform float MIPSCALE;\n"
+                                           "uniform float STEPSIZE;\n"
+                                           "uniform float SCALEINVARIANCE;\n"
+                                           "uniform float ROTATIONINVARIANCE;\n"
+                                           "uniform int texWidthKeyPoints;\n"
+                                           "uniform int texHeightKeyPoints;\n"
+                                           "uniform sampler2D keyPoints;\n"
+                                           "uniform int keyPointCount;\n"
+                                           "float mipScale;\n"
+                                           "float descriptorScale;\n"
+                                           "float angle;\n"
+                                           "float step;\n"
+                                           SHARED_SHADER_FUNCTIONS
+                                           "float randomLike(int index) {\n"
+                                           "    int b = index ^ (index * 11) ^ (index / 17) ^ (index >> 16) ^ (index * 1877) ^ (index * 8332) ^ (index * 173);\n"
+                                           "    b = b ^ (b << 8) ^ (b * 23);\n"
+                                           "    b >>= 3;\n"
+                                           "    return float(b & 0xffff) / float(0x10000);\n"
+                                           "}\n"
+                                           "vec2 refineKeyPoint(sampler2D s, vec2 kp, float m, uvec4 descriptor) {\n"
+                                           "   vec2 sc = vec2(1.0/float(mipMapWidth),1.0/float(mipMapHeight));\n"
+                                           "   vec2 kp2 = kp * sc;\n"
+                                           "   float sina = sin(angle);\n"
+                                           "   float cosa = cos(angle);\n"
+                                           "   vec2 cosid = vec2(cosa, sina) * descriptorScale * sc.x;\n"
+                                           "   vec2 nsicd = vec2(-sina, cosa) * descriptorScale * sc.y;\n"
+                                           "   vec2 gdx = vec2(sc.x / mipScale,0.0);\n"
+                                           "   vec2 gdy = vec2(0.0, sc.y / mipScale);\n"
+                                           "   vec2 xya = vec2(0.0,0.0);\n"
+                                           "   uint dBits[4];\n"
+                                           "   dBits[0] = descriptor.x;"
+                                           "   dBits[1] = descriptor.y;"
+                                           "   dBits[2] = descriptor.z;"
+                                           "   dBits[3] = descriptor.w;"
+                                           "   for (int b = 0; b < DESCRIPTORSIZE; b++) {\n"
+                                           "       vec4 dp = descriptors12[b];\n"
+                                           "       vec2 d1 = kp2 + vec2(dot(cosid,dp.xy), dot(nsicd,dp.xy));\n"
+                                           "       vec2 d2 = kp2 + vec2(dot(cosid,dp.zw), dot(nsicd,dp.zw));\n"
+                                           "       vec2 df = vec2(textureLod(s, d1, m).x,textureLod(s, d2, m).x);\n"
+                                           "       uint b2 = df.y < df.x ? uint(1) : uint(0);\n"
+                                           "       if (b2 != ((dBits[b>>5]>>uint(b & 31)) & uint(1)) ) {\n"
+                                           "           vec2 gr = vec2( textureLod(s, d2 - gdx, m).x - textureLod(s, d2 + gdx, m).x , textureLod(s, d2 - gdy, m).x - textureLod(s, d2 + gdy, m).x )\n"
+                                           "                    -vec2( textureLod(s, d1 - gdx, m).x - textureLod(s, d1 + gdx, m).x , textureLod(s, d1 - gdy, m).x - textureLod(s, d1 + gdy, m).x );\n"
+                                           "           if (b2 != uint(0)) gr = -gr;\n"
+                                           "           if (stepping != 0) gr = vec2((gr.x == 0.0) ? 0.0 : (gr.x > 0.0) ? 1.0 : -1.0, (gr.y == 0.0) ? 0.0 : (gr.y > 0.0) ? 1.0 : -1.0);\n"
+                                           "           xya += gr * distance(d2,d1);\n"
+                                           "       }\n"
+                                           "   }\n"
+                                           "   float l = length(xya);\n"
+                                           "   if (l != 0.0) xya *= step / mipScale / l;\n"
+                                           "   return kp + xya;\n"
+                                           "}\n"
+                                           "void main()\n"
+                                           "{\n"
+                                           "   int txx = int(floor(p.x+0.25));\n"
+                                           "   int txy = int(floor(p.y+0.25));\n"
+                                           "   int descriptorNr = txx + txy * texWidthKeyPoints;\n"
+                                           "   for(int v = 0; v < 2; v++) {\n"
+                                           "       vec2 kp = t2d_nearest(keyPoints,txx,txy,texWidthKeyPoints,texHeightKeyPoints);\n"
+                                           "       for(int i = mipEnd; i >= 0; i--) {\n"
+                                           "           int descriptorNr2 = descriptorNr + i * keyPointCount;\n"
+                                           "           int descriptorNrX = descriptorNr2 % texWidthDescriptors;\n"
+                                           "           int descriptorNrY = descriptorNr2 / texWidthDescriptors;\n"
+                                           "           vec2 descriptorNrXY = vec2(float(descriptorNrX) + 0.25,float(descriptorNrY) + 0.25) / vec2(float(texWidthDescriptors),float(texHeightDescriptors));\n"
+                                           "           uvec4 descriptorNeeded = textureLod( descriptors, descriptorNrXY, 0.0);\n"
+                                           "           for(int k = 0; k < STEPCOUNT; k++) {\n"
+                                           "               mipScale = pow(MIPSCALE, float(i));\n"
+                                           "               descriptorScale = 1.0 / mipScale;\n"
+                                           "               step = STEPSIZE * descriptorScale;\n"
+                                           "               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.0 - SCALEINVARIANCE;\n"
+                                           "               angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.0 - ROTATIONINVARIANCE) / 360.0 * 2.0 * 3.1415927;\n"
+                                           "               kp = refineKeyPoint( mipMap, kp, float(i), descriptorNeeded);\n"
+                                           "           }\n"
+                                           "       }\n"
+                                           "       switch(v) {\n"
+                                           "           case 0: frag_color.xy = kp; break;\n"
+                                           "           case 1: frag_color.zw = kp; break;\n"
+                                           "       }\n"
+                                           "   }\n"
+                                           "}\n"
+                                           "\n";
 const std::string displayMipMapProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
-"in vec2 p;\n"
-"out vec4 frag_color;\n"
-"uniform sampler2D mipMap;\n"
-"uniform int mipLevel;\n"
-"uniform int mipMapWidth,mipMapHeight;\n"
-"void main()\n"
-"{\n"
-"   vec2 sc = vec2(1.0/float(mipMapWidth),1.0/float(mipMapHeight));\n"
-"   vec2 xy = p * sc;\n"
-"   xy.y = 1.0 - xy.y;\n"
-"   float mip = textureLod( mipMap, xy, float(mipLevel) ).x;\n"
-"   frag_color.x = mip;"
-"   frag_color.y = mip;"
-"   frag_color.z = mip;"
-"   frag_color.w = mip;"
-"}\n"
-"\n";
+                                         "in vec2 p;\n"
+                                         "out vec4 frag_color;\n"
+                                         "uniform sampler2D mipMap;\n"
+                                         "uniform int mipLevel;\n"
+                                         "uniform int mipMapWidth,mipMapHeight;\n"
+                                         "void main()\n"
+                                         "{\n"
+                                         "   vec2 sc = vec2(1.0/float(mipMapWidth),1.0/float(mipMapHeight));\n"
+                                         "   vec2 xy = p * sc;\n"
+                                         "   xy.y = 1.0 - xy.y;\n"
+                                         "   float mip = textureLod( mipMap, xy, float(mipLevel) ).x;\n"
+                                         "   frag_color.x = mip;"
+                                         "   frag_color.y = mip;"
+                                         "   frag_color.z = mip;"
+                                         "   frag_color.w = mip;"
+                                         "}\n"
+                                         "\n";
 const std::string basicProgram = "#version 300 es\nprecision highp float;precision highp int;\n"
-"layout(location = 0) in vec2 pos;\n"
-"uniform int texWidthKeyPoints;\n"
-"uniform int texHeightKeyPoints;\n"
-"out vec2 p;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = vec4(pos.xy, 0.0, 1.0);\n"
-"    p = ((pos.xy + 1.0) * 0.5) * vec2(float(texWidthKeyPoints),float(texHeightKeyPoints));\n"
-"}\n"
-"\n";
+                                 "layout(location = 0) in vec2 pos;\n"
+                                 "uniform int texWidthKeyPoints;\n"
+                                 "uniform int texHeightKeyPoints;\n"
+                                 "out vec2 p;\n"
+                                 "void main()\n"
+                                 "{\n"
+                                 "    gl_Position = vec4(pos.xy, 0.0, 1.0);\n"
+                                 "    p = ((pos.xy + 1.0) * 0.5) * vec2(float(texWidthKeyPoints),float(texHeightKeyPoints));\n"
+                                 "}\n"
+                                 "\n";
 
 void checkGLError();
 void checkShader(GLuint shader);
@@ -297,8 +294,7 @@ void initOpenGL() {
     glGenTextures(MIPMAPIDCOUNT, openGLMipMaps);
     glGenTextures(4, openGLDescriptorShape);
     for (int i = 0; i < KEYPOINTIDCOUNT; i++) {
-        glGenTextures(1, &(openGLKeyPointsX[i]));
-        glGenTextures(1, &(openGLKeyPointsY[i]));
+        glGenTextures(1, &(openGLKeyPoints[i]));
     }
     for (int i = 0; i < DESCRIPTORIDCOUNT; i++) {
         glGenTextures(1, &(openGLDescriptors[i]));
@@ -420,6 +416,16 @@ void upload2DFloatTexture(const GLuint& tex, const float* data, unsigned int wid
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
 
+void upload2DKeyPointsTexture(const GLuint& tex, const KeyPoint* data, unsigned int width, unsigned int height, bool nearest) {
+    glBindTexture(GL_TEXTURE_2D, tex); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, nearest ? GL_NEAREST : GL_LINEAR); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, (int)width, (int)height, 0, GL_RG, GL_FLOAT, data); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
+}
+
 void upload1DFloatTexture(const GLuint& tex, const float* data, unsigned int count, int& width, int& height, bool nearest) {
     width = (int)count;
     height = 1;
@@ -433,6 +439,21 @@ void upload1DFloatTexture(const GLuint& tex, const float* data, unsigned int cou
         return;
     }
     upload2DFloatTexture(tex, data, width, height, nearest);
+}
+
+void upload1DKeyPointsTexture(const GLuint& tex, const KeyPoint* data, unsigned int count, int& width, int& height, bool nearest) {
+    width = (int)count;
+    height = 1;
+    if (width > maxTextureSize) {
+        width = maxTextureSize;
+        height = (int)(count + maxTextureSize - 1) / maxTextureSize;
+        KeyPoint* data2 = new KeyPoint[width * height];
+        memcpy(data2, data, count * sizeof(float));
+        upload2DKeyPointsTexture(tex, data2, width, height, nearest);
+        delete[] data2;
+        return;
+    }
+    upload2DKeyPointsTexture(tex, data, width, height, nearest);
 }
 
 void upload2Duint324Texture(const GLuint& tex, const unsigned int* data, unsigned int width, unsigned int height, bool nearest) {
@@ -485,14 +506,7 @@ static std::vector<float> kpx;
 static std::vector<float> kpy;
 
 void uploadKeyPoints_openGL(int keyPointsId, const std::vector<KeyPoint>& keyPoints) {
-    kpx.resize(keyPoints.size());
-    kpy.resize(keyPoints.size());
-    for (int i = int(keyPoints.size()) - 1; i >= 0; i--) {
-        kpx[i] = keyPoints[i].x;
-        kpy[i] = keyPoints[i].y;
-    }
-    upload1DFloatTexture(openGLKeyPointsX[keyPointsId], &(kpx[0]), (unsigned int)keyPoints.size(), openGLKeyPointsTextureWidth[keyPointsId], openGLKeyPointsTextureHeight[keyPointsId], true);
-    upload1DFloatTexture(openGLKeyPointsY[keyPointsId], &(kpy[0]), (unsigned int)keyPoints.size(), openGLKeyPointsTextureWidth[keyPointsId], openGLKeyPointsTextureHeight[keyPointsId], true);
+    upload1DKeyPointsTexture(openGLKeyPoints[keyPointsId], &(keyPoints[0]), (unsigned int)keyPoints.size(), openGLKeyPointsTextureWidth[keyPointsId], openGLKeyPointsTextureHeight[keyPointsId], true);
     openGLKeyPointCount[keyPointsId] = (int)keyPoints.size();
 }
 
@@ -580,7 +594,7 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     GLint sampleDescriptors_location_mipMap = glGetUniformLocation(openGLProgram_sampleDescriptors, "mipMap"); checkGLError();
     GLint sampleDescriptors_location_keyPointsx = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsx"); checkGLError();
     GLint sampleDescriptors_location_keyPointsy = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsy"); checkGLError();
-    
+
     const int descriptorCount = openGLKeyPointCount[keyPointsId] * (mipEnd + 1);
     int descriptorX = descriptorCount;
     int descriptorY = 1;
@@ -610,14 +624,11 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     glUniform1i(sampleDescriptors_location_keyPointCount, openGLKeyPointCount[keyPointsId]); checkGLError();
 
     glActiveTexture(GL_TEXTURE0); checkGLError();
-    glBindTexture(GL_TEXTURE_2D, openGLKeyPointsX[keyPointsId]); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLKeyPoints[keyPointsId]); checkGLError();
     glUniform1i(sampleDescriptors_location_keyPointsx, 0); checkGLError();
     glActiveTexture(GL_TEXTURE1); checkGLError();
-    glBindTexture(GL_TEXTURE_2D, openGLKeyPointsY[keyPointsId]); checkGLError();
-    glUniform1i(sampleDescriptors_location_keyPointsy, 1); checkGLError();
-    glActiveTexture(GL_TEXTURE2); checkGLError();
     glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
-    glUniform1i(sampleDescriptors_location_mipMap, 2); checkGLError();
+    glUniform1i(sampleDescriptors_location_mipMap, 1); checkGLError();
 
     glBindFramebuffer(GL_FRAMEBUFFER, openGLDescriptorRenderTarget[keyPointsId].first); checkGLError();
     glViewport(0, 0, descriptorX, descriptorY);
@@ -699,17 +710,14 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     glUniform1i(refineKeyPoints_location_keyPointCount, keyPointCount); checkGLError();
 
     glActiveTexture(GL_TEXTURE0); checkGLError();
-    glBindTexture(GL_TEXTURE_2D, openGLKeyPointsX[keyPointsId]); checkGLError();
+    glBindTexture(GL_TEXTURE_2D, openGLKeyPoints[keyPointsId]); checkGLError();
     glUniform1i(refineKeyPoints_location_keyPointsx, 0); checkGLError();
     glActiveTexture(GL_TEXTURE1); checkGLError();
-    glBindTexture(GL_TEXTURE_2D, openGLKeyPointsY[keyPointsId]); checkGLError();
-    glUniform1i(refineKeyPoints_location_keyPointsy, 1); checkGLError();
-    glActiveTexture(GL_TEXTURE2); checkGLError();
     glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
-    glUniform1i(refineKeyPoints_location_mipMap, 2); checkGLError();
-    glActiveTexture(GL_TEXTURE3); checkGLError();
+    glUniform1i(refineKeyPoints_location_mipMap, 1); checkGLError();
+    glActiveTexture(GL_TEXTURE2); checkGLError();
     glBindTexture(GL_TEXTURE_2D, openGLDescriptors[descriptorsId]); checkGLError();
-    glUniform1i(refineKeyPoints_location_descriptors, 3); checkGLError();
+    glUniform1i(refineKeyPoints_location_descriptors, 2); checkGLError();
 
     glBindFramebuffer(GL_FRAMEBUFFER, openGLKeyPointsRenderTarget[keyPointsId].first); checkGLError();
     const int w = (int)openGLKeyPointsRenderTargetWidth[keyPointsId];
