@@ -54,8 +54,8 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     const float cosa = cosf(angle);
     const float sinad = (sina * descriptorSize * 1024.f);
     const float cosad = (cosa * descriptorSize * 1024.f);
-    const int gdxx = int(cosa * 1024.f); const int gdxy = int(sina * 1024.f);
-    const int gdyx = int(-sina * 1024.f); const int gdyy = int(cosa * 1024.f);
+    const int gdxx = 1024; const int gdxy = 0;
+    const int gdyx = 0; const int gdyy = 1024;
     float xa = 0;
     float ya = 0;
     for (int b = 0; b < DESCRIPTORSIZE; ++b) {
@@ -97,8 +97,8 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
     }
     const float stepSize = descriptorScale * step;
     KeyPoint r;
-    r.x = kp.x + (cosa * xa + sina * ya) * stepSize;
-    r.y = kp.y + (-sina * xa + cosa * ya) * stepSize;
+    r.x = kp.x + xa * stepSize;
+    r.y = kp.y + ya * stepSize;
     const bool clipping = false; if (clipping) {
         const float w = floorf(float(width) / mipScale);
         const float h = floorf(float(height) / mipScale);
