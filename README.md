@@ -23,4 +23,4 @@ Stereo Vision Disparity/Depth: https://www.youtube.com/watch?v=sh3JB8mnVaY
 
 Lucyte with KITTIE benchmark (speed is read from file): https://www.youtube.com/watch?v=C-9sCdJsaTE 
 
-Lucyte on Android: https://www.youtube.com/shorts/5h3pg95hoFU
+Lucyte on Android: https://www.youtube.com/watch?v=mTa0ZqoGJMk
