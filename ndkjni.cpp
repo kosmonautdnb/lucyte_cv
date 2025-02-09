@@ -142,7 +142,7 @@ Java_com_example_lucyteandroid_MyGLRenderer_refineKeyPoints(JNIEnv *env, jobject
                                                             jint key_points_id, jint descriptors_id,
                                                             jint mipmaps_id, jint mip_levels,
                                                             jint key_point_count, jint uint32_count,
-                                                            jint stepcount, jboolean stepping,
+                                                            jint stepcount,
                                                             jfloat mipscale, jfloat stepsize,
                                                             jfloat scaleinvariance,
                                                             jfloat rotationinvariance,
@@ -151,7 +151,7 @@ Java_com_example_lucyteandroid_MyGLRenderer_refineKeyPoints(JNIEnv *env, jobject
                                                             jfloatArray errors) {
     std::vector<KeyPoint> destKeyPoints;
     std::vector<float> destErrors;
-    refineKeyPoints_openGL(key_points_id, descriptors_id, mipmaps_id, key_point_count, mip_levels, stepcount, stepping, mipscale, stepsize, scaleinvariance, rotationinvariance, destKeyPoints, destErrors);
+    refineKeyPoints_openGL(key_points_id, descriptors_id, mipmaps_id, key_point_count, mip_levels, stepcount, mipscale, stepsize, scaleinvariance, rotationinvariance, destKeyPoints, destErrors);
     jboolean isCopy;
     jfloat* kpx = env->GetFloatArrayElements(key_points_x, &isCopy);
     jfloat* kpy = env->GetFloatArrayElements(key_points_y, &isCopy);

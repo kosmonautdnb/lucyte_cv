@@ -121,7 +121,7 @@ void featureTracking(Mat img_1, Mat img_2, vector<Point2f>& points1, vector<Poin
         sampleDescriptors_openCL(mipLevels, d1, 1.f, MIPSCALE);
         uploadDescriptors_openCL(mipLevels, d1);
         uploadMipMaps_openCL(mipMaps(mips2));
-        refineKeyPoints_openCL(p, e, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(p, e, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         points2.resize(points1.size());
         for (int i = 0; i < points1.size(); i++) {
             points2[i].x = p[i].x;

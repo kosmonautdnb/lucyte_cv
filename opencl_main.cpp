@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     sampleDescriptors_openCL(mipLevels, searchForDescriptors, 1.f, MIPSCALE);
     uploadDescriptors_openCL(mipLevels, searchForDescriptors);
-    refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     long long t0 = X_Query_perf_counter();
     long long t2 = X_Query_perf_counter();
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         long long t1 = X_Query_perf_counter();
 
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);

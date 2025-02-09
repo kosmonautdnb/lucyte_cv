@@ -188,9 +188,9 @@ int main(int argc, char** argv)
     sampleDescriptors_openCL(mipLevels, searchForDescriptorsLeft, 1.f, MIPSCALE);
     uploadDescriptors_openCL(mipLevels, searchForDescriptorsLeft);
     uploadMipMaps_openCL(mipMaps(mipmaps3));
-    refineKeyPoints_openCL(keyPointsRight, errorsRight, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(keyPointsRight, errorsRight, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     uploadMipMaps_openCL(mipMaps(mipmaps2));
-    refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     for (int steps = stereoFirstFrame+1; steps <= stereoLastFrame; steps += stereoFrameStep) {
         std::vector<KeyPoint> lastFrameKeyPointsLeft = keyPointsLeft;
@@ -205,9 +205,9 @@ int main(int argc, char** argv)
         mipmaps3 = mipMaps(mat3);
 
         uploadMipMaps_openCL(mipMaps(mipmaps3));
-        refineKeyPoints_openCL(keyPointsRight, errorsRight, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPointsRight, errorsRight, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
         uploadMipMaps_openCL(mipMaps(mipmaps2));
-        refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPointsLeft, errorsLeft, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
         cv::Mat v = output("keypoints", mat2, mat3, keyPointsLeft, errorsLeft, lastFrameKeyPointsLeft, lastFrameErrorsLeft,
             keyPointsRight, errorsRight, lastFrameKeyPointsRight, lastFrameErrorsRight);

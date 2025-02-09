@@ -46,7 +46,7 @@ float sampleDescriptor(const KeyPoint& kp, Descriptor& d, const unsigned char* s
     return float(h) / float(DESCRIPTORSIZE * 1024);
 }
 
-KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descriptor& toSearch, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const float mipScale) {
+KeyPoint refineKeyPoint(const KeyPoint& kp, const Descriptor& toSearch, const unsigned char* s, const float descriptorScale, const float angle, const float step, const int width, const int height, const float mipScale) {
     const int kp2x = int(floorf(kp.x * mipScale * 1024.f));
     const int kp2y = int(floorf(kp.y * mipScale * 1024.f));
     const float descriptorSize = mipScale * descriptorScale;
@@ -77,10 +77,6 @@ KeyPoint refineKeyPoint(const bool stepping, const KeyPoint& kp, const Descripto
             if (b2 != 0) {
                 gx = -gx;
                 gy = -gy;
-            }
-            if (stepping) {
-                gx = (gx == 0) ? 0 : (gx > 0) ? 1 : -1;
-                gy = (gy == 0) ? 0 : (gy > 0) ? 1 : -1;
             }
             const int dx = (d2x - d1x);
             const int dy = (d2y - d1y);

@@ -167,7 +167,7 @@ int main(int argc, char** argv)
     searchForDescriptors.resize(mipmaps1.size());
     sampleDescriptors_openCL(mipLevels, searchForDescriptors, 1.f, MIPSCALE);
     uploadDescriptors_openCL(mipLevels, searchForDescriptors);
-    refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     cv::Point2f currentPosition = cv::Point2f(0, 0);
     std::vector<cv::Point2f> positions;
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
 
-        refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
         if (cv::waitKey(1) == 27)
             break;

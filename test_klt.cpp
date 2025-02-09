@@ -89,7 +89,7 @@ std::pair<KeyPoint,float> trackPoint(const std::vector<cv::Mat> & mipmapsSource,
                 const float step = STEPSIZE * descriptorScale;
                 descriptorScale *= 1.f + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;
                 const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
-                kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i], mipmapsDest[i].data, descriptorScale, angle, step, width, height, mipScale);
+                kp = refineKeyPoint(kp, searchForDescriptors[i], mipmapsDest[i].data, descriptorScale, angle, step, width, height, mipScale);
             }
         }
         switch (v) {

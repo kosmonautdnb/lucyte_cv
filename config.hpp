@@ -24,7 +24,6 @@ float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
 float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
 int STEPCOUNT = 100;
 float STEPSIZE = 0.002f;
-bool BOOLSTEPPING = false;
 #endif
 
 #if CONFIG == 1
@@ -33,7 +32,6 @@ float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
 float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
 int STEPCOUNT = 25;
 float STEPSIZE = 0.002f;
-bool BOOLSTEPPING = false;
 #endif
 
 #if CONFIG == 2
@@ -42,7 +40,6 @@ float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
 float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
 int STEPCOUNT = 50;
 float STEPSIZE = 0.004f;
-bool BOOLSTEPPING = false;
 #endif
 
 #if CONFIG == 3
@@ -51,7 +48,6 @@ float SCALEINVARIANCE = (0.5f / 2.f); // 0.5 / 2 is good
 float ROTATIONINVARIANCE = (20.f / 2.f); // 45.f / 2 is good you may do 8 separate sampled versions to get full cirlce to 360 degrees
 int STEPCOUNT = 12;
 float STEPSIZE = 0.0035f;
-bool BOOLSTEPPING = false;
 #endif
 
 

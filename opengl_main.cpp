@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     std::vector<std::vector<Descriptor>> searchForDescriptors;
     sampleDescriptors_openGL(0, 0, 0, mipLevels, searchForDescriptors, 1.f, MIPSCALE);
     uploadDescriptors_openGL(0, mipLevels, searchForDescriptors);
-    refineKeyPoints_openGL(0,0,0, (int)keyPoints.size(), mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
+    refineKeyPoints_openGL(0,0,0, (int)keyPoints.size(), mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
 
     long long t0 = X_Query_perf_counter();;
     long long t2 = X_Query_perf_counter();;
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
         std::vector<float> lastFrameErrors = errors;
 
         t00 = X_Query_perf_counter();
-        refineKeyPoints_openGL(0, 0, 0, (int)keyPoints.size(), mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
+        refineKeyPoints_openGL(0, 0, 0, (int)keyPoints.size(), mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE, keyPoints, errors);
         long long t1 = X_Query_perf_counter();
 
         cv::Mat v = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);

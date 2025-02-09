@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     searchForDescriptors.resize(mipmaps1.size());
     sampleDescriptors_openCL(mipLevels, searchForDescriptors, 1.f, MIPSCALE);
     uploadDescriptors_openCL(mipLevels, searchForDescriptors);
-    refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+    refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
     for (int steps = firstFrame+1; steps <= lastFrame; steps += frameStep) {
         cv::Mat mat2 = loadImage(steps);
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
         std::vector<KeyPoint> lastFrameKeyPoints = keyPoints;
         std::vector<float> lastFrameErrors = errors;
 
-        refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, BOOLSTEPPING, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+        refineKeyPoints_openCL(keyPoints, errors, mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
 
         cv::Mat v  = output("keypoints", mat2, keyPoints, errors, lastFrameKeyPoints, lastFrameErrors);
         if (outputVideo) video.write(v);

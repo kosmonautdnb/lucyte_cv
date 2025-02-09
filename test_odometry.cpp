@@ -197,7 +197,7 @@ int main(int argc, char** argv)
                         const float step = STEPSIZE * descriptorScale;
                         descriptorScale *= (1.f + frrand(SCALEINVARIANCE));
                         const float angle = frrand(ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;
-                        kp = refineKeyPoint(BOOLSTEPPING, kp, searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
+                        kp = refineKeyPoint(kp, searchForDescriptors[i][j], mipmaps2[i].data, descriptorScale, angle, step, width, height, mipScale);
                     }
                 }
                 switch (v) {

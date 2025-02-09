@@ -106,7 +106,7 @@ static std::string openCV_program =
 "\n"
 "   float2 refineKeyPoint( const image2d_t s, global unsigned int* dBits, const int keyPointIndex, const float2 kpxy, \n"
 "                           const float mipScale, const float descriptorScale, const float angle, const float step, const int DESCRIPTORSIZE, const int DESCRIPTORSIZE2,\n"
-"                           const int width,const int height,const int stepping,\n"
+"                           const int width,const int height,\n"
 "                           constant const float2* descriptors1, constant const float2* descriptors2,\n"
 "                           global float *debug) {\n"
 "       int dIndex = keyPointIndex * DESCRIPTORSIZE2;\n"
@@ -133,7 +133,6 @@ static std::string openCV_program =
 "               float2  gr  = (float2)( tex(s, d2 - gdx) - tex(s, d2 + gdx) , tex(s, d2 - gdy) - tex(s, d2 + gdy) )\n"
 "                            -(float2)( tex(s, d1 - gdx) - tex(s, d1 + gdx) , tex(s, d1 - gdy) - tex(s, d1 + gdy) ); \n"
 "               if (b2 != 0) gr = -gr;\n"
-"               if (stepping != 0) gr = (float2)((gr.x == 0.f) ? 0.f : (gr.x > 0.f) ? 1.f : -1.f, (gr.y == 0.f) ? 0.f : (gr.y > 0.f) ? 1.f : -1.f);\n"
 "               xya += gr * fast_length(d2 - d1);\n"
 "           }\n"
 "       }\n"
@@ -250,8 +249,7 @@ static std::string openCV_program =
 "       const int DESCRIPTORSIZE = ints[1];\n"
 "       const int mipLevels = ints[2];\n"
 "       const int STEPCOUNT = ints[3];\n"
-"       const int stepping = ints[4];\n"
-"       const int DESCRIPTORSIZE2 = ints[5];\n"
+"       const int DESCRIPTORSIZE2 = ints[4];\n"
 "       const float MIPSCALE = floats[0];\n"
 "       const float STEPSIZE = floats[1];\n"
 "       const float SCALEINVARIANCE = floats[2];\n"
@@ -270,38 +268,38 @@ static std::string openCV_program =
 "               descriptorScale *= 1.0 + randomLike(k * 11 + i * 9 + v * 11 + 31239) * SCALEINVARIANCE * 2.f - SCALEINVARIANCE;\n"
 "               const float angle = (randomLike(k * 13 + i * 7 + v * 9 + 1379) * ROTATIONINVARIANCE * 2.f - ROTATIONINVARIANCE) / 360.f * 2 * 3.1415927f;\n"
 "               switch(i) {\n"
-"                   case 0:  kp = refineKeyPoint( s0,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 1:  kp = refineKeyPoint( s1,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 2:  kp = refineKeyPoint( s2,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 3:  kp = refineKeyPoint( s3,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 4:  kp = refineKeyPoint( s4,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 5:  kp = refineKeyPoint( s5,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 6:  kp = refineKeyPoint( s6,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 7:  kp = refineKeyPoint( s7,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 8:  kp = refineKeyPoint( s8,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 9:  kp = refineKeyPoint( s9,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 10: kp = refineKeyPoint(s10,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 11: kp = refineKeyPoint(s11,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 12: kp = refineKeyPoint(s12,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 13: kp = refineKeyPoint(s13,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 14: kp = refineKeyPoint(s14,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 15: kp = refineKeyPoint(s15,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 16: kp = refineKeyPoint( sb0,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 17: kp = refineKeyPoint( sb1,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 18: kp = refineKeyPoint( sb2,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 19: kp = refineKeyPoint( sb3,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 20: kp = refineKeyPoint( sb4,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 21: kp = refineKeyPoint( sb5,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 22: kp = refineKeyPoint( sb6,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 23: kp = refineKeyPoint( sb7,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 24: kp = refineKeyPoint( sb8,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 25: kp = refineKeyPoint( sb9,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 26: kp = refineKeyPoint(sb10,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 27: kp = refineKeyPoint(sb11,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 28: kp = refineKeyPoint(sb12,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 29: kp = refineKeyPoint(sb13,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 30: kp = refineKeyPoint(sb14,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
-"                   case 31: kp = refineKeyPoint(sb15,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, stepping,descriptors1, descriptors2, debug); break;\n"
+"                   case 0:  kp = refineKeyPoint( s0,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 1:  kp = refineKeyPoint( s1,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 2:  kp = refineKeyPoint( s2,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 3:  kp = refineKeyPoint( s3,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 4:  kp = refineKeyPoint( s4,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 5:  kp = refineKeyPoint( s5,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 6:  kp = refineKeyPoint( s6,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 7:  kp = refineKeyPoint( s7,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 8:  kp = refineKeyPoint( s8,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 9:  kp = refineKeyPoint( s9,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 10: kp = refineKeyPoint(s10,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 11: kp = refineKeyPoint(s11,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 12: kp = refineKeyPoint(s12,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 13: kp = refineKeyPoint(s13,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 14: kp = refineKeyPoint(s14,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 15: kp = refineKeyPoint(s15,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height, descriptors1, descriptors2, debug); break;\n"
+"                   case 16: kp = refineKeyPoint( sb0,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 17: kp = refineKeyPoint( sb1,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 18: kp = refineKeyPoint( sb2,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 19: kp = refineKeyPoint( sb3,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 20: kp = refineKeyPoint( sb4,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 21: kp = refineKeyPoint( sb5,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 22: kp = refineKeyPoint( sb6,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 23: kp = refineKeyPoint( sb7,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 24: kp = refineKeyPoint( sb8,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 25: kp = refineKeyPoint( sb9,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 26: kp = refineKeyPoint(sb10,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 27: kp = refineKeyPoint(sb11,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 28: kp = refineKeyPoint(sb12,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 29: kp = refineKeyPoint(sb13,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 30: kp = refineKeyPoint(sb14,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
+"                   case 31: kp = refineKeyPoint(sb15,dBits[i],j,kp,mipScale, descriptorScale, angle, step, DESCRIPTORSIZE, DESCRIPTORSIZE2, width, height,descriptors1, descriptors2, debug); break;\n"
 "               };\n"
 "            }\n"
 "       }\n"
@@ -515,13 +513,12 @@ void sampleDescriptors_openCL_waitfor(const int queueId, const int keyPointsId, 
 }
 
 
-void refineKeyPoints_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipLevels, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+void refineKeyPoints_openCL(const int queueId, const int keyPointsId, const int descriptorsId, const int mipmapsId, const int keyPointCount, const int mipLevels, const int STEPCOUNT, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
     openCLInt1[queueId][0] = keyPointCount;
     openCLInt1[queueId][1] = DESCRIPTORSIZE;
     openCLInt1[queueId][2] = mipLevels;
     openCLInt1[queueId][3] = STEPCOUNT;
-    openCLInt1[queueId][4] = stepping ? 1 : 0;
-    openCLInt1[queueId][5] = Descriptor::uint32count * 32;
+    openCLInt1[queueId][4] = Descriptor::uint32count * 32;
     openCLFloat1[queueId][0] = MIPSCALE;
     openCLFloat1[queueId][1] = STEPSIZE;
     openCLFloat1[queueId][2] = SCALEINVARIANCE;
@@ -592,7 +589,7 @@ void sampleDescriptors_openCL(const int mipLevels, std::vector<std::vector<Descr
     sampleDescriptors_openCL(0, 0, 0, 0, mipLevels, DESCRIPTORSCALE2, MIPSCALE);
     sampleDescriptors_openCL_waitfor(0, 0, 0,0, mipLevels, destMips);
 }
-void refineKeyPoints_openCL(std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors, const int mipLevels, const int STEPCOUNT, const bool stepping, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
-    refineKeyPoints_openCL(0, 0, 0, 0, (int)destKeyPoints.size(), mipLevels, STEPCOUNT, stepping, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
+void refineKeyPoints_openCL(std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors, const int mipLevels, const int STEPCOUNT, const float MIPSCALE, const float STEPSIZE, const float SCALEINVARIANCE, const float ROTATIONINVARIANCE) {
+    refineKeyPoints_openCL(0, 0, 0, 0, (int)destKeyPoints.size(), mipLevels, STEPCOUNT, MIPSCALE, STEPSIZE, SCALEINVARIANCE, ROTATIONINVARIANCE);
     refineKeyPoints_openCL_waitfor(0, 0, destKeyPoints, destErrors);
 }

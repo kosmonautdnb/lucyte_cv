@@ -120,7 +120,6 @@ const std::string refineKeyPointsProgram = ""\
                                            "uniform int texWidthDescriptors;\n"
                                            "uniform int texHeightDescriptors;\n"
                                            "uniform int DESCRIPTORSIZE;\n"
-                                           "uniform int stepping;\n"
                                            "uniform int mipLevels;\n"
                                            "uniform int STEPCOUNT;\n"
                                            "uniform float MIPSCALE;\n"
@@ -169,7 +168,6 @@ const std::string refineKeyPointsProgram = ""\
                                            "           vec2 gr = vec2( textureLod(s, d2 - gdx, m).x - textureLod(s, d2 + gdx, m).x , textureLod(s, d2 - gdy, m).x - textureLod(s, d2 + gdy, m).x )\n"
                                            "                    -vec2( textureLod(s, d1 - gdx, m).x - textureLod(s, d1 + gdx, m).x , textureLod(s, d1 - gdy, m).x - textureLod(s, d1 + gdy, m).x );\n"
                                            "           if (b2 != uint(0)) gr = -gr;\n"
-                                           "           if (stepping != 0) gr = vec2((gr.x == 0.0) ? 0.0 : (gr.x > 0.0) ? 1.0 : -1.0, (gr.y == 0.0) ? 0.0 : (gr.y > 0.0) ? 1.0 : -1.0);\n"
                                            "           xya += gr * distance(d2,d1);\n"
                                            "       }\n"
                                            "       bk >>= 1;\n"
@@ -663,7 +661,7 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
 }
 
-void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, int keyPointCount, int mipLevels, int STEPCOUNT, bool stepping, float MIPSCALE, float STEPSIZE, float SCALEINVARIANCE, float ROTATIONINVARIANCE, std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors) {
+void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, int keyPointCount, int mipLevels, int STEPCOUNT, float MIPSCALE, float STEPSIZE, float SCALEINVARIANCE, float ROTATIONINVARIANCE, std::vector<KeyPoint>& destKeyPoints, std::vector<float>& destErrors) {
 
     if (openGLKeyPointsTextureWidth[keyPointsId] != openGLKeyPointsRenderTargetWidth[keyPointsId] || openGLKeyPointsTextureHeight[keyPointsId] != (int)openGLKeyPointsRenderTargetHeight[keyPointsId]) {
         openGLKeyPointsRenderTargetWidth[keyPointsId] = openGLKeyPointsTextureWidth[keyPointsId];
@@ -680,7 +678,6 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     GLint refineKeyPoints_location_texWidthDescriptors = glGetUniformLocation(openGLProgram_refineKeyPoints, "texWidthDescriptors"); checkGLError();
     GLint refineKeyPoints_location_texHeightDescriptors = glGetUniformLocation(openGLProgram_refineKeyPoints, "texHeightDescriptors"); checkGLError();
     GLint refineKeyPoints_location_DESCRIPTORSIZE = glGetUniformLocation(openGLProgram_refineKeyPoints, "DESCRIPTORSIZE"); checkGLError();
-    GLint refineKeyPoints_location_stepping = glGetUniformLocation(openGLProgram_refineKeyPoints, "stepping"); checkGLError();
     GLint refineKeyPoints_location_mipLevels = glGetUniformLocation(openGLProgram_refineKeyPoints, "mipLevels"); checkGLError();
     GLint refineKeyPoints_location_STEPCOUNT = glGetUniformLocation(openGLProgram_refineKeyPoints, "STEPCOUNT"); checkGLError();
     GLint refineKeyPoints_location_MIPSCALE = glGetUniformLocation(openGLProgram_refineKeyPoints, "MIPSCALE"); checkGLError();
@@ -699,7 +696,6 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     glUniform1i(refineKeyPoints_location_texWidthDescriptors, openGLDescriptorsTextureWidth[descriptorsId]); checkGLError();
     glUniform1i(refineKeyPoints_location_texHeightDescriptors, openGLDescriptorsTextureHeight[descriptorsId]); checkGLError();
     glUniform1i(refineKeyPoints_location_DESCRIPTORSIZE, DESCRIPTORSIZE); checkGLError();
-    glUniform1i(refineKeyPoints_location_stepping, stepping ? 1 : 0); checkGLError();
     glUniform1i(refineKeyPoints_location_mipLevels, mipLevels); checkGLError();
     glUniform1i(refineKeyPoints_location_STEPCOUNT, STEPCOUNT); checkGLError();
     glUniform1f(refineKeyPoints_location_MIPSCALE, MIPSCALE); checkGLError();
