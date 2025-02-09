@@ -285,7 +285,7 @@ void initOpenGL() {
     }
     descriptors12 += ");\n";
     descriptorsw += ");\n";
-    std::string descriptorCount = "int DESCRIPTORSIZE = " + std::to_string(DESCRIPTORSIZE) + ";\n";
+    std::string descriptorCount = "const int DESCRIPTORSIZE = " + std::to_string(DESCRIPTORSIZE) + ";\n";
 
     std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + descriptorsw + descriptorCount + refineKeyPointsProgram;
     std::string sampleDescriptors = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + descriptorCount + sampleDescriptorProgram;
@@ -597,8 +597,7 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     GLint sampleDescriptors_location_texWidthKeyPoints2 = glGetUniformLocation(openGLProgram_sampleDescriptors, "texWidthKeyPoints2"); checkGLError();
     GLint sampleDescriptors_location_texHeightKeyPoints2 = glGetUniformLocation(openGLProgram_sampleDescriptors, "texHeightKeyPoints2"); checkGLError();
     GLint sampleDescriptors_location_mipMap = glGetUniformLocation(openGLProgram_sampleDescriptors, "mipMap"); checkGLError();
-    GLint sampleDescriptors_location_keyPointsx = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsx"); checkGLError();
-    GLint sampleDescriptors_location_keyPointsy = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsy"); checkGLError();
+    GLint sampleDescriptors_location_keyPoints = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPoints"); checkGLError();
 
     const int descriptorCount = openGLKeyPointCount[keyPointsId] * mipLevels;
     int descriptorX = descriptorCount;
@@ -629,7 +628,7 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
 
     glActiveTexture(GL_TEXTURE0); checkGLError();
     glBindTexture(GL_TEXTURE_2D, openGLKeyPoints[keyPointsId]); checkGLError();
-    glUniform1i(sampleDescriptors_location_keyPointsx, 0); checkGLError();
+    glUniform1i(sampleDescriptors_location_keyPoints, 0); checkGLError();
     glActiveTexture(GL_TEXTURE1); checkGLError();
     glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
     glUniform1i(sampleDescriptors_location_mipMap, 1); checkGLError();
@@ -688,8 +687,7 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     GLint refineKeyPoints_location_ROTATIONINVARIANCE = glGetUniformLocation(openGLProgram_refineKeyPoints, "ROTATIONINVARIANCE"); checkGLError();
     GLint refineKeyPoints_location_texWidthKeyPoints = glGetUniformLocation(openGLProgram_refineKeyPoints, "texWidthKeyPoints"); checkGLError();
     GLint refineKeyPoints_location_texHeightKeyPoints = glGetUniformLocation(openGLProgram_refineKeyPoints, "texHeightKeyPoints"); checkGLError();
-    GLint refineKeyPoints_location_keyPointsx = glGetUniformLocation(openGLProgram_refineKeyPoints, "keyPointsx"); checkGLError();
-    GLint refineKeyPoints_location_keyPointsy = glGetUniformLocation(openGLProgram_refineKeyPoints, "keyPointsy"); checkGLError();
+    GLint refineKeyPoints_location_keyPoints = glGetUniformLocation(openGLProgram_refineKeyPoints, "keyPoints"); checkGLError();
     GLint refineKeyPoints_location_keyPointCount = glGetUniformLocation(openGLProgram_refineKeyPoints, "keyPointCount"); checkGLError();
 
     glUseProgram(openGLProgram_refineKeyPoints); checkGLError();
@@ -711,7 +709,7 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
 
     glActiveTexture(GL_TEXTURE0); checkGLError();
     glBindTexture(GL_TEXTURE_2D, openGLKeyPoints[keyPointsId]); checkGLError();
-    glUniform1i(refineKeyPoints_location_keyPointsx, 0); checkGLError();
+    glUniform1i(refineKeyPoints_location_keyPoints, 0); checkGLError();
     glActiveTexture(GL_TEXTURE1); checkGLError();
     glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
     glUniform1i(refineKeyPoints_location_mipMap, 1); checkGLError();
