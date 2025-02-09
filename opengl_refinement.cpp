@@ -168,7 +168,7 @@ const std::string refineKeyPointsProgram = ""\
                                            "           vec2 gr = vec2( textureLod(s, d2 - gdx, m).x - textureLod(s, d2 + gdx, m).x , textureLod(s, d2 - gdy, m).x - textureLod(s, d2 + gdy, m).x )\n"
                                            "                    -vec2( textureLod(s, d1 - gdx, m).x - textureLod(s, d1 + gdx, m).x , textureLod(s, d1 - gdy, m).x - textureLod(s, d1 + gdy, m).x );\n"
                                            "           if (b2 != 0) gr = -gr;\n"
-                                           "           xya += gr * distance(d2,d1);\n"
+                                           "           xya += gr * descriptorsw[b];\n"
                                            "       }\n"
                                            "       bk >>= 1;\n"
                                            "   }\n"
@@ -274,15 +274,22 @@ void initOpenGL() {
 #endif // __CURRENT_PLATFORM__ == __PLATFORM_WINDOWS__
 
     std::string descriptors12 = "vec4 descriptors12[" + std::to_string(DESCRIPTORSIZE) + "] = vec4 [](";
+    std::string descriptorsw = "float descriptorsw[" + std::to_string(DESCRIPTORSIZE) + "] = float [](";
     for (int i = 0; i < DESCRIPTORSIZE; i++) {
         if (i != 0) {
             descriptors12 += ",";
+            descriptorsw += ",";
         }
         descriptors12 += "vec4(" + std::to_string(descriptorsX1[i]) + "," + std::to_string(descriptorsY1[i]) + "," + std::to_string(descriptorsX2[i]) + "," + std::to_string(descriptorsY2[i]) + ")";
+        float dx = descriptorsX1[i] - descriptorsX2[i];
+        float dy = descriptorsY1[i] - descriptorsY2[i];
+        float d = sqrtf(dx*dx+dy*dy);
+        descriptorsw += std::to_string(d);
     }
     descriptors12 += ");\n";
+    descriptorsw += ");\n";
 
-    std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + refineKeyPointsProgram;
+    std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + descriptorsw + refineKeyPointsProgram;
     std::string sampleDescriptors = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + sampleDescriptorProgram;
 
     openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptors.c_str(), (unsigned int)sampleDescriptors.length());
