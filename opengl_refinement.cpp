@@ -76,7 +76,6 @@ const std::string sampleDescriptorProgram = ""
                                             "uniform int texHeightKeyPoints;\n"
                                             "uniform int texWidthKeyPoints2;\n"
                                             "uniform int texHeightKeyPoints2;\n"
-                                            "uniform int DESCRIPTORSIZE;\n"
                                             "uniform int mipLevels;\n"
                                             "uniform int keyPointCount;\n"
                                             "uniform float MIPSCALE;\n"
@@ -119,7 +118,6 @@ const std::string refineKeyPointsProgram = ""\
                                            "uniform int texHeightDescriptorShape;\n"
                                            "uniform int texWidthDescriptors;\n"
                                            "uniform int texHeightDescriptors;\n"
-                                           "uniform int DESCRIPTORSIZE;\n"
                                            "uniform int mipLevels;\n"
                                            "uniform int STEPCOUNT;\n"
                                            "uniform float MIPSCALE;\n"
@@ -287,9 +285,10 @@ void initOpenGL() {
     }
     descriptors12 += ");\n";
     descriptorsw += ");\n";
+    std::string descriptorCount = "int DESCRIPTORSIZE = " + std::to_string(DESCRIPTORSIZE) + ";\n";
 
-    std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + descriptorsw + refineKeyPointsProgram;
-    std::string sampleDescriptors = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + sampleDescriptorProgram;
+    std::string refineKeys = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + descriptorsw + descriptorCount + refineKeyPointsProgram;
+    std::string sampleDescriptors = "#version 300 es\nprecision highp float;precision highp int;\n" + descriptors12 + descriptorCount + sampleDescriptorProgram;
 
     openGLFragmentShader_sampleDescriptors = pixelShader(sampleDescriptors.c_str(), (unsigned int)sampleDescriptors.length());
     openGLFragmentShader_refineKeyPoints = pixelShader(refineKeys.c_str(), (unsigned int)refineKeys.length());
@@ -597,7 +596,6 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     GLint sampleDescriptors_location_texHeightKeyPoints = glGetUniformLocation(openGLProgram_sampleDescriptors, "texHeightKeyPoints"); checkGLError();
     GLint sampleDescriptors_location_texWidthKeyPoints2 = glGetUniformLocation(openGLProgram_sampleDescriptors, "texWidthKeyPoints2"); checkGLError();
     GLint sampleDescriptors_location_texHeightKeyPoints2 = glGetUniformLocation(openGLProgram_sampleDescriptors, "texHeightKeyPoints2"); checkGLError();
-    GLint sampleDescriptors_location_DESCRIPTORSIZE = glGetUniformLocation(openGLProgram_sampleDescriptors, "DESCRIPTORSIZE"); checkGLError();
     GLint sampleDescriptors_location_mipMap = glGetUniformLocation(openGLProgram_sampleDescriptors, "mipMap"); checkGLError();
     GLint sampleDescriptors_location_keyPointsx = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsx"); checkGLError();
     GLint sampleDescriptors_location_keyPointsy = glGetUniformLocation(openGLProgram_sampleDescriptors, "keyPointsy"); checkGLError();
@@ -624,7 +622,6 @@ void sampleDescriptors_openGL(int keyPointsId, int descriptorsId, int mipmapsId,
     glUniform1i(sampleDescriptors_location_texHeightKeyPoints, descriptorY); checkGLError();
     glUniform1i(sampleDescriptors_location_texWidthKeyPoints2, openGLKeyPointsTextureWidth[keyPointsId]); checkGLError();
     glUniform1i(sampleDescriptors_location_texHeightKeyPoints2, openGLKeyPointsTextureHeight[keyPointsId]); checkGLError();
-    glUniform1i(sampleDescriptors_location_DESCRIPTORSIZE, DESCRIPTORSIZE); checkGLError();
     glUniform1f(sampleDescriptors_location_DESCRIPTORSCALE2, DESCRIPTORSCALE2); checkGLError();
     glUniform1f(sampleDescriptors_location_MIPSCALE, MIPSCALE); checkGLError();
     glUniform1i(sampleDescriptors_location_mipLevels, mipLevels); checkGLError();
@@ -683,7 +680,6 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     GLint refineKeyPoints_location_texHeightDescriptorShape = glGetUniformLocation(openGLProgram_refineKeyPoints, "texHeightDescriptorShape"); checkGLError();
     GLint refineKeyPoints_location_texWidthDescriptors = glGetUniformLocation(openGLProgram_refineKeyPoints, "texWidthDescriptors"); checkGLError();
     GLint refineKeyPoints_location_texHeightDescriptors = glGetUniformLocation(openGLProgram_refineKeyPoints, "texHeightDescriptors"); checkGLError();
-    GLint refineKeyPoints_location_DESCRIPTORSIZE = glGetUniformLocation(openGLProgram_refineKeyPoints, "DESCRIPTORSIZE"); checkGLError();
     GLint refineKeyPoints_location_mipLevels = glGetUniformLocation(openGLProgram_refineKeyPoints, "mipLevels"); checkGLError();
     GLint refineKeyPoints_location_STEPCOUNT = glGetUniformLocation(openGLProgram_refineKeyPoints, "STEPCOUNT"); checkGLError();
     GLint refineKeyPoints_location_MIPSCALE = glGetUniformLocation(openGLProgram_refineKeyPoints, "MIPSCALE"); checkGLError();
@@ -701,7 +697,6 @@ void refineKeyPoints_openGL(int keyPointsId, int descriptorsId, int mipmapsId, i
     glUniform1i(refineKeyPoints_location_texHeightDescriptorShape, openGLDescriptorShapeTextureHeight); checkGLError();
     glUniform1i(refineKeyPoints_location_texWidthDescriptors, openGLDescriptorsTextureWidth[descriptorsId]); checkGLError();
     glUniform1i(refineKeyPoints_location_texHeightDescriptors, openGLDescriptorsTextureHeight[descriptorsId]); checkGLError();
-    glUniform1i(refineKeyPoints_location_DESCRIPTORSIZE, DESCRIPTORSIZE); checkGLError();
     glUniform1i(refineKeyPoints_location_mipLevels, mipLevels); checkGLError();
     glUniform1i(refineKeyPoints_location_STEPCOUNT, STEPCOUNT); checkGLError();
     glUniform1f(refineKeyPoints_location_MIPSCALE, MIPSCALE); checkGLError();
