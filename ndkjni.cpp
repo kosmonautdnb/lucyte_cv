@@ -255,3 +255,8 @@ Java_com_example_lucyteandroid_MyGLRenderer_drawLine(JNIEnv *env, jobject thiz, 
     glDeleteBuffers(1, &vbo);
     glUseProgram(0);
 }
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_lucyteandroid_MyGLRenderer_getDescriptorUint32Count(JNIEnv *env, jobject thiz) {
+    return Descriptor::uint32count;
+}
