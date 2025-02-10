@@ -76,6 +76,9 @@ target_link_libraries(lucyte_KITTIE ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 add_executable(lucyte_KITTIE_stereo check_odometry_kittie_stereo_opencl.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_KITTIE_stereo ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
+add_executable(lucyte_check_webcam_opencl check_webcam_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_check_webcam_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+
 if (OpenGL_FOUND AND glfw3_FOUND)
 	add_executable(lucyte_opengl opengl_main.cpp ${lucyte_common} ${lucyte_opengl})
 	target_link_libraries(lucyte_opengl ${OpenCV_LIBS} glfw ${OPENGL_LIBRARIES} GLEW::GLEW)
