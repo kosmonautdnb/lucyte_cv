@@ -11,6 +11,7 @@ int texf(const unsigned char* s, const int x, const int y, const unsigned int wi
         if (yr < 0) yr = 0;
         if (xr >= int(width - 1)) xr = width - 2;
         if (yr >= int(height - 1)) yr = height - 2;
+        return ((int)s[xr + yr * width])<<2; // 10 bit
     }
     s += xr + yr * width;
     const unsigned short a = *((unsigned short*)(s));
