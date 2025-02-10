@@ -37,43 +37,43 @@ set(lucyte_opengl opengl_refinement.cpp opengl_refinement.hpp)
 add_executable(lucyte_basic main.cpp ${lucyte_common})
 target_link_libraries(lucyte_basic ${OpenCV_LIBS})
 
-add_executable(lucyte_test_klt test_klt.cpp ${lucyte_common})
-target_link_libraries(lucyte_test_klt ${OpenCV_LIBS})
+add_executable(lucyte_check_klt check_klt.cpp ${lucyte_common})
+target_link_libraries(lucyte_check_klt ${OpenCV_LIBS})
 
-add_executable(lucyte_test_klt_standalone test_klt_standalone.cpp ${lucyte_common})
-target_link_libraries(lucyte_test_klt_standalone ${OpenCV_LIBS})
+add_executable(lucyte_check_klt_standalone check_klt_standalone.cpp ${lucyte_common})
+target_link_libraries(lucyte_check_klt_standalone ${OpenCV_LIBS})
 
-add_executable(lucyte_test_odometry test_odometry.cpp ${lucyte_common})
-target_link_libraries(lucyte_test_odometry ${OpenCV_LIBS})
+add_executable(lucyte_check_odometry check_odometry.cpp ${lucyte_common})
+target_link_libraries(lucyte_check_odometry ${OpenCV_LIBS})
 
-add_executable(lucyte_test_exotic test_exotic.cpp ${lucyte_common})
-target_link_libraries(lucyte_test_exotic ${OpenCV_LIBS})
+add_executable(lucyte_check_exotic check_exotic.cpp ${lucyte_common})
+target_link_libraries(lucyte_check_exotic ${OpenCV_LIBS})
 
 add_executable(lucyte_opencl opencl_main.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_test_odometry_opencl test_odometry_opencl.cpp ${lucyte_common} ${lucyte_opencl})
-target_link_libraries(lucyte_test_odometry_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+add_executable(lucyte_check_odometry_opencl check_odometry_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_check_odometry_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_test_rectangle_opencl test_rectangle_opencl.cpp ${lucyte_common} ${lucyte_opencl})
-target_link_libraries(lucyte_test_rectangle_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+add_executable(lucyte_check_rectangle_opencl check_rectangle_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_check_rectangle_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_test_voronoi_opencl test_voronoi_opencl.cpp ${lucyte_common} ${lucyte_opencl})
-target_link_libraries(lucyte_test_voronoi_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+add_executable(lucyte_check_voronoi_opencl check_voronoi_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_check_voronoi_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_test_voronoi_stereo_opencl test_voronoi_stereo_opencl.cpp ${lucyte_common} ${lucyte_opencl})
-target_link_libraries(lucyte_test_voronoi_stereo_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+add_executable(lucyte_check_voronoi_stereo_opencl check_voronoi_stereo_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_check_voronoi_stereo_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_test_feature_importance_opencl test_feature_importance_opencl.cpp ${lucyte_common} ${lucyte_opencl})
-target_link_libraries(lucyte_test_feature_importance_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
+add_executable(lucyte_check_feature_importance_opencl check_feature_importance_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+target_link_libraries(lucyte_check_feature_importance_opencl ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
 add_executable(lucyte_opencl_nonblocking opencl_main_nonblocking.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_opencl_nonblocking ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_KITTIE test_odometry_kittie_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+add_executable(lucyte_KITTIE check_odometry_kittie_opencl.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_KITTIE ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
-add_executable(lucyte_KITTIE_stereo test_odometry_kittie_stereo_opencl.cpp ${lucyte_common} ${lucyte_opencl})
+add_executable(lucyte_KITTIE_stereo check_odometry_kittie_stereo_opencl.cpp ${lucyte_common} ${lucyte_opencl})
 target_link_libraries(lucyte_KITTIE_stereo ${OpenCV_LIBS} ${OpenCL_LIBRARIES})
 
 if (OpenGL_FOUND AND glfw3_FOUND)
