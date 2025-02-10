@@ -11,4 +11,4 @@
 #endif
 
 #define lcLog printf
-#define KEYPOINTCOUNT 10000
+#define KEYPOINTCOUNT 1000
