@@ -1,7 +1,7 @@
 # Lucyte Feature Tracker
 by Stefan Mader in 2025 
 abandoned in february 2025 
-email:st.mader@gmx.de
+email: st.mader@gmx.de
 
 A novel feature/point tracking approach that uses the descriptors to locate the features in an image. Ensuring luminance invariance.
 
