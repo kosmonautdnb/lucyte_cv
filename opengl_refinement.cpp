@@ -501,8 +501,10 @@ void uploadMipMaps_openGL(int mipmapsId, const MipMap& baseLevel) {
     glBindTexture(GL_TEXTURE_2D, openGLMipMaps[mipmapsId]); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST); checkGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); checkGLError();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); checkGLError();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER); checkGLError();
+    GLfloat color[] = { 0.f,0.f,0.f,1.f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color); checkGLError();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, (int)baseLevel.width, (int)baseLevel.height, 0, GL_RED, GL_UNSIGNED_BYTE, baseLevel.data); checkGLError();
     glGenerateMipmap(GL_TEXTURE_2D); checkGLError();
     glBindTexture(GL_TEXTURE_2D, 0); checkGLError();
