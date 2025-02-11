@@ -64,8 +64,8 @@ std::vector<cv::Mat> mipmaps2;
 
 std::vector<MipMap> mipMaps(const std::vector<cv::Mat>& m) { std::vector<MipMap> r; r.resize(m.size()); for (int i = 0; i < r.size(); i++) { r[i].width = m[i].cols; r[i].height = m[i].rows; r[i].data = m[i].data; } return r; }
 std::vector<cv::Mat> mipMaps(const cv::Mat& mat) {
-    cv::Mat k;
-    cv::cvtColor(mat, k, cv::COLOR_RGB2GRAY);
+    cv::Mat k = mat.clone();
+    //cv::cvtColor(mat, k, cv::COLOR_RGB2GRAY);
     int width = k.cols;
     int height = k.rows;
     std::vector<cv::Mat> mipmaps;
